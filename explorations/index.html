@@ -1,0 +1,2781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ShaderPaper — system catalogue</title>
+<style>
+  :root{
+    --bg:#0b0b0c;--panel:#141416;--line:#26262a;--fg:#e9e7e2;--dim:#8d8a84;
+    --accent:#c8a45c;--algo:#b47fc4;--geo:#6f8fb8;--org:#7fb489;--dir:#c8a45c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:15px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1240px;margin:0 auto;padding:48px 28px 100px}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:0}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 10px;font-weight:600}
+  .sub{color:var(--dim);max-width:70ch;margin:0}
+
+  nav{position:sticky;top:0;z-index:20;background:rgba(11,11,12,.93);backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--line);margin:0 0 36px;padding:12px 0;display:flex;gap:8px;flex-wrap:wrap}
+  nav button{background:transparent;color:var(--dim);border:1px solid transparent;padding:7px 14px;
+      border-radius:8px;font:inherit;font-size:13.5px;cursor:pointer}
+  nav button:hover{color:var(--fg);background:#1a1a1d}
+  nav button.on{color:var(--fg);background:#1e1e21;border-color:var(--line)}
+  nav .count{color:#5f5c58;font-size:11.5px;margin-left:5px}
+
+  .intro{padding:20px 22px;border-radius:12px;border:1px solid var(--line);background:#101012;margin-bottom:26px}
+  .intro h2{margin:0 0 6px;font-size:22px;letter-spacing:-.01em}
+  .intro p{margin:0;color:var(--dim);max-width:78ch;font-size:14px}
+  .intro.A{border-left:3px solid var(--algo)} .intro.G{border-left:3px solid var(--geo)}
+  .intro.O{border-left:3px solid var(--org)} .intro.D{border-left:3px solid var(--dir)}
+
+  section{margin:0 0 30px;padding:24px;background:var(--panel);border:1px solid var(--line);border-radius:14px}
+  .head{display:flex;gap:11px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+  h3{font-size:18px;margin:0;letter-spacing:-.01em;font-weight:600}
+  .tag{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;padding:3px 9px;border-radius:20px;
+       border:1px solid var(--line);color:var(--dim)}
+  .tag.A{color:var(--algo);border-color:#42304a} .tag.G{color:var(--geo);border-color:#2c3d52}
+  .tag.O{color:var(--org);border-color:#2d4634} .tag.D{color:var(--dir);border-color:#4a3d22}
+  .tag.S{color:#c4907f;border-color:#4a332c} .tag.F{color:#8fb8b4;border-color:#2c4a47}
+  .blurb{color:#cfccc5;margin:8px 0 12px;max-width:78ch;font-size:14.5px}
+  .note{color:#c9a06a;font-size:13px;margin:0 0 12px;max-width:78ch}
+  .meta{color:var(--dim);font-size:13.5px;margin:0 0 14px;max-width:78ch}
+  .meta b{color:#bab6ae;font-weight:600}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+  .plate{background:#f2f0ea;border-radius:3px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.55);aspect-ratio:4/5}
+  .plate canvas{width:100%;height:100%;display:block}
+  .cap{color:var(--dim);font-size:11px;margin-top:6px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
+  button.act{background:#1e1e21;color:var(--fg);border:1px solid var(--line);padding:8px 15px;
+    border-radius:8px;font:inherit;font-size:13.5px;cursor:pointer}
+  button.act:hover{background:#27272b;border-color:#3a3a40}
+  .status{color:var(--dim);font-size:12.5px}
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:22px 0 30px}
+  .rule{background:#101012;border:1px solid var(--line);border-left:2px solid var(--accent);border-radius:10px;padding:14px 16px}
+  .rule b{display:block;font-size:13.5px;margin-bottom:4px}
+  .rule span{color:var(--dim);font-size:13px}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px;background:#101012;
+    border:1px solid var(--line);border-radius:14px;margin-bottom:34px}
+  .compare h4{margin:0 0 10px;font-size:14.5px}
+  .compare .bad h4{color:#c07070} .compare .good h4{color:#84b48c}
+  .compare p{color:var(--dim);font-size:13px;margin:10px 0 0}
+  @media(max-width:720px){.compare{grid-template-columns:1fr}}
+
+  .inputrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 26px;padding:16px 18px;
+    background:#17131b;border:1px solid #33263a;border-radius:12px}
+  .inputrow label{font-size:13.5px;color:#cfccc5}
+  input[type=text]{background:#0d0d0f;border:1px solid #3a2f42;color:var(--fg);padding:9px 13px;
+    border-radius:8px;font:inherit;font-size:14px;min-width:270px}
+  input[type=text]:focus{outline:none;border-color:var(--algo)}
+  .inputrow .status{margin-left:auto}
+
+  .skipped{padding:20px 22px;background:#141416;border:1px dashed #33333a;border-radius:12px}
+  .skipped h4{margin:0 0 10px;font-size:15px}
+  .skipped p{margin:0 0 10px;color:var(--dim);font-size:13.5px;max-width:78ch}
+  .skipped b{color:#cfccc5}
+  .hidden{display:none}
+  footer{color:var(--dim);font-size:13px;border-top:1px solid var(--line);padding-top:26px;margin-top:50px;max-width:78ch}
+  code{background:#1c1c1f;padding:1px 5px;border-radius:4px;font-size:12.5px}
+  .load{color:var(--dim);font-size:13.5px;padding:40px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>ShaderPaper — system catalogue</h1>
+  <p class="sub">Twenty-three generative systems, each shown as four variations — the same shape as one collection in the 5&nbsp;&times;&nbsp;4 plan. Organised by your taxonomy, with the art-directed tier first because it is the one that answers the artistic-appeal problem.</p>
+</header>
+
+<nav id="nav"></nav>
+<div id="app"></div>
+
+<footer>
+  Everything renders live and locally. Nothing is published.
+  Sections render on first visit, so switching tabs the first time takes a moment.
+  <br><br>
+  <b>Consolidated from</b> the earlier <code>systems.html</code>, <code>taxonomy.html</code> and <code>composition.html</code>, which this file replaces.
+  Written analysis lives in <code>../docs/roast-verdict.md</code>.
+  <br><br>
+  Hard-edge work is drawn with Canvas2D rather than shaders on purpose — vector paths stay crisp at any output size.
+  For print you would export those as <b>SVG or PDF</b>, not PNG.
+</footer>
+</div>
+
+<script>
+/* ============================================================
+   0 · infrastructure
+   ============================================================ */
+function fail(m){
+  let b=document.getElementById('errbar');
+  if(!b){ b=document.createElement('pre'); b.id='errbar';
+    b.style.cssText='background:#3a1414;border:1px solid #6b2222;color:#ffb4b4;padding:14px 16px;border-radius:10px;margin:0 0 24px;white-space:pre-wrap;font-size:12.5px;overflow-x:auto';
+    document.getElementById('app').before(b); }
+  b.textContent+=m+'\n'; console.error(m);
+}
+addEventListener('error',e=>fail('X '+e.message));
+
+const PAPER='#f2f0ea', INKC='#14141a';
+const ACCENTS=['#b8752a','#a83c2c','#2c4877','#2f5d4a','#6b3a5e','#8a6d1f'];
+
+function R(seed,i){ const x=Math.sin(seed*7.13+i*19.77)*43758.5453; return x-Math.floor(x); }
+function pick(seed,i,arr){ return arr[Math.floor(R(seed,i)*arr.length)]; }
+function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)/4294967296; }
+function seedFrom(s){ return strHash(s)*997; }
+function prep(cv){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const w=cv.clientWidth||200,h=cv.clientHeight||250;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const c=cv.getContext('2d'); c.fillStyle=PAPER; c.fillRect(0,0,cv.width,cv.height); return c;
+}
+function noise2(x,y,s){
+  const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;
+  const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const h=(a,b)=>{const t=Math.sin(a*127.1+b*311.7+s*13.7)*43758.5453; return t-Math.floor(t);};
+  return (h(xi,yi)*(1-u)+h(xi+1,yi)*u)*(1-v)+(h(xi,yi+1)*(1-u)+h(xi+1,yi+1)*u)*v;
+}
+function fbm(x,y,s){ let a=.5,t=0,fx=x,fy=y; for(let i=0;i<4;i++){t+=a*noise2(fx,fy,s);fx*=2.03;fy*=2.03;a*=.5;} return t; }
+
+/* ---- shared WebGL2 renderer: one context, blitted into many 2D canvases ---- */
+const SS=2, GW=520, GH=650;
+const glc=document.createElement('canvas'); glc.width=GW*SS; glc.height=GH*SS;
+const gl=glc.getContext('webgl2',{preserveDrawingBuffer:true,antialias:false});
+if(!gl) fail('X WebGL2 unavailable — shader systems will not render.');
+const FLOAT_OK = gl ? !!gl.getExtension('EXT_color_buffer_float') : false;
+
+const VERT=`#version 300 es
+in vec2 a; void main(){ gl_Position=vec4(a,0.,1.); }`;
+
+const PRELUDE=`#version 300 es
+precision highp float;
+out vec4 outColor;
+uniform vec2 u_res; uniform float u_seed;
+const vec3 PAPER=vec3(0.949,0.941,0.919);
+const vec3 INK  =vec3(0.078,0.078,0.102);
+float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
+float rnd(float i){ return hash11(u_seed*7.13+i*19.77); }
+float hash21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
+float vnoise(vec2 p){ vec2 i=floor(p),f=fract(p); vec2 u=f*f*(3.0-2.0*f);
+  return mix(mix(hash21(i),hash21(i+vec2(1,0)),u.x),mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),u.x),u.y); }
+float fbmG(vec2 p){ float a=0.5,s=0.0; for(int i=0;i<5;i++){ s+=a*vnoise(p); p=p*2.03+11.7; a*=0.5; } return s; }
+float isoLine(float g,float w){ float aa=max(fwidth(g),1e-6); float d=abs(fract(g)-0.5);
+  return 1.0-smoothstep(0.0,w*aa,d); }
+vec3 oklab2lin(vec3 c){
+  float l_=c.x+0.3963377774*c.y+0.2158037573*c.z;
+  float m_=c.x-0.1055613458*c.y-0.0638541728*c.z;
+  float s_=c.x-0.0894841775*c.y-1.2914855480*c.z;
+  float l=l_*l_*l_,m=m_*m_*m_,s=s_*s_*s_;
+  return vec3(4.0767416621*l-3.3077115913*m+0.2309699292*s,
+             -1.2684380046*l+2.6097574011*m-0.3413193965*s,
+             -0.0041960863*l-0.7034186147*m+1.7076147010*s); }
+vec3 toSRGB(vec3 c){ c=max(c,0.0);
+  return mix(12.92*c,1.055*pow(c,vec3(1.0/2.4))-0.055,step(0.0031308,c)); }
+vec3 oklch(float L,float C,float h){ return toSRGB(oklab2lin(vec3(L,C*cos(h),C*sin(h)))); }
+vec2 uvCentered(){ return (gl_FragCoord.xy-0.5*u_res)/min(u_res.x,u_res.y)*2.0; }
+`;
+
+function compile(src,type){ const s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+const pcache=new Map();
+function program(body){
+  if(pcache.has(body)) return pcache.get(body);
+  const p=gl.createProgram();
+  gl.attachShader(p,compile(VERT,gl.VERTEX_SHADER));
+  gl.attachShader(p,compile(PRELUDE+body,gl.FRAGMENT_SHADER));
+  gl.bindAttribLocation(p,0,'a'); gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  pcache.set(body,p); return p;
+}
+if(gl){ const vb=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0,2,gl.FLOAT,false,0,0); }
+
+function renderGL(body,seed,extra){
+  const p=program(body); gl.useProgram(p);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.viewport(0,0,glc.width,glc.height);
+  gl.uniform2f(gl.getUniformLocation(p,'u_res'),glc.width,glc.height);
+  gl.uniform1f(gl.getUniformLocation(p,'u_seed'),seed);
+  if(extra) extra(p);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+}
+function blit(cv){ const c=prep(cv); c.imageSmoothingQuality='high'; c.drawImage(glc,0,0,cv.width,cv.height); }
+
+/* ============================================================
+   1 · shader systems
+   ============================================================ */
+const F_GUILLOCHE=`
+void main(){
+  vec2 p=uvCentered();
+  float crop=rnd(50.);
+  if(crop<0.5) p = p*0.52 - vec2(rnd(51.)-0.5, rnd(52.)-0.5)*0.8;
+  float r=length(p), th=atan(p.y,p.x);
+  float A=3.0+floor(rnd(1.)*7.0), B=5.0+floor(rnd(2.)*9.0), C=2.0+floor(rnd(3.)*6.0);
+  float f=sin(A*th+13.0*r)+0.70*sin(B*th-8.5*r+1.7)+0.45*sin(C*th+19.0*r+3.1)+0.50*sin(22.0*r+rnd(4.)*6.28);
+  float g=f*(2.2+rnd(5.)*1.6);
+  float ink=isoLine(g,1.35);
+  /* half the seeds keep the intact rosette (authentic to engine-turning),
+     half crop into it hard so the plate bleeds — rule 1 + 2 */
+  if(crop>=0.5){
+    float Rr=0.94;
+    ink*=1.0-smoothstep(Rr-0.012,Rr,r);
+    ink=max(ink,(1.0-smoothstep(0.0015,0.004,abs(r-Rr)))*0.9);
+    ink=max(ink,(1.0-smoothstep(0.0015,0.004,abs(r-Rr*0.955)))*0.55);
+  }
+  outColor=vec4(mix(PAPER,INK,ink),1.0);
+}`;
+const F_MOIRE=`
+float grating(vec2 p,float ang,float freq){ return dot(p,vec2(cos(ang),sin(ang)))*freq; }
+void main(){
+  vec2 p=uvCentered();
+  float mode=rnd(1.), base=rnd(2.)*3.14159, freq=26.0+rnd(3.)*30.0, d=0.04+rnd(4.)*0.22;
+  float g1,g2;
+  if(mode<0.34){ g1=grating(p,base,freq); g2=grating(p,base+d,freq*(1.0+rnd(5.)*0.05)); }
+  else if(mode<0.67){ g1=length(p-vec2(rnd(6.)-0.5,rnd(7.)-0.5)*0.5)*freq; g2=grating(p,base,freq); }
+  else { g1=length(p-vec2(0.34,0.0))*freq; g2=length(p+vec2(0.34,0.0))*freq; }
+  float ink=1.0-(1.0-isoLine(g1,2.2))*(1.0-isoLine(g2,2.2));
+  /* rule 1 + 4: full bleed, with a heavy solid field cutting across
+     so the piece has value structure instead of even grey texture */
+  float ba=rnd(20.)*3.14159, bo=(rnd(21.)-0.5)*1.1;
+  float bandv=dot(p,vec2(cos(ba),sin(ba)))-bo;
+  float bw=0.10+rnd(22.)*0.34;
+  ink=max(ink, 1.0-smoothstep(bw,bw+fwidth(bandv)*2.0,abs(bandv)));
+  outColor=vec4(mix(PAPER,INK,ink),1.0);
+}`;
+const F_CONTOUR=`
+void main(){
+  vec2 p=uvCentered();
+  float sc=1.3+rnd(1.)*1.4;
+  vec2 o1=vec2(rnd(2.),rnd(3.))*40.0, o2=vec2(rnd(4.),rnd(5.))*40.0;
+  vec2 q=vec2(fbmG(p*sc+o1), fbmG(p*sc+o1+vec2(5.2,1.3)));
+  vec2 r=vec2(fbmG(p*sc+3.0*q+o2), fbmG(p*sc+3.0*q+o2+vec2(8.3,2.8)));
+  float h=fbmG(p*sc+3.4*r);
+  float levels=9.0+floor(rnd(6.)*7.0);
+  float g=h*levels, band=floor(g)/levels, hue=rnd(7.)*6.28318;
+  vec3 fill=oklch(0.965-band*0.16, 0.012+band*0.045, hue);
+  outColor=vec4(mix(fill,INK,isoLine(g,1.25)*0.85),1.0);
+}`;
+const F_OKLABFIELD=`
+void main(){
+  vec2 p=uvCentered()*0.5;
+  float baseH=rnd(1.)*6.28318, spread=0.35+rnd(2.)*1.5, dir=rnd(3.)<0.5?-1.0:1.0;
+  vec3 col=oklch(0.93,0.03,baseH);
+  const int N=5;
+  for(int i=0;i<N;i++){
+    float t=float(i)/float(N-1);
+    float inset=0.46-t*0.40, yoff=-t*0.055;
+    vec2 q=abs(p-vec2(0.0,yoff));
+    if(q.x<inset && q.y<inset*1.18) col=oklch(0.90-t*0.46, 0.028+t*0.098, baseH+dir*spread*t);
+  }
+  outColor=vec4(col,1.0);
+}`;
+const F_INVERSIVE=`
+void main(){
+  vec2 p=uvCentered()*1.05;
+  float kk=1.05+rnd(1.)*0.32, ang=rnd(2.)*3.14159;
+  p=mat2(cos(ang),-sin(ang),sin(ang),cos(ang))*p;
+  float s=1.0;
+  for(int i=0;i<7;i++){ p=mod(p+1.0,2.0)-1.0; float r2=dot(p,p); float k=kk/r2; p*=k; s*=k; }
+  float d=length(p)/s;
+  float g=log(max(d,1e-7))*(1.6+rnd(3.)*1.2);
+  vec3 fill=oklch(0.955,0.02,rnd(4.)*6.28318);
+  outColor=vec4(mix(fill,INK,isoLine(g,1.3)),1.0);
+}`;
+const F_BLOOM=`
+void main(){
+  vec2 p=uvCentered();
+  /* rule 1 + 2: crop into the bloom and push it off the third */
+  p = p*(0.50+rnd(60.)*0.32) - vec2(rnd(61.)-0.5, rnd(62.)-0.5)*0.72;
+  float r=length(p), th=atan(p.y,p.x);
+  float ink=0.0, layers=3.0+floor(rnd(1.)*4.0);
+  for(int i=0;i<7;i++){
+    float fi=float(i); if(fi>=layers) break;
+    float k=3.0+floor(rnd(10.+fi)*9.0);
+    float amp=0.13+rnd(20.+fi)*0.13, base=0.15+fi*0.125, rot=rnd(30.+fi)*6.28318;
+    float petal=base+amp*abs(cos(k*(th+rot)));
+    ink=max(ink,1.0-smoothstep(0.0,2.6*fwidth(r),abs(r-petal)));
+    ink=max(ink,isoLine((r/max(petal,1e-3))*7.0,1.15)*(1.0-step(petal,r))*0.30);
+  }
+  outColor=vec4(mix(PAPER,INK,ink),1.0);
+}`;
+const F_ISOGRID=`
+float hexD(vec2 p){ p=abs(p); return max(dot(p,normalize(vec2(1.0,1.7320508))),p.x); }
+void main(){
+  vec2 p=uvCentered();
+  float sc=2.4+floor(rnd(1.)*4.0);
+  vec2 q=p*sc, s=vec2(1.0,1.7320508), h=s*0.5;
+  vec2 a=mod(q,s)-h, b=mod(q-h,s)-h;
+  vec2 gv=dot(a,a)<dot(b,b)?a:b; vec2 id=q-gv;
+  float ang=atan(gv.y,gv.x)-1.5708;
+  float sect=floor(mod(ang+12.56637,6.28318)/2.09439);
+  sect=mod(sect+floor(hash21(id*0.41+rnd(2.)*37.0)*3.0),3.0);
+  float L=sect<0.5?0.93:(sect<1.5?0.755:0.575);
+  vec3 col=oklch(L,0.028+(1.0-L)*0.055,rnd(3.)*6.28318);
+  float w=fwidth(hexD(gv))*1.2;
+  float edge=1.0-smoothstep(0.5-w,0.5,hexD(gv));
+  float aa2=mod(ang+12.56637,2.09439);
+  float spoke=min(aa2,2.09439-aa2)*length(gv);
+  float sp=1.0-smoothstep(0.0,fwidth(spoke)*1.6,spoke);
+  outColor=vec4(mix(col,INK,max(1.0-edge,sp)*0.9),1.0);
+}`;
+const F_POLYECHO=`
+float sdReg(vec2 p,float n,float rot){
+  float a=atan(p.y,p.x)+rot, k=3.14159265/n;
+  return length(p)*cos(mod(a+k,2.0*k)-k);
+}
+void main(){
+  vec2 p=uvCentered();
+  /* rule 1 + 2: zoom past the frame and shift the origin off the third */
+  p = p*(0.42+rnd(8.)*0.30) - vec2(rnd(9.)-0.5, rnd(10.)-0.5)*0.85;
+  float n=3.0+floor(rnd(1.)*6.0), M=10.0+floor(rnd(2.)*13.0), twist=(rnd(3.)-0.5)*2.8;
+  float aa=fwidth(length(p));
+  float ink=0.0;
+  for(int i=0;i<26;i++){
+    float fi=float(i); if(fi>=M) break;
+    float t=fi/M, rad=0.06+t*1.25;
+    float sd=sdReg(p,n,t*twist);
+    /* rule 4: a few rings thicken into solid mass */
+    if(rnd(40.+fi)<0.16){
+      float band=0.012+rnd(60.+fi)*0.055;
+      ink=max(ink,1.0-smoothstep(0.0,aa*1.5,abs(sd-rad)-band));
+    } else {
+      /* rule 3: stroke weight varies ~8:1 between rings */
+      float w=1.0+rnd(80.+fi)*7.0;
+      ink=max(ink,1.0-smoothstep(0.0,w*aa,abs(sd-rad)));
+    }
+  }
+  outColor=vec4(mix(PAPER,INK,ink),1.0);
+}`;
+const F_FRACTAL=`
+void main(){
+  vec2 p=uvCentered();
+  /* rule 1 + 2: crop into the structure and offset, so it runs off every edge */
+  float z=0.17+rnd(4.)*0.20;
+  vec2 u=p*z+vec2(0.5+(rnd(5.)-0.5)*0.8, 0.5+(rnd(6.)-0.5)*0.8);
+  float ink=0.0, mode=rnd(1.);
+  if(mode<0.5){
+    vec2 q=u; ink=1.0;
+    for(int i=0;i<5;i++){ q*=3.0; vec2 f=floor(mod(q,3.0)); if(f.x==1.0&&f.y==1.0){ ink=0.0; break; } }
+  } else {
+    float N=exp2(5.0+floor(rnd(2.)*2.0));
+    ivec2 g=ivec2(floor(abs(u)*N));
+    ink=((g.x & g.y)==0)?1.0:0.0;
+  }
+  outColor=vec4(mix(PAPER,oklch(0.30,0.075,rnd(3.)*6.28318),ink),1.0);
+}`;
+const RD_SIM=`#version 300 es
+precision highp float; out vec4 outColor;
+uniform sampler2D u_prev; uniform vec2 u_texel; uniform float u_f,u_k;
+void main(){
+  vec2 uv=gl_FragCoord.xy*u_texel; vec2 c=texture(u_prev,uv).xy; vec2 l=-c;
+  l+=0.20*(texture(u_prev,uv+vec2(u_texel.x,0)).xy+texture(u_prev,uv+vec2(-u_texel.x,0)).xy
+          +texture(u_prev,uv+vec2(0,u_texel.y)).xy+texture(u_prev,uv+vec2(0,-u_texel.y)).xy);
+  l+=0.05*(texture(u_prev,uv+u_texel).xy+texture(u_prev,uv-u_texel).xy
+          +texture(u_prev,uv+vec2(u_texel.x,-u_texel.y)).xy+texture(u_prev,uv+vec2(-u_texel.x,u_texel.y)).xy);
+  float A=c.x,B=c.y,r=A*B*B;
+  outColor=vec4(clamp(A+(1.0*l.x-r+u_f*(1.0-A)),0.,1.), clamp(B+(0.5*l.y+r-(u_f+u_k)*B),0.,1.),0.,1.);
+}`;
+const RD_SHOW=`
+uniform sampler2D u_rd;
+void main(){
+  float B=texture(u_rd,gl_FragCoord.xy/u_res).y;
+  float band=floor(clamp(B,0.,0.999)*4.0)/4.0;
+  outColor=vec4(oklch(0.955-band*0.62, 0.020+band*0.105, rnd(1.)*6.28318+band*1.1),1.0);
+}`;
+
+function runRD(seed){
+  const W=200,H=250,texel=[1/W,1/H];
+  const f=0.030+R(seed,3.1)*0.032, k=0.057+R(seed,5.7)*0.008;
+  const data=new Float32Array(W*H*4);
+  for(let i=0;i<W*H;i++){ data[i*4]=1; data[i*4+1]=0; data[i*4+3]=1; }
+  const blobs=5+Math.floor(R(seed,9.3)*7);
+  for(let b=0;b<blobs;b++){
+    const cx=Math.floor(R(seed,b*1.7)*W), cy=Math.floor(R(seed,b*2.9)*H), rad=4+Math.floor(R(seed,b*4.1)*7);
+    for(let y=-rad;y<=rad;y++) for(let x=-rad;x<=rad;x++){
+      if(x*x+y*y>rad*rad) continue;
+      const px=((cx+x)%W+W)%W, py=((cy+y)%H+H)%H, i=(py*W+px)*4;
+      data[i]=0.5; data[i+1]=0.9;
+    }
+  }
+  const mk=init=>{ const t=gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D,t);
+    gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA32F,W,H,0,gl.RGBA,gl.FLOAT,init);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT); return t; };
+  let a=mk(data), b=mk(null);
+  const fbo=gl.createFramebuffer();
+  const pr=gl.createProgram();
+  gl.attachShader(pr,compile(VERT,gl.VERTEX_SHADER));
+  gl.attachShader(pr,compile(RD_SIM,gl.FRAGMENT_SHADER));
+  gl.bindAttribLocation(pr,0,'a'); gl.linkProgram(pr); gl.useProgram(pr);
+  gl.uniform2f(gl.getUniformLocation(pr,'u_texel'),texel[0],texel[1]);
+  gl.uniform1f(gl.getUniformLocation(pr,'u_f'),f);
+  gl.uniform1f(gl.getUniformLocation(pr,'u_k'),k);
+  gl.viewport(0,0,W,H);
+  for(let i=0;i<1400;i++){
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,b,0);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,a);
+    gl.uniform1i(gl.getUniformLocation(pr,'u_prev'),0);
+    gl.drawArrays(gl.TRIANGLES,0,3);
+    const t=a; a=b; b=t;
+  }
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.deleteTexture(b); gl.deleteFramebuffer(fbo); gl.deleteProgram(pr);
+  return a;
+}
+
+/* ============================================================
+   2 · canvas systems
+   ============================================================ */
+const CA_RULES=[30,45,54,60,73,90,105,110,150,182,225,26,146,22];
+function drawCA(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const rule=CA_RULES[Math.floor(R(seed,2.7)*CA_RULES.length)];
+  /* rule 1: full bleed — the automaton runs off the sheet rather than sitting in a margin */
+  const N=61+Math.floor(R(seed,7.7)*40), rows=Math.ceil(N*1.25);
+  const cell=Math.max(W/N,H/rows), ox=(W-cell*N)/2, oy=(H-cell*rows)/2;
+  let st=new Uint8Array(N);
+  if(R(seed,4.4)<0.5) st[Math.floor(N/2)]=1;
+  else for(let i=0;i<N;i++) st[i]=R(seed,i*0.37)<0.35?1:0;
+  c.fillStyle=INKC;
+  for(let y=0;y<rows;y++){
+    for(let x=0;x<N;x++) if(st[x]) c.fillRect(ox+x*cell,oy+y*cell,Math.ceil(cell),Math.ceil(cell));
+    const nx=new Uint8Array(N);
+    for(let x=0;x<N;x++){
+      const l=st[(x-1+N)%N],cc=st[x],r=st[(x+1)%N];
+      nx[x]=(rule>>((l<<2)|(cc<<1)|r))&1;
+    }
+    st=nx;
+  }
+}
+function drawPenrose(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const PHI=(1+Math.sqrt(5))/2;
+  const sub=(x,y)=>({x:x.x+(y.x-x.x)/PHI, y:x.y+(y.y-x.y)/PHI});
+  let tris=[];
+  for(let i=0;i<10;i++){
+    const a={x:0,y:0};
+    let b={x:Math.cos((2*i-1)*Math.PI/10),y:Math.sin((2*i-1)*Math.PI/10)};
+    let cc={x:Math.cos((2*i+1)*Math.PI/10),y:Math.sin((2*i+1)*Math.PI/10)};
+    if(i%2===0){ const t=b; b=cc; cc=t; }
+    tris.push([0,a,b,cc]);
+  }
+  const depth=4+Math.floor(R(seed,6.1)*3);
+  for(let d=0;d<depth;d++){
+    const out=[];
+    for(const [col,A,B,C] of tris){
+      if(col===0){ const P=sub(A,B); out.push([0,C,P,B],[1,P,C,A]); }
+      else{ const Q=sub(B,A),Rr=sub(B,C); out.push([1,Rr,C,A],[1,Q,Rr,B],[0,Rr,Q,A]); }
+    }
+    tris=out;
+  }
+  /* rule 1 + 2: zoom past the frame and offset, so the tiling bleeds instead of floating as a wheel */
+  const rot=R(seed,8.9)*Math.PI*2, zoom=(1.15+R(seed,3.3)*0.95)*Math.min(W,H);
+  const cx=W*(0.25+R(seed,4.7)*0.5), cy=H*(0.25+R(seed,5.9)*0.5);
+  const px=p=>[cx+(p.x*Math.cos(rot)-p.y*Math.sin(rot))*zoom, cy+(p.x*Math.sin(rot)+p.y*Math.cos(rot))*zoom];
+  const hue=R(seed,5.5)*360;
+  const fills=[`hsl(${hue|0} 22% 88%)`,`hsl(${(hue+28)%360|0} 30% 72%)`];
+  for(const [col,A,B,C] of tris){
+    const a=px(A),b=px(B),cc=px(C);
+    c.beginPath(); c.moveTo(a[0],a[1]); c.lineTo(b[0],b[1]); c.lineTo(cc[0],cc[1]); c.closePath();
+    c.fillStyle=fills[col]; c.fill();
+  }
+  c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,W*0.0014); c.lineJoin='round';
+  for(const [col,A,B,C] of tris){
+    const a=px(A),b=px(B),cc=px(C);
+    c.beginPath(); c.moveTo(b[0],b[1]); c.lineTo(a[0],a[1]); c.lineTo(cc[0],cc[1]); c.stroke();
+  }
+}
+function drawSigil(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const cx=W/2, cy=H*0.47, Rr=Math.min(W,H)*0.34;
+  const N=7+Math.floor(R(seed,1)*7), pts=[];
+  for(let i=0;i<N;i++){ const a=-Math.PI/2+i*2*Math.PI/N; pts.push([cx+Math.cos(a)*Rr,cy+Math.sin(a)*Rr]); }
+  c.strokeStyle=INKC; c.lineWidth=Math.max(1,W*0.0035); c.lineJoin='round';
+  [1.16,1.10,1.0].forEach(k=>{ c.beginPath(); c.arc(cx,cy,Rr*k,0,7); c.stroke(); });
+  c.lineWidth=Math.max(1.2,W*0.0052);
+  let cur=Math.floor(R(seed,2)*N);
+  const steps=N+3+Math.floor(R(seed,3)*N);
+  c.beginPath(); c.moveTo(pts[cur][0],pts[cur][1]);
+  for(let s=0;s<steps;s++){ cur=(cur+1+Math.floor(R(seed,10+s)*(N-1)))%N; c.lineTo(pts[cur][0],pts[cur][1]); }
+  c.stroke();
+  for(let i=0;i<N;i++){
+    const rr=W*(R(seed,50+i)<0.4?0.016:0.009);
+    c.beginPath(); c.arc(pts[i][0],pts[i][1],rr,0,7);
+    c.fillStyle=R(seed,80+i)<0.5?INKC:PAPER; c.fill(); c.stroke();
+  }
+}
+function drawMemoryLines(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,90,ACCENTS);
+  /* rule 2: baseline low, on the lower third — not centred */
+  const y=H*(0.70+R(seed,80)*0.09);
+  /* rule 1: the timeline runs off both edges */
+  const m=-W*0.10, span=W-2*m;
+  const N=6+Math.floor(R(seed,1)*7), xs=[];
+  for(let i=0;i<N;i++) xs.push(m+span*(i/(N-1)));
+  /* rule 3 + 4: heavy baseline anchoring the composition */
+  c.strokeStyle=INKC; c.lineWidth=Math.max(1.6,D*0.0042);
+  c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke();
+  for(let i=0;i<N-1;i++) for(let j=i+1;j<N;j++){
+    if(R(seed,100+i*13+j)>0.46) continue;
+    const r=(xs[j]-xs[i])/2;
+    const heavy=R(seed,500+i*11+j)<0.16;
+    c.strokeStyle=(R(seed,600+i*5+j)<0.12)?accent:INKC;
+    c.lineWidth=Math.max(0.6, D*(heavy?0.0044:0.0011)*(0.6+R(seed,200+i*7+j)*1.5));
+    c.beginPath(); c.arc((xs[i]+xs[j])/2,y,r,Math.PI,0); c.stroke();
+  }
+  for(let i=0;i<N;i++){
+    const big=R(seed,400+i)<0.25;
+    const h=H*(big?0.14:0.045)*(0.5+R(seed,300+i)*1.4);
+    c.strokeStyle=INKC; c.lineWidth=Math.max(1,D*(big?0.0034:0.0014));
+    c.beginPath(); c.moveTo(xs[i],y); c.lineTo(xs[i],y+h); c.stroke();
+    c.beginPath(); c.arc(xs[i],y,D*(big?0.011:0.005),0,7);
+    c.fillStyle=big?INKC:PAPER; c.fill(); c.stroke();
+  }
+}
+function drawBranch(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  c.strokeStyle=INKC; c.lineCap='round';
+  const spread=0.30+R(seed,1)*0.55, ratio=0.66+R(seed,2)*0.14;
+  const nb=R(seed,3)<0.35?3:2, maxd=8+Math.floor(R(seed,4)*3);
+  let count=0;
+  (function branch(x,y,ang,len,d){
+    if(d>maxd||len<1.4||count>26000) return; count++;
+    const x2=x+Math.cos(ang)*len, y2=y+Math.sin(ang)*len;
+    c.lineWidth=Math.max(0.5,W*0.011*Math.pow(0.74,d));
+    c.beginPath(); c.moveTo(x,y); c.lineTo(x2,y2); c.stroke();
+    for(let i=0;i<nb;i++){
+      const t=nb===1?0:(i/(nb-1)-0.5)*2;
+      const j=(R(seed,d*31+i*7+count*0.013)-0.5)*0.34;
+      branch(x2,y2,ang+t*spread+j,len*ratio,d+1);
+    }
+  })(W/2,H*0.93,-Math.PI/2,H*0.235,0);
+}
+function drawFlow(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  c.strokeStyle='rgba(20,20,26,0.5)';
+  const sc=1.4+R(seed,1)*2.6, turb=1.0+R(seed,2)*4.0;
+  const n=420, steps=90, step=Math.min(W,H)*0.006;
+  for(let i=0;i<n;i++){
+    let x=R(seed,100+i*2)*W, y=R(seed,101+i*2)*H;
+    c.lineWidth=Math.max(0.5,W*0.0016*(0.5+R(seed,300+i)*1.6));
+    c.beginPath(); c.moveTo(x,y);
+    for(let s=0;s<steps;s++){
+      const a=fbm(x/W*sc,y/H*sc,seed)*Math.PI*2*turb;
+      x+=Math.cos(a)*step; y+=Math.sin(a)*step;
+      if(x<-10||x>W+10||y<-10||y>H+10) break;
+      c.lineTo(x,y);
+    }
+    c.stroke();
+  }
+}
+function drawCellNet(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const GX=110, GY=138, S=6+Math.floor(R(seed,1)*9), gens=90+Math.floor(R(seed,2)*110);
+  let a=new Uint8Array(GX*GY);
+  for(let i=0;i<a.length;i++) a[i]=Math.floor(R(seed,10+i*0.0007)*S);
+  let b=new Uint8Array(GX*GY);
+  for(let g=0;g<gens;g++){
+    for(let y=0;y<GY;y++) for(let x=0;x<GX;x++){
+      const i=y*GX+x, s=a[i], nxt=(s+1)%S; let hit=false;
+      for(let dy=-1;dy<=1&&!hit;dy++) for(let dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0) continue;
+        if(a[((y+dy+GY)%GY)*GX+((x+dx+GX)%GX)]===nxt){ hit=true; break; }
+      }
+      b[i]=hit?nxt:s;
+    }
+    const t=a; a=b; b=t;
+  }
+  const hue=R(seed,3)*360, span=40+R(seed,4)*260, cw=W/GX, ch=H/GY;
+  for(let y=0;y<GY;y++) for(let x=0;x<GX;x++){
+    const v=a[y*GX+x]/S;
+    c.fillStyle=`hsl(${(hue+v*span)%360} ${18+v*30}% ${88-v*58}%)`;
+    c.fillRect(x*cw,y*ch,Math.ceil(cw)+1,Math.ceil(ch)+1);
+  }
+}
+
+/* ---- art-directed tier ---- */
+function drawNaiveRings(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  c.strokeStyle='#5a5a60'; c.lineWidth=Math.max(1,W*0.0022);
+  const cx=W/2, cy=H/2, N=14;
+  for(let i=1;i<=N;i++){
+    const r=(Math.min(W,H)*0.42)*(i/N);
+    c.beginPath();
+    for(let a=0;a<=360;a+=2){
+      const t=a*Math.PI/180, rr=r*(1+0.05*Math.sin(t*5+seed));
+      const x=cx+Math.cos(t)*rr, y=cy+Math.sin(t)*rr;
+      a===0?c.moveTo(x,y):c.lineTo(x,y);
+    }
+    c.closePath(); c.stroke();
+  }
+}
+function drawArcField(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const cx=W*(-0.15+R(seed,1)*0.5), cy=H*(0.55+R(seed,2)*0.75);
+  const accent=pick(seed,3,ACCENTS);
+  let r=Math.min(W,H)*0.04, i=0;
+  while(r<D*1.35 && i<400){
+    i++;
+    const mode=R(seed,10+i);
+    if(mode<0.10){ r+=D*(0.05+R(seed,200+i)*0.12); continue; }
+    if(mode<0.22){
+      const t=D*(0.012+R(seed,300+i)*0.055);
+      c.beginPath(); c.arc(cx,cy,r+t/2,0,7);
+      c.strokeStyle=(R(seed,400+i)<0.22)?accent:INKC; c.lineWidth=t; c.stroke();
+      r+=t+D*(0.006+R(seed,500+i)*0.03); continue;
+    }
+    const cluster=3+Math.floor(R(seed,600+i)*10), gap=D*(0.0035+R(seed,700+i)*0.006);
+    for(let k=0;k<cluster;k++){
+      c.beginPath();
+      if(R(seed,800+i*13+k)<0.28){
+        const a0=R(seed,900+i*7+k)*6.283;
+        c.arc(cx,cy,r,a0,a0+1.0+R(seed,950+i*7+k)*4.0);
+      } else c.arc(cx,cy,r,0,7);
+      c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,D*0.0009*(0.5+R(seed,1000+i*5+k)*1.4));
+      c.stroke(); r+=gap;
+    }
+    r+=D*(0.004+R(seed,1100+i)*0.028);
+  }
+}
+function drawDriftFragment(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS), N=9000;
+  const golden=Math.PI*(3-Math.sqrt(5))+(R(seed,2)-0.5)*0.0009;
+  const zoom=D*(0.030+R(seed,3)*0.020);
+  const ox=W*(0.2+R(seed,4)*0.7), oy=H*(0.15+R(seed,5)*0.8), fs=0.9+R(seed,6)*1.8;
+  for(let n=1;n<=N;n++){
+    const a=n*golden, rad=zoom*Math.sqrt(n);
+    const x=ox+Math.cos(a)*rad, y=oy+Math.sin(a)*rad;
+    if(x<-D*0.05||x>W+D*0.05||y<-D*0.05||y>H+D*0.05) continue;
+    const d=fbm(x/W*fs,y/H*fs,seed);
+    const s=Math.pow(Math.max(0,d-0.28)/0.72,1.5);
+    const rr=D*0.0016+D*0.0115*s;
+    if(rr<0.45) continue;
+    c.beginPath(); c.arc(x,y,rr,0,7);
+    if(d>0.66){ c.fillStyle=INKC; c.fill(); }
+    else if(d>0.5){ c.fillStyle=accent; c.fill(); }
+    else { c.strokeStyle=INKC; c.lineWidth=Math.max(0.5,D*0.0007); c.stroke(); }
+  }
+}
+function drawPartition(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS), cells=[];
+  (function split(x,y,w,h,d,idx){
+    const minS=Math.min(W,H)*0.055;
+    if(d>6||(w<minS*2&&h<minS*2)||R(seed,idx)<0.13){ cells.push([x,y,w,h,d]); return; }
+    const vert=w/h>1.15?true:(h/w>1.15?false:R(seed,idx+7)<0.5);
+    const t=0.30+R(seed,idx+13)*0.40;
+    if(vert){ split(x,y,w*t,h,d+1,idx*2+1); split(x+w*t,y,w*(1-t),h,d+1,idx*2+2); }
+    else{ split(x,y,w,h*t,d+1,idx*2+1); split(x,y+h*t,w,h*(1-t),d+1,idx*2+2); }
+  })(0,0,W,H,0,1);
+  cells.forEach((cell,i)=>{
+    const [x,y,w,h]=cell, roll=R(seed,2000+i*3);
+    if(roll<0.14){ c.fillStyle=INKC; c.fillRect(x,y,w,h); }
+    else if(roll<0.20){ c.fillStyle=accent; c.fillRect(x,y,w,h); }
+    else if(roll<0.30){
+      c.save(); c.beginPath(); c.rect(x,y,w,h); c.clip();
+      c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,D*0.0008);
+      const step=D*(0.006+R(seed,3000+i)*0.012);
+      for(let g=-h;g<w+h;g+=step){ c.beginPath(); c.moveTo(x+g,y); c.lineTo(x+g+h,y+h); c.stroke(); }
+      c.restore();
+    }
+  });
+  c.strokeStyle=INKC;
+  cells.forEach((cell,i)=>{
+    if(R(seed,4000+i)<0.45) return;
+    const [x,y,w,h,d]=cell;
+    c.lineWidth=Math.max(0.6,D*0.0016*Math.pow(0.82,d));
+    c.strokeRect(x,y,w,h);
+  });
+}
+function drawBands(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const accent=pick(seed,1,ACCENTS);
+  const waveF=1.2+R(seed,2)*3.2, waveA=H*(0.02+R(seed,3)*0.075);
+  const phase=R(seed,4)*6.283, modF=1.5+R(seed,5)*4.0;
+  const accentAt=Math.floor(R(seed,6)*40)+6;
+  const bnd=(i,x)=>waveA*Math.sin((x/W)*waveF*6.283+phase+i*0.22);
+  let y=-H*0.15,i=0,ys=[];
+  while(y<H*1.15&&i<220){ ys.push(y); const m=(Math.sin(i/modF)+1)/2; y+=H*(0.004+Math.pow(m,2.1)*0.115); i++; }
+  for(let k=0;k<ys.length-1;k++){
+    if(k%2===1) continue;
+    c.beginPath();
+    const N=64;
+    for(let s=0;s<=N;s++){ const x=W*s/N, yy=ys[k]+bnd(k,x); s===0?c.moveTo(x,yy):c.lineTo(x,yy); }
+    for(let s=N;s>=0;s--){ const x=W*s/N; c.lineTo(x,ys[k+1]+bnd(k+1,x)); }
+    c.closePath();
+    c.fillStyle=(k===accentAt||k===accentAt+4)?accent:INKC; c.fill();
+  }
+}
+function drawDisplacement(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cols=5+Math.floor(R(seed,2)*6), rows=Math.round(cols*1.25);
+  const m=Math.min(W,H)*0.07, cw=(W-m*2)/cols, ch=(H-m*2)/rows;
+  const ox=R(seed,3), oy=R(seed,4), nest=2+Math.floor(R(seed,5)*3);
+  for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
+    const cx=m+cw*(q+0.5), cy=m+ch*(r+0.5);
+    const dist=Math.hypot(q/cols-ox,r/rows-oy);
+    const chaos=Math.pow(Math.min(1,dist*1.5),2.0)*Math.min(cw,ch)*0.55;
+    const heavy=R(seed,100+r*31+q)<0.09;
+    for(let n=0;n<nest;n++){
+      const s=(1-n/(nest+0.6))*0.78, hw=cw*s*0.5, hh=ch*s*0.5;
+      const pts=[[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]];
+      c.beginPath();
+      pts.forEach((p,k)=>{
+        const jx=(R(seed,200+r*97+q*17+n*7+k)-0.5)*chaos;
+        const jy=(R(seed,900+r*61+q*23+n*11+k)-0.5)*chaos;
+        const x=cx+p[0]+jx, y=cy+p[1]+jy;
+        k===0?c.moveTo(x,y):c.lineTo(x,y);
+      });
+      c.closePath();
+      if(heavy&&n===0){ c.fillStyle=(R(seed,700+r*13+q)<0.3)?accent:INKC; c.fill(); }
+      c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,D*0.0013*(heavy?2.4:1)*Math.pow(0.8,n));
+      c.stroke();
+    }
+  }
+}
+
+/* ---- round 2 additions ---- */
+function drawHarmonograph(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const f=k=>Math.round(1+R(seed,k)*5)+(R(seed,k+40)<0.35?R(seed,k+80)*0.02:0);
+  const A=[W*0.30,W*0.16,H*0.30,H*0.16];
+  const fr=[f(2),f(3),f(4),f(5)];
+  const ph=[R(seed,6)*6.283,R(seed,7)*6.283,R(seed,8)*6.283,R(seed,9)*6.283];
+  const dec=[0.0016+R(seed,10)*0.0035,0.0012+R(seed,11)*0.003,
+             0.0016+R(seed,12)*0.0035,0.0012+R(seed,13)*0.003];
+  const cx=W*(0.32+R(seed,14)*0.36), cy=H*(0.34+R(seed,15)*0.32);
+  const zoom=1.05+R(seed,16)*0.85;
+  const N=14000;
+  c.lineCap='round'; c.lineJoin='round';
+  let px=null,py=null;
+  for(let i=0;i<N;i++){
+    const t=i*0.032;
+    const x=cx+zoom*(A[0]*Math.sin(fr[0]*t+ph[0])*Math.exp(-dec[0]*i)
+                    +A[1]*Math.sin(fr[1]*t+ph[1])*Math.exp(-dec[1]*i));
+    const y=cy+zoom*(A[2]*Math.sin(fr[2]*t+ph[2])*Math.exp(-dec[2]*i)
+                    +A[3]*Math.sin(fr[3]*t+ph[3])*Math.exp(-dec[3]*i));
+    if(px!==null){
+      const life=i/N;
+      c.strokeStyle = (i%1900<70) ? accent : `rgba(20,20,26,${0.85-life*0.45})`;
+      c.lineWidth=Math.max(0.45, D*0.0016*(1-life*0.72));
+      c.beginPath(); c.moveTo(px,py); c.lineTo(x,y); c.stroke();
+    }
+    px=x; py=y;
+  }
+}
+
+/* Curated de Jong parameter sets, used as a guaranteed fallback. */
+const DEJONG_GOOD=[
+ [1.641,1.902,0.316,1.525],[-2.7,-0.09,-0.86,-2.2],[-2.24,0.43,-0.65,-2.43],
+ [2.01,-2.53,1.61,-0.33],[-2.0,-2.0,-1.2,2.0],[1.4,-2.3,2.4,-2.1],
+ [-1.7,1.8,-1.9,-0.4],[-2.24,0.43,-0.65,-2.43],[1.7,1.7,0.6,1.2]
+];
+/* Cheap probe pass: measure the attractor's real extent and how much of it is
+   actually occupied, so degenerate parameter sets (fixed points, thin cycles)
+   are rejected BEFORE the expensive density pass, and framing is fitted rather
+   than guessed. This is what stopped the blank / tiny / shoved-to-one-side plates. */
+function probeDeJong(a,b,d,e){
+  let x=0.1,y=0.1;
+  for(let i=0;i<1000;i++){ const nx=Math.sin(a*y)-Math.cos(b*x); y=Math.sin(d*x)-Math.cos(e*y); x=nx; }
+  let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+  const M=16000, xs=new Float64Array(M), ys=new Float64Array(M);
+  for(let i=0;i<M;i++){
+    const nx=Math.sin(a*y)-Math.cos(b*x); y=Math.sin(d*x)-Math.cos(e*y); x=nx;
+    if(!isFinite(x)||!isFinite(y)) return null;
+    xs[i]=x; ys[i]=y;
+    if(x<minx)minx=x; if(x>maxx)maxx=x; if(y<miny)miny=y; if(y>maxy)maxy=y;
+  }
+  const w=maxx-minx, h=maxy-miny;
+  if(!(w>1e-6)||!(h>1e-6)) return null;
+  const G=64, grid=new Uint8Array(G*G);
+  for(let i=0;i<M;i++){
+    const gx=Math.min(G-1,((xs[i]-minx)/w*G)|0), gy=Math.min(G-1,((ys[i]-miny)/h*G)|0);
+    grid[gy*G+gx]=1;
+  }
+  let occ=0; for(let i=0;i<grid.length;i++) occ+=grid[i];
+  return {minx,maxx,miny,maxy,w,h,occ:occ/(G*G)};
+}
+function goodDeJong(p){
+  if(!p) return false;
+  if(p.w<0.60||p.h<0.60) return false;        // too small → tiny plate
+  if(p.occ<0.055||p.occ>0.72) return false;   // thin cycle, or shapeless blob
+  const ar=p.w/p.h;
+  return ar>0.22 && ar<4.5;                   // extreme aspect frames badly
+}
+
+function drawAttractor(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const accent=pick(seed,1,ACCENTS);
+  let a,b,d,e,pr=null;
+  for(let t=0;t<26;t++){
+    a=-3+R(seed,2+t*4)*6; b=-3+R(seed,3+t*4)*6;
+    d=-3+R(seed,4+t*4)*6; e=-3+R(seed,5+t*4)*6;
+    const p=probeDeJong(a,b,d,e);
+    if(goodDeJong(p)){ pr=p; break; }
+  }
+  if(!pr){                                     // guaranteed fallback
+    const g=DEJONG_GOOD[Math.floor(R(seed,900)*DEJONG_GOOD.length)];
+    a=g[0]; b=g[1]; d=g[2]; e=g[3];
+    pr=probeDeJong(a,b,d,e);
+    if(!pr) return;
+  }
+  /* Fit the measured bounding box to the sheet at a controlled fill, then nudge
+     for composition — bounded, so the subject can never leave the page. */
+  const fill=0.80+R(seed,60)*0.10;
+  const s=Math.min((W*fill)/pr.w,(H*fill)/pr.h);
+  const cxA=(pr.minx+pr.maxx)/2, cyA=(pr.miny+pr.maxy)/2;
+  const ox=W*0.5+(R(seed,61)-0.5)*W*0.10-cxA*s;
+  const oy=H*0.5+(R(seed,62)-0.5)*H*0.10-cyA*s;
+  const dens=new Float32Array(W*H);
+  let x=0.1,y=0.1,maxd=0;
+  const N=Math.min(700000, W*H*3);
+  for(let i=0;i<N;i++){
+    const nx=Math.sin(a*y)-Math.cos(b*x);
+    y=Math.sin(d*x)-Math.cos(e*y); x=nx;
+    if(i<600) continue;
+    const px=(ox+x*s)|0, py=(oy+y*s)|0;
+    if(px<0||px>=W||py<0||py>=H) continue;
+    const k=py*W+px; dens[k]++; if(dens[k]>maxd) maxd=dens[k];
+  }
+  if(maxd<1) return;
+  const img=c.getImageData(0,0,W,H), px=img.data;
+  const lg=Math.log(maxd+1);
+  const ar=parseInt(accent.slice(1,3),16), ag=parseInt(accent.slice(3,5),16), ab=parseInt(accent.slice(5,7),16);
+  for(let i=0;i<W*H;i++){
+    if(!dens[i]) continue;
+    const t=Math.min(1,Math.log(dens[i]+1)/lg*1.5);
+    const j=i*4;
+    const rr=t>0.72?20:ar, gg=t>0.72?20:ag, bb=t>0.72?26:ab;
+    px[j]  =px[j]  +(rr-px[j])*t;
+    px[j+1]=px[j+1]+(gg-px[j+1])*t;
+    px[j+2]=px[j+2]+(bb-px[j+2])*t;
+  }
+  c.putImageData(img,0,0);
+}
+
+const FONTSTACK='"Helvetica Neue",Helvetica,Arial,sans-serif';
+function drawEchoType(cv,seed,word){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const accent=pick(seed,1,ACCENTS);
+  const w=(word||'ECHO').toUpperCase().trim()||'ECHO';
+  if(R(seed,2)<0.5){
+    // stacked, cropped, weight-varied
+    const lines=7+Math.floor(R(seed,3)*9);
+    const lh=H/lines;
+    for(let i=0;i<lines;i++){
+      const size=lh*(1.02+R(seed,10+i)*0.22);
+      c.font=`800 ${size}px ${FONTSTACK}`;
+      const tw=c.measureText(w).width;
+      const scale=(W*1.18)/tw;
+      const roll=R(seed,50+i);
+      c.save();
+      c.translate(W*(-0.09+R(seed,90+i)*0.06), lh*i+lh*0.82);
+      c.scale(scale,1);
+      if(roll<0.62){ c.fillStyle=INKC; c.fillText(w,0,0); }
+      else if(roll<0.72){ c.fillStyle=accent; c.fillText(w,0,0); }
+      else { c.strokeStyle=INKC; c.lineWidth=Math.max(0.7,size*0.014)/scale; c.strokeText(w,0,0); }
+      c.restore();
+    }
+  } else {
+    // radial rings
+    const cx=W*0.5, cy=H*0.48;
+    const rings=5+Math.floor(R(seed,4)*5);
+    for(let k=0;k<rings;k++){
+      const r=Math.min(W,H)*(0.10+k*0.075);
+      const size=Math.min(W,H)*(0.075-k*0.0045);
+      if(size<4) continue;
+      c.font=`700 ${size}px ${FONTSTACK}`;
+      const sp=c.measureText(w+' · ').width;
+      const reps=Math.max(1,Math.floor((2*Math.PI*r)/sp));
+      const str=(w+' · ').repeat(reps);
+      const heavy=R(seed,120+k)<0.30;
+      c.fillStyle=heavy?accent:INKC;
+      let ang=R(seed,140+k)*6.283;
+      for(const ch of str){
+        const cw=c.measureText(ch).width;
+        c.save();
+        c.translate(cx+Math.cos(ang)*r, cy+Math.sin(ang)*r);
+        c.rotate(ang+Math.PI/2);
+        c.fillText(ch,-cw/2,0);
+        c.restore();
+        ang+=cw/r;
+      }
+    }
+  }
+}
+
+function drawMonoMaze(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cols=7+Math.floor(R(seed,2)*10), cell=W/cols, rows=Math.ceil(H/cell)+1;
+  const arcs=R(seed,3)<0.62;
+  for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
+    const x=q*cell, y=r*cell;
+    const t=R(seed,100+r*53+q*7);
+    const heavy=R(seed,900+r*31+q*13)<0.12;
+    if(R(seed,1700+r*17+q*3)<0.07){ c.fillStyle=heavy?accent:INKC; c.fillRect(x,y,cell,cell); continue; }
+    c.strokeStyle=INKC; c.lineCap='butt';
+    c.lineWidth=Math.max(0.8, D*(heavy?0.0052:0.0021));
+    c.beginPath();
+    if(arcs){
+      if(t<0.5){ c.arc(x,y,cell/2,0,Math.PI/2); c.moveTo(x+cell,y+cell); c.arc(x+cell,y+cell,cell/2,Math.PI,Math.PI*1.5); }
+      else { c.arc(x+cell,y,cell/2,Math.PI/2,Math.PI); c.moveTo(x,y+cell); c.arc(x,y+cell,cell/2,Math.PI*1.5,Math.PI*2); }
+    } else {
+      if(t<0.5){ c.moveTo(x,y); c.lineTo(x+cell,y+cell); }
+      else { c.moveTo(x+cell,y); c.lineTo(x,y+cell); }
+    }
+    c.stroke();
+  }
+}
+
+function drawSacred(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const N=6+Math.floor(R(seed,2)*10)*(R(seed,3)<0.5?1:2);
+  const cx=W/2, cy=H*0.47, Rm=Math.min(W,H)*0.46;
+  const motifs=5+Math.floor(R(seed,4)*7);
+  for(let s=0;s<N;s++){
+    const base=s*2*Math.PI/N;
+    for(let m=0;m<motifs;m++){
+      const rr=Rm*(0.14+ (m/motifs)*0.92);
+      const spanA=(0.10+R(seed,200+m)*0.75)*(2*Math.PI/N);
+      const kind=R(seed,300+m);
+      const heavy=R(seed,400+m)<0.22;
+      c.strokeStyle=(R(seed,500+m)<0.16)?accent:INKC;
+      c.lineWidth=Math.max(0.6, D*(heavy?0.0042:0.0013));
+      c.beginPath();
+      if(kind<0.42){
+        c.arc(cx,cy,rr,base-spanA,base+spanA);
+      } else if(kind<0.72){
+        const r2=rr*(0.62+R(seed,600+m)*0.34);
+        c.moveTo(cx+Math.cos(base-spanA)*r2, cy+Math.sin(base-spanA)*r2);
+        c.lineTo(cx+Math.cos(base)*rr, cy+Math.sin(base)*rr);
+        c.lineTo(cx+Math.cos(base+spanA)*r2, cy+Math.sin(base+spanA)*r2);
+      } else {
+        const dr=D*(0.006+R(seed,700+m)*0.016);
+        c.arc(cx+Math.cos(base)*rr, cy+Math.sin(base)*rr, dr, 0, 7);
+        if(R(seed,800+m)<0.4){ c.fillStyle=INKC; c.fill(); }
+      }
+      c.stroke();
+    }
+  }
+}
+
+function drawBotanic(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const RULES=[
+    {ax:'F',r:'FF+[+F-F-F]-[-F+F+F]',ang:22},
+    {ax:'X',r:'F+[[X]-X]-F[-FX]+X',ang:25,f:'FF'},
+    {ax:'F',r:'F[+F]F[-F][F]',ang:20},
+    {ax:'X',r:'F[+X][-X]FX',ang:27,f:'FF'}
+  ];
+  const R0=RULES[Math.floor(R(seed,2)*RULES.length)];
+  const ang=(R0.ang+(R(seed,3)-0.5)*10)*Math.PI/180;
+  const iter=4+Math.floor(R(seed,4)*2);
+  let s=R0.ax;
+  for(let i=0;i<iter;i++){
+    let o='';
+    for(const ch of s) o += ch==='X'?R0.r : (ch==='F'?(R0.f||'FF'):ch);
+    s=o;
+    if(s.length>240000) break;
+  }
+  let len=H*0.012*Math.pow(0.78,iter-4);
+  const st=[]; let x=W*0.5, y=H*0.98, a=-Math.PI/2, d=0;
+  c.lineCap='round';
+  for(const ch of s){
+    if(ch==='F'){
+      const nx=x+Math.cos(a)*len, ny=y+Math.sin(a)*len;
+      c.strokeStyle=d>3?accent:INKC;
+      c.lineWidth=Math.max(0.45, D*0.0032*Math.pow(0.72,d));
+      c.beginPath(); c.moveTo(x,y); c.lineTo(nx,ny); c.stroke();
+      x=nx; y=ny;
+    }
+    else if(ch==='+') a+=ang;
+    else if(ch==='-') a-=ang;
+    else if(ch==='['){ st.push([x,y,a,d]); d++; }
+    else if(ch===']'){ const p=st.pop(); if(p){ x=p[0]; y=p[1]; a=p[2]; d=p[3]; } }
+  }
+}
+
+/* ---- round 3: spatial + formula ---- */
+function lcg(s){ let st=(Math.abs(s)*2654435761)>>>0 || 12345;
+  return ()=>((st=(Math.imul(st,1664525)+1013904223)>>>0)/4294967296); }
+
+/* IsoArchitecture — a height field of boxes drawn back-to-front (painter's
+   algorithm), which gives true hidden-line removal for free. */
+function drawIsoArch(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const N=7+Math.floor(R(seed,2)*7);
+  const u=Math.min(W,H)*(0.085+R(seed,3)*0.05);
+  const k=Math.cos(Math.PI/6), s6=Math.sin(Math.PI/6);
+  const ox=W*(0.42+R(seed,4)*0.20), oy=H*(0.24+R(seed,5)*0.20);
+  const vy=u*0.62;
+  const proj=(x,y,z)=>[ox+(x-z)*k*u, oy+(x+z)*s6*u-y*vy];
+  const hmax=3.5+R(seed,8)*4.0;
+  const hs=[];
+  for(let x=0;x<N;x++){ hs[x]=[];
+    for(let z=0;z<N;z++)
+      hs[x][z]=Math.max(0,Math.round(fbm(x*0.34+R(seed,6)*12,z*0.34+R(seed,7)*12,seed)*hmax-0.5)); }
+  const order=[];
+  for(let x=0;x<N;x++) for(let z=0;z<N;z++) order.push([x,z]);
+  order.sort((a,b)=>(a[0]+a[1])-(b[0]+b[1]));
+  const face=(pts,fill)=>{
+    c.beginPath(); pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+    c.closePath(); c.fillStyle=fill; c.fill();
+    c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,D*0.0013); c.lineJoin='round'; c.stroke();
+  };
+  order.forEach(([x,z])=>{
+    const h=hs[x][z]; if(h<=0) return;
+    const hot=R(seed,300+x*37+z)<0.07;
+    const top=hot?accent:'#f2f0ea', right='#d8d5cc', left='#adaaa2';
+    face([proj(x+1,h,z),proj(x+1,h,z+1),proj(x+1,0,z+1),proj(x+1,0,z)],right);
+    face([proj(x,h,z+1),proj(x+1,h,z+1),proj(x+1,0,z+1),proj(x,0,z+1)],left);
+    face([proj(x,h,z),proj(x+1,h,z),proj(x+1,h,z+1),proj(x,h,z+1)],top);
+  });
+}
+
+/* Ridgeline — a surface read as stacked profiles, each filled with paper so it
+   occludes the rows behind. The Unknown Pleasures construction. */
+function drawRidge(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const rows=26+Math.floor(R(seed,2)*32);
+  const amp=H*(0.09+R(seed,3)*0.11);
+  const m=W*(0.06+R(seed,4)*0.07);
+  const fs=1.1+R(seed,5)*2.6;
+  const off=R(seed,6)*20;
+  const hi=Math.floor(R(seed,9)*rows);
+  for(let r=0;r<rows;r++){
+    const t=r/(rows-1);
+    const y0=H*0.16+(H*0.70)*t;
+    const pts=[];
+    for(let i=0;i<=140;i++){
+      const x=m+(W-2*m)*(i/140);
+      const v=fbm((i/140)*fs+r*0.11+off, r*0.29+off, seed);
+      const env=Math.pow(Math.sin(Math.PI*i/140),0.65);
+      pts.push([x, y0-(v-0.5)*amp*env*2.4]);
+    }
+    c.beginPath(); c.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]);
+    c.lineTo(pts[pts.length-1][0],H); c.lineTo(pts[0][0],H); c.closePath();
+    c.fillStyle=PAPER; c.fill();
+    c.beginPath(); c.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]);
+    c.strokeStyle=(r===hi)?accent:INKC;
+    c.lineWidth=Math.max(0.7, D*0.0011*(0.55+t*1.9)*(r===hi?2.6:1));
+    c.stroke();
+  }
+}
+
+/* Wire Solid — a torus knot drawn as depth-sorted segments, each stroked first
+   in paper then in ink, so the paper halo produces the over/under crossings of
+   a knot diagram without any real hidden-line maths. */
+function drawWireSolid(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const P=2+Math.floor(R(seed,1)*5), Q=2+Math.floor(R(seed,2)*6);
+  const ax=R(seed,3)*Math.PI, ay=R(seed,4)*Math.PI;
+  const ca=Math.cos(ax),sa=Math.sin(ax),cb=Math.cos(ay),sb=Math.sin(ay);
+  const Nn=1400, segs=[];
+  const scale=Math.min(W,H)*(0.16+R(seed,5)*0.05);
+  const ox=W*(0.44+R(seed,6)*0.12), oy=H*(0.42+R(seed,7)*0.14);
+  for(let i=0;i<=Nn;i++){
+    const t=i/Nn*Math.PI*2;
+    const r=Math.cos(Q*t)+2.4;
+    let x=r*Math.cos(P*t), y=r*Math.sin(P*t), z=-Math.sin(Q*t)*1.5;
+    let x1=x*cb+z*sb, z1=-x*sb+z*cb;
+    let y1=y*ca-z1*sa, z2=y*sa+z1*ca;
+    segs.push([ox+x1*scale, oy+y1*scale, z2]);
+  }
+  const list=[];
+  for(let i=0;i<segs.length-1;i++) list.push([segs[i],segs[i+1],(segs[i][2]+segs[i+1][2])/2]);
+  list.sort((a,b)=>a[2]-b[2]);
+  const lw=Math.max(1.6, D*0.0075);
+  c.lineCap='round';
+  list.forEach(([p,q],i)=>{
+    c.beginPath(); c.moveTo(p[0],p[1]); c.lineTo(q[0],q[1]);
+    c.strokeStyle=PAPER; c.lineWidth=lw*2.1; c.stroke();
+    c.beginPath(); c.moveTo(p[0],p[1]); c.lineTo(q[0],q[1]);
+    c.strokeStyle=(i%311<12)?accent:INKC; c.lineWidth=lw; c.stroke();
+  });
+}
+
+/* Modular times table — connect n to (n·k mod N) on a circle. The cardioid and
+   nephroid envelopes are not drawn; they are where the chords crowd. */
+function drawTimesTable(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const N=140+Math.floor(R(seed,2)*300);
+  const k=2+R(seed,3)*28;
+  const Rr=Math.min(W,H)*(0.46+R(seed,4)*0.12);
+  const cx=W*(0.44+R(seed,5)*0.12), cy=H*(0.44+R(seed,6)*0.12);
+  c.strokeStyle=INKC; c.lineWidth=Math.max(0.9,D*0.0026);
+  c.beginPath(); c.arc(cx,cy,Rr,0,7); c.stroke();
+  const acc=Math.floor(R(seed,7)*N);
+  for(let i=0;i<N;i++){
+    const a1=(i/N)*Math.PI*2-Math.PI/2;
+    const a2=(((i*k)%N)/N)*Math.PI*2-Math.PI/2;
+    const near=Math.abs(i-acc)<N*0.045;
+    c.strokeStyle=near?accent:`rgba(20,20,26,${0.30+R(seed,900+i)*0.35})`;
+    c.lineWidth=Math.max(0.45, D*(near?0.0022:0.00075));
+    c.beginPath();
+    c.moveTo(cx+Math.cos(a1)*Rr, cy+Math.sin(a1)*Rr);
+    c.lineTo(cx+Math.cos(a2)*Rr, cy+Math.sin(a2)*Rr);
+    c.stroke();
+  }
+}
+
+/* Superformula (Gielis, 2003) — one equation that generates most natural
+   two-dimensional forms from six numbers. */
+function drawSuperformula(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cx=W*(0.42+R(seed,2)*0.16), cy=H*(0.42+R(seed,3)*0.16);
+  const base=Math.min(W,H)*(0.40+R(seed,4)*0.16);
+  const layers=6+Math.floor(R(seed,5)*12);
+  const m=2+Math.floor(R(seed,6)*14);
+  const a=0.7+R(seed,7)*0.7, b=0.7+R(seed,8)*0.7;
+  for(let L=0;L<layers;L++){
+    const t=L/layers;
+    const n1=0.25+R(seed,20+L)*1.9, n2=0.25+R(seed,40+L)*2.4, n3=0.25+R(seed,60+L)*2.4;
+    const rot=t*(R(seed,9)-0.5)*3.0;
+    const sc=base*(0.16+t*0.98);
+    const heavy=R(seed,80+L)<0.15;
+    c.strokeStyle=(R(seed,100+L)<0.13)?accent:INKC;
+    c.lineWidth=Math.max(0.55, D*(heavy?0.0040:0.0011));
+    c.beginPath();
+    for(let i=0;i<=420;i++){
+      const th=(i/420)*Math.PI*2;
+      const t1=Math.pow(Math.abs(Math.cos(m*th/4)/a),n2);
+      const t2=Math.pow(Math.abs(Math.sin(m*th/4)/b),n3);
+      const rr=Math.pow(t1+t2,-1/n1);
+      if(!isFinite(rr)) continue;
+      const x=cx+Math.cos(th+rot)*rr*sc, y=cy+Math.sin(th+rot)*rr*sc;
+      i?c.lineTo(x,y):c.moveTo(x,y);
+    }
+    c.closePath(); c.stroke();
+  }
+}
+
+/* Dendrite — diffusion-limited aggregation. Particles random-walk until they
+   touch the cluster and freeze. Frost, coral, mineral growth. */
+function drawDendrite(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const GX=150, GY=188, grid=new Uint8Array(GX*GY);
+  const rnd=lcg(seed*1000+7);
+  const cx=GX>>1, cy=GY>>1;
+  grid[cy*GX+cx]=1;
+  const pts=[[cx,cy,0]];
+  let maxR=1;
+  const target=3400;
+  let guard=0;
+  while(pts.length<target && guard<2_500_000){
+    const sa=rnd()*Math.PI*2, sr=maxR+4;
+    let x=Math.round(cx+Math.cos(sa)*sr), y=Math.round(cy+Math.sin(sa)*sr);
+    const kill=maxR+26;
+    for(let step=0;step<7000;step++){
+      guard++;
+      const d=(rnd()*4)|0;
+      x+=d===0?1:d===1?-1:0; y+=d===2?1:d===3?-1:0;
+      if(x<1||x>=GX-1||y<1||y>=GY-1) break;
+      const dr=Math.hypot(x-cx,y-cy);
+      if(dr>kill) break;
+      if(grid[y*GX+x-1]||grid[y*GX+x+1]||grid[(y-1)*GX+x]||grid[(y+1)*GX+x]){
+        grid[y*GX+x]=1; pts.push([x,y,dr]);
+        if(dr>maxR) maxR=dr;
+        break;
+      }
+    }
+  }
+  const cw=W/GX, ch=H/GY, sc=Math.max(cw,ch)*0.62;
+  pts.forEach(([x,y,dr])=>{
+    const t=Math.min(1,dr/Math.max(1,maxR));
+    c.beginPath();
+    c.arc(x*cw, y*ch, sc*(1.25-t*0.55), 0, 7);
+    c.fillStyle=(t>0.82&&R(seed,x*7+y)<0.35)?accent:INKC;
+    c.fill();
+  });
+}
+
+const F_CHLADNI=`
+void main(){
+  vec2 p=uvCentered();
+  if(rnd(30.)<0.45) p = p*0.62 - vec2(rnd(31.)-0.5, rnd(32.)-0.5)*0.55;
+  vec2 u=p*0.5+0.5;
+  float PI=3.14159265;
+  float n=1.0+floor(rnd(1.)*8.0), m=1.0+floor(rnd(2.)*8.0);
+  float n2=1.0+floor(rnd(3.)*8.0), m2=1.0+floor(rnd(4.)*8.0);
+  float w=rnd(5.)*0.85;
+  float f = cos(n*PI*u.x)*cos(m*PI*u.y) - cos(m*PI*u.x)*cos(n*PI*u.y);
+  f += w*(cos(n2*PI*u.x)*cos(m2*PI*u.y) - cos(m2*PI*u.x)*cos(n2*PI*u.y));
+  float aa=max(fwidth(f),1e-6);
+  /* the nodal set — where the plate does not move, and the sand collects */
+  float ink=1.0-smoothstep(0.0, aa*(1.6+rnd(6.)*3.4), abs(f));
+  /* rule 4: one signed region carries flat value */
+  if(rnd(7.)<0.55) ink=max(ink, (1.0-smoothstep(-aa,aa,f))*0.16);
+  vec3 tint=oklch(0.30,0.055,rnd(8.)*6.28318);
+  outColor=vec4(mix(PAPER,tint,ink),1.0);
+}`;
+
+/* ---- round 4: rebuilt from references ---- */
+const PALETTES=[
+ ['#e63946','#f6f2e8','#a8dadc','#457b9d','#1d3557'],
+ ['#264653','#2a9d8f','#e9c46a','#f4a261','#e76f51'],
+ ['#0b2545','#13315c','#134074','#8da9c4','#eef4ed'],
+ ['#1a1423','#372549','#774c60','#b75d69','#eacdc2'],
+ ['#22223b','#4a4e69','#9a8c98','#c9ada7','#f2e9e4'],
+ ['#03071e','#9d0208','#dc2f02','#f48c06','#ffba08'],
+ ['#004e64','#00a5cf','#25a18e','#7ae582','#e9f7ef']
+];
+const palOf=(seed,i)=>PALETTES[Math.floor(R(seed,i)*PALETTES.length)];
+
+/* ---------------------------------------------------------------------------
+   COLOUR ARRANGEMENT  (after Tyler Hobbs, "Color Arrangement in Generative Art")
+   His central claim: good colour work is not about choosing the right colours,
+   it is about PLACING them. A random palette entry per element — which is what
+   every palette system here used to do — is the weak default. It produces
+   confetti: marks stay individual and never aggregate into shapes.
+   Each strategy makes an element's colour a function of WHERE it sits, so
+   neighbours agree and build larger compositional masses.
+   --------------------------------------------------------------------------- */
+const STRATEGIES=['gradient','clumping','sequence','sampled map','compositional'];
+function makeColorField(seed,pal){
+  const n=pal.length;
+  const mode=Math.floor(R(seed,700)*STRATEGIES.length);
+  const ang=R(seed,701)*Math.PI*2, dx=Math.cos(ang), dy=Math.sin(ang);
+  const fs=1.1+R(seed,702)*2.3;
+  const jitter=0.06+R(seed,703)*0.14;   /* Hobbs: sequences want probabilistic variation */
+  const rev=R(seed,704)<0.5;
+  const f=(x,y,W,H,i)=>{
+    const u=x/W, v=y/H;
+    let t;
+    if(mode===0)      t=(u*dx+v*dy)*0.62+0.5;                 /* gradient      */
+    else if(mode===1) t=fbm(u*fs,v*fs,seed+11);               /* clumping      */
+    else if(mode===2) t=((i||0)*0.1379)%1;                    /* sequence      */
+    else if(mode===3){                                        /* sampled map   */
+      const wx=fbm(u*fs+3.1,v*fs+1.7,seed+3)*1.7;
+      t=fbm(u*fs+wx, v*fs+wx*0.6, seed+7);
+    }
+    else t=1-Math.min(1,Math.hypot(u-0.5,v-0.5)*1.9);         /* compositional */
+    if(rev) t=1-t;
+    t=Math.max(0,Math.min(0.9999,t));
+    let idx=1+Math.floor(t*(n-1));
+    if(R(seed,900+(i||0)*3)<jitter) idx=1+Math.floor(R(seed,901+(i||0)*3)*(n-1));
+    return Math.min(n-1,Math.max(1,idx));
+  };
+  f.label=STRATEGIES[mode];
+  return f;
+}
+function noteStrategy(cv,label){ if(cv) cv.dataset.strategy=label; }
+
+/* Evenly-spaced flow-field streamlines, drawn as round-capped dashes.
+   The even spacing is the whole trick — an occupancy grid stops a line as soon
+   as it crowds one already drawn, which is why it reads as combed rather than
+   scribbled. */
+function drawFlowDash(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  const col=pal[Math.floor(R(seed,2)*pal.length)];
+  const sc=1.0+R(seed,3)*2.2;
+  const turb=2.0+R(seed,4)*3.5;
+  const sep=D*(0.0115+R(seed,5)*0.007);
+  const gw=Math.max(1,Math.ceil(W/sep)), gh=Math.max(1,Math.ceil(H/sep));
+  const occ=new Uint8Array(gw*gh);
+  const step=sep*0.42;
+  c.lineCap='round'; c.strokeStyle=col;
+  c.lineWidth=Math.max(1.3, sep*0.32);
+  c.setLineDash([sep*0.85, sep*0.62]);
+  const at=(x,y)=>{ const gx=(x/sep)|0, gy=(y/sep)|0;
+    return (gx<0||gy<0||gx>=gw||gy>=gh)?-1:gy*gw+gx; };
+  for(let i=0;i<3200;i++){
+    const sx=R(seed,100+i*2)*W, sy=R(seed,101+i*2)*H;
+    const g0=at(sx,sy); if(g0<0||occ[g0]) continue;
+    let pts=[];
+    for(const dir of [1,-1]){
+      let x=sx,y=sy; const seg=[];
+      for(let s=0;s<260;s++){
+        const a=fbm(x/W*sc,y/H*sc,seed)*Math.PI*turb;
+        x+=Math.cos(a)*step*dir; y+=Math.sin(a)*step*dir;
+        if(x<0||x>=W||y<0||y>=H) break;
+        const g=at(x,y); if(g<0) break;
+        if(s>2&&occ[g]) break;
+        seg.push([x,y]);
+      }
+      if(dir===1) pts=seg; else pts=seg.reverse().concat(pts);
+    }
+    if(pts.length<7) continue;
+    for(const [x,y] of pts){ const g=at(x,y); if(g>=0) occ[g]=1; }
+    c.beginPath();
+    pts.forEach((p,k)=>k?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+    c.stroke();
+  }
+  c.setLineDash([]);
+}
+
+/* True circle packing by random insertion: drop a candidate, grow it until it
+   touches something, keep it if it earned enough radius. */
+function drawCirclePack(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const maxR=D*(0.055+R(seed,2)*0.075), minR=D*0.0032;
+  const cs=[]; const rnd=lcg(seed*7919+3);
+  for(let i=0;i<9000 && cs.length<1600;i++){
+    const x=rnd()*W, y=rnd()*H;
+    let r=Math.min(maxR,x,y,W-x,H-y);
+    for(let k=0;k<cs.length;k++){
+      const d=Math.hypot(x-cs[k][0],y-cs[k][1])-cs[k][2];
+      if(d<r) r=d;
+      if(r<minR) break;
+    }
+    if(r<minR) continue;
+    cs.push([x,y,r-D*0.0012]);
+  }
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label);
+  cs.forEach((o,i)=>{
+    c.beginPath(); c.arc(o[0],o[1],Math.max(0.5,o[2]),0,7);
+    c.fillStyle=pal[field(o[0],o[1],W,H,i)];   /* colour by position, not by lottery */
+    c.fill();
+    if(R(seed,9000+i)<0.16){ c.strokeStyle=pal[0]; c.lineWidth=Math.max(0.6,D*0.0011); c.stroke(); }
+  });
+}
+
+/* Quadtree subdivision — recursion probability driven by a density field, so
+   detail concentrates instead of spreading evenly. */
+function drawQuadtree(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const fs=1.0+R(seed,2)*2.4, bias=0.30+R(seed,3)*0.42;
+  const leaves=[];
+  (function q(x,y,w,h,d,idx){
+    const dens=fbm((x+w/2)/W*fs, (y+h/2)/H*fs, seed);
+    const p=Math.min(0.94, dens*bias+0.30);
+    if(d>=7 || w<D*0.011 || R(seed,idx)>p){ leaves.push([x,y,w,h,d]); return; }
+    const hw=w/2, hh=h/2;
+    q(x,y,hw,hh,d+1,idx*4+1); q(x+hw,y,hw,hh,d+1,idx*4+2);
+    q(x,y+hh,hw,hh,d+1,idx*4+3); q(x+hw,y+hh,hw,hh,d+1,idx*4+4);
+  })(0,0,W,H,0,1);
+  const gap=D*0.0016;
+  /* Inheritance, Hobbs' fifth strategy: a leaf takes its parent cell's colour
+     with high probability, mutating only occasionally. Sibling quadrants stay
+     together, so subdivision reads as regions rather than static. */
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label+' + inheritance');
+  const memo=new Map();
+  const inherit=(idx,x,y,w,h,d,i)=>{
+    if(d===0) return field(x+w/2,y+h/2,W,H,i);
+    const p=memo.get(idx>>2);
+    if(p===undefined || R(seed,5000+idx)<0.22) return field(x+w/2,y+h/2,W,H,i);
+    return p;
+  };
+  leaves.forEach((L,i)=>{
+    const [x,y,w,h,d]=L;
+    const ci=inherit(i+1,x,y,w,h,d,i);
+    memo.set(i+1,ci);
+    c.fillStyle=pal[ci];
+    c.fillRect(x+gap,y+gap,Math.max(0.5,w-gap*2),Math.max(0.5,h-gap*2));
+  });
+}
+
+/* Hypnotic Squares — a grid of nested squares, each generation drifting toward
+   a direction chosen per cell. */
+function drawHypnoSquares(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  const cols=3+Math.floor(R(seed,2)*4), rows=Math.round(cols*1.25);
+  const m=Math.min(W,H)*0.05;
+  const cw=(W-m*2)/cols, ch=(H-m*2)/rows;
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label);
+  for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
+    const n=3+Math.floor(R(seed,100+r*31+q)*6);
+    const dx=(R(seed,200+r*17+q)-0.5), dy=(R(seed,300+r*23+q)-0.5);
+    let x=m+q*cw, y=m+r*ch, w=cw*0.92, h=ch*0.92;
+    const col=pal[field(m+cw*(q+0.5), m+ch*(r+0.5), W, H, r*cols+q)];
+    for(let k=0;k<n;k++){
+      c.strokeStyle=col;
+      c.lineWidth=Math.max(0.7, D*0.0022*(1-k/n)+D*0.0006);
+      c.strokeRect(x,y,w,h);
+      const sw=w*(0.68+R(seed,500+k)*0.12), sh=h*(0.68+R(seed,600+k)*0.12);
+      x+=(w-sw)*(0.5+dx); y+=(h-sh)*(0.5+dy); w=sw; h=sh;
+    }
+  }
+}
+
+/* Overlapping shards */
+function drawShards(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const pal=palOf(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label);
+  const n=16+Math.floor(R(seed,2)*26);
+  for(let i=0;i<n;i++){
+    const cx=R(seed,100+i*3)*W, cy=R(seed,101+i*3)*H;
+    const a=R(seed,102+i*3)*6.283, len=Math.hypot(W,H)*(0.35+R(seed,200+i)*0.85);
+    const spread=0.04+R(seed,300+i)*0.30;
+    c.beginPath();
+    c.moveTo(cx,cy);
+    c.lineTo(cx+Math.cos(a-spread)*len, cy+Math.sin(a-spread)*len);
+    c.lineTo(cx+Math.cos(a+spread)*len, cy+Math.sin(a+spread)*len);
+    c.closePath();
+    c.fillStyle=pal[field(cx,cy,W,H,i)];
+    c.globalAlpha=0.75+R(seed,500+i)*0.25;
+    c.fill();
+  }
+  c.globalAlpha=1;
+}
+
+/* Chord caustic — every line tangent to an inner circle of random radius.
+   The bright envelope is not drawn; it is where tangents crowd. */
+function drawChordCaustic(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cx=W*(0.40+R(seed,2)*0.20), cy=H*(0.40+R(seed,3)*0.20);
+  const n=260+Math.floor(R(seed,4)*420);
+  const bias=0.6+R(seed,5)*2.6;
+  const spanR=Math.min(W,H)*(0.10+R(seed,6)*0.30);
+  const L=D*1.2;
+  for(let i=0;i<n;i++){
+    const a=R(seed,1000+i*2)*Math.PI*2;
+    const off=Math.pow(R(seed,1001+i*2),bias)*spanR;
+    const nx=Math.cos(a), ny=Math.sin(a);
+    const px=cx+nx*off, py=cy+ny*off;
+    const tx=-ny, ty=nx;
+    c.beginPath();
+    c.moveTo(px-tx*L,py-ty*L); c.lineTo(px+tx*L,py+ty*L);
+    c.strokeStyle=(R(seed,3000+i)<0.07)?accent:`rgba(20,20,26,${0.16+R(seed,2000+i)*0.34})`;
+    c.lineWidth=Math.max(0.4, D*0.00065*(0.5+R(seed,4000+i)*1.5));
+    c.stroke();
+  }
+}
+
+/* Differential growth — a closed curve whose nodes repel their neighbours,
+   pull along the line, and split when segments stretch. Meanders, coral,
+   brain folds, all from three local rules and no global plan. */
+function drawDiffGrowth(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const rnd=lcg(seed*104729+11);
+  const sepD=D*(0.014+R(seed,2)*0.010);
+  let pts=[];
+  const n0=26, r0=Math.min(W,H)*0.10;
+  for(let i=0;i<n0;i++){ const a=i/n0*Math.PI*2;
+    pts.push([W/2+Math.cos(a)*r0, H/2+Math.sin(a)*r0]); }
+  const iters=110+Math.floor(R(seed,3)*70);
+  const maxN=1500;
+  for(let it=0;it<iters;it++){
+    const cell=sepD, gw=Math.ceil(W/cell)+2, gh=Math.ceil(H/cell)+2;
+    const grid=new Map();
+    pts.forEach((p,i)=>{
+      const k=(((p[1]/cell)|0)+1)*gw+(((p[0]/cell)|0)+1);
+      if(!grid.has(k)) grid.set(k,[]); grid.get(k).push(i);
+    });
+    const fx=new Float64Array(pts.length), fy=new Float64Array(pts.length);
+    for(let i=0;i<pts.length;i++){
+      const [x,y]=pts[i];
+      const gx=((x/cell)|0)+1, gy=((y/cell)|0)+1;
+      for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){
+        const arr=grid.get((gy+dy)*gw+(gx+dx)); if(!arr) continue;
+        for(const j of arr){
+          if(j===i) continue;
+          const ddx=x-pts[j][0], ddy=y-pts[j][1];
+          const d=Math.hypot(ddx,ddy);
+          if(d>0 && d<sepD){ const f=(sepD-d)/sepD*0.55; fx[i]+=ddx/d*f*sepD; fy[i]+=ddy/d*f*sepD; }
+        }
+      }
+      const pa=pts[(i-1+pts.length)%pts.length], nb=pts[(i+1)%pts.length];
+      fx[i]+=((pa[0]+nb[0])/2-x)*0.42; fy[i]+=((pa[1]+nb[1])/2-y)*0.42;
+      fx[i]+=(rnd()-0.5)*sepD*0.10;   fy[i]+=(rnd()-0.5)*sepD*0.10;
+    }
+    for(let i=0;i<pts.length;i++){
+      pts[i][0]=Math.max(2,Math.min(W-2,pts[i][0]+fx[i]*0.36));
+      pts[i][1]=Math.max(2,Math.min(H-2,pts[i][1]+fy[i]*0.36));
+    }
+    if(pts.length<maxN){
+      const out=[];
+      for(let i=0;i<pts.length;i++){
+        out.push(pts[i]);
+        const nb=pts[(i+1)%pts.length];
+        if(Math.hypot(nb[0]-pts[i][0],nb[1]-pts[i][1])>sepD*1.05)
+          out.push([(pts[i][0]+nb[0])/2,(pts[i][1]+nb[1])/2]);
+      }
+      pts=out;
+    }
+  }
+  c.lineJoin='round';
+  c.strokeStyle=INKC; c.lineWidth=Math.max(1.1,D*0.0026);
+  c.beginPath();
+  pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+  c.closePath(); c.stroke();
+  c.strokeStyle=accent; c.lineWidth=Math.max(0.5,D*0.0009);
+  c.beginPath();
+  pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+  c.closePath(); c.stroke();
+}
+
+/* Mandelbrot, rendered the way it prints: interior solid, exterior paper,
+   with the filigree carried by banded escape counts rather than a rainbow. */
+const F_MANDEL=`
+const vec2 SPOTS[8]=vec2[8](
+  vec2(-0.743644786,0.131825252), vec2(-0.16,1.0405),
+  vec2(-1.25066,0.02012),         vec2(-0.7453,0.1127),
+  vec2(-1.749086,0.0),            vec2(0.001643721,-0.822467633),
+  vec2(-0.10109636,0.95628651),   vec2(-1.7687,0.0017));
+void main(){
+  vec2 p=uvCentered();
+  vec2 ctr=SPOTS[int(floor(rnd(1.)*8.0))];
+  /* float32 gives out below ~1e-3 of span, so the zoom stays in a range
+     that still resolves cleanly at print size */
+  float zoom=0.012+rnd(4.)*0.55;
+  vec2 c0=ctr+p*zoom;
+  vec2 z=vec2(0.0); float i=0.0; const float MAXI=420.0;
+  for(int k=0;k<420;k++){
+    z=vec2(z.x*z.x-z.y*z.y, 2.0*z.x*z.y)+c0;
+    if(dot(z,z)>256.0) break;
+    i+=1.0;
+  }
+  float ink;
+  if(i>=MAXI-0.5){ ink=1.0; }
+  else {
+    float sm=i+1.0-log2(log2(max(dot(z,z),1.0001))*0.5+1.0);
+    float band=fract(sm*(0.055+rnd(2.)*0.09));
+    ink=smoothstep(0.42,0.58,band)*0.86;
+  }
+  vec3 tint=oklch(0.16,0.03,rnd(3.)*6.28318);
+  outColor=vec4(mix(PAPER,tint,ink),1.0);
+}`;
+
+/* Marbling — repeated domain warping, posterized into flat bands so it
+   survives an 8-bit print pipeline instead of banding by accident. */
+const F_MARBLE=`
+void main(){
+  vec2 p=uvCentered();
+  float sc=0.9+rnd(1.)*1.3;
+  vec2 q=p*sc;
+  for(int i=0;i<4;i++){
+    q += 0.72*vec2(fbmG(q*1.7+float(i)*13.1+rnd(2.)*30.0),
+                   fbmG(q*1.7+float(i)*7.3 +rnd(3.)*30.0)) - 0.36;
+  }
+  float v=fbmG(q*1.35+rnd(4.)*20.0);
+  float lv=5.0+floor(rnd(5.)*6.0);
+  float band=floor(clamp(v,0.0,0.999)*lv)/lv;
+  float hue=rnd(6.)*6.28318;
+  vec3 col=oklch(0.94-band*0.70, 0.020+band*0.085, hue+band*0.85);
+  outColor=vec4(col,1.0);
+}`;
+
+/* ---- round 5: additive-density family (Art Blocks references) ---- */
+const EMIT=[
+ [[0,0,0],[58,8,10],[186,30,24],[255,140,40],[255,236,186]],    // fire
+ [[0,0,0],[20,6,40],[88,38,138],[190,120,230],[242,222,255]],   // violet
+ [[0,0,0],[8,26,30],[20,92,96],[92,202,192],[228,255,250]],     // teal
+ [[0,0,0],[30,14,6],[138,58,24],[232,152,80],[255,238,208]],    // copper
+ [[0,0,0],[10,14,34],[30,70,150],[110,170,240],[232,244,255]]   // cobalt
+];
+function rampAt(st,t){
+  const n=st.length-1, f=Math.max(0,Math.min(0.9999,t))*n, i=f|0, u=f-i;
+  const a=st[i], b=st[i+1];
+  return [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u, a[2]+(b[2]-a[2])*u];
+}
+/* Shared renderer for every density-accumulation piece.
+   emissive: dense -> bright on black.  paper: dense -> dark ink on stock. */
+function renderDensity(c,W,H,dens,maxd,ramp,paper,boost){
+  if(maxd<1) return;
+  const img=c.createImageData(W,H), px=img.data;
+  const lg=Math.log(1+maxd);
+  const tint=rampAt(ramp,0.72);
+  for(let i=0;i<W*H;i++){
+    const t=Math.min(1, Math.log(1+dens[i])/lg*(boost||1.25));
+    const j=i*4; px[j+3]=255;
+    if(paper){
+      px[j]  =242+(tint[0]*0.55+8-242)*t;
+      px[j+1]=240+(tint[1]*0.55+8-240)*t;
+      px[j+2]=234+(tint[2]*0.55+10-234)*t;
+    } else {
+      const col=rampAt(ramp,t);
+      px[j]=col[0]; px[j+1]=col[1]; px[j+2]=col[2];
+    }
+  }
+  c.putImageData(img,0,0);
+}
+function darkGround(cv){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const w=cv.clientWidth||200,h=cv.clientHeight||250;
+  cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+  const c=cv.getContext('2d'); c.fillStyle='#000'; c.fillRect(0,0,cv.width,cv.height); return c;
+}
+
+/* Gravity — the JMY construction. Particles streamed through a field of point
+   masses, some attracting and some repelling. Nothing is drawn but the paths;
+   the bright filaments are where trajectories converge, and the teardrop voids
+   are the shadows behind repulsors. */
+function gravityCore(cv,seed,paper){
+  const c=paper?prep(cv):darkGround(cv);
+  const W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const dens=new Float32Array(W*H);
+  const rnd=lcg(seed*31337+5);
+  const K=3+Math.floor(R(seed,1)*5);
+  const att=[];
+  for(let k=0;k<K;k++){
+    const rep=R(seed,20+k)<0.34;
+    att.push({x:W*(0.22+R(seed,40+k)*0.56), y:H*(0.22+R(seed,60+k)*0.56),
+              m:(rep?-1:1)*(0.5+R(seed,80+k)*1.0)*D*D*0.0007});
+  }
+  const soft=Math.pow(D*0.035,2);
+  const sheet=R(seed,2)<0.4;
+  const N=3200, steps=420, dt=0.55, damp=0.9992;
+  const vmax=D*0.02;
+  for(let p=0;p<N;p++){
+    let x,y,vx,vy;
+    if(sheet){
+      x=rnd()*W; y=H*1.02;
+      vx=(rnd()-0.5)*D*0.0016; vy=-D*0.0042*(0.6+rnd()*0.8);
+    } else {
+      const a=rnd()*Math.PI*2, r=Math.min(W,H)*0.62;
+      x=W/2+Math.cos(a)*r; y=H/2+Math.sin(a)*r;
+      const sp=D*0.0035*(0.5+rnd()*0.9);
+      vx=-Math.cos(a)*sp-Math.sin(a)*sp*0.35;
+      vy=-Math.sin(a)*sp+Math.cos(a)*sp*0.35;
+    }
+    for(let s=0;s<steps;s++){
+      let ax=0, ay=0;
+      for(let k=0;k<K;k++){
+        const dx=att[k].x-x, dy=att[k].y-y;
+        const d2=dx*dx+dy*dy+soft, inv=att[k].m/(d2*Math.sqrt(d2));
+        ax+=dx*inv; ay+=dy*inv;
+      }
+      vx=(vx+ax*dt)*damp; vy=(vy+ay*dt)*damp;
+      const sp=Math.hypot(vx,vy);
+      if(sp>vmax){ vx=vx/sp*vmax; vy=vy/sp*vmax; }
+      x+=vx*dt; y+=vy*dt;
+      /* particles are launched from outside the sheet on purpose, so travelling
+         off-canvas must not end the trace — only a generous kill box does.
+         Density is recorded solely while the particle is over the page. */
+      if(x<-W||x>2*W||y<-H||y>2*H) break;
+      if(x>=0&&x<W&&y>=0&&y<H) dens[(y|0)*W+(x|0)]+=1;
+    }
+  }
+  let maxd=0; for(let i=0;i<dens.length;i++) if(dens[i]>maxd) maxd=dens[i];
+  renderDensity(c,W,H,dens,maxd,EMIT[Math.floor(R(seed,3)*EMIT.length)],paper,1.35);
+}
+function drawGravity(cv,seed){ gravityCore(cv,seed,false); }
+function drawGravityInk(cv,seed){ gravityCore(cv,seed,true); }
+
+/* Nebula — a family of 3D Lissajous curves with drifting phase, projected and
+   accumulated. The glowing edges are caustics: places where neighbouring
+   curves in the family pile onto the same pixels. */
+function drawNebula(cv,seed){
+  const c=darkGround(cv);
+  const W=cv.width,H=cv.height;
+  const dens=new Float32Array(W*H);
+  const a=1+Math.floor(R(seed,1)*5), b=1+Math.floor(R(seed,2)*5), g=1+Math.floor(R(seed,3)*5);
+  const p1=R(seed,4)*6.283, p2=R(seed,5)*6.283, p3=R(seed,6)*6.283;
+  const rx=R(seed,7)*Math.PI, ry=R(seed,8)*Math.PI;
+  const cx=Math.cos(rx),sx=Math.sin(rx),cy2=Math.cos(ry),sy2=Math.sin(ry);
+  const fam=200+Math.floor(R(seed,9)*160);
+  const spread=0.10+R(seed,10)*0.55;
+  const S=Math.min(W,H)*0.40;
+  const ox=W*(0.46+R(seed,11)*0.08), oy=H*(0.46+R(seed,12)*0.08);
+  const M=760;
+  for(let f=0;f<fam;f++){
+    const ph=(f/fam)*spread;
+    for(let i=0;i<M;i++){
+      const t=(i/M)*Math.PI*2;
+      const X=Math.sin(a*t+p1+ph), Y=Math.sin(b*t+p2+ph*1.3), Z=Math.sin(g*t+p3+ph*0.7);
+      const X1=X*cy2+Z*sy2, Z1=-X*sy2+Z*cy2;
+      const Y1=Y*cx-Z1*sx;
+      const px=(ox+X1*S)|0, py=(oy+Y1*S)|0;
+      if(px<0||px>=W||py<0||py>=H) continue;
+      dens[py*W+px]+=1;
+    }
+  }
+  let maxd=0; for(let i=0;i<dens.length;i++) if(dens[i]>maxd) maxd=dens[i];
+  renderDensity(c,W,H,dens,maxd,EMIT[Math.floor(R(seed,13)*EMIT.length)],false,1.6);
+}
+
+/* Fushi — soft advected ribbons. Long streamlines through a heavily warped
+   field, accumulated at low contrast so the result reads as painted rather
+   than drawn. */
+function drawFushi(cv,seed){
+  const c=darkGround(cv);
+  const W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const dens=new Float32Array(W*H);
+  const rnd=lcg(seed*7717+13);
+  const sc=0.7+R(seed,1)*1.1, warp=1.4+R(seed,2)*2.2;
+  const N=2400, steps=500, step=D*0.0016;
+  for(let p=0;p<N;p++){
+    let x=rnd()*W, y=rnd()*H;
+    const w=1+rnd()*2.6;
+    for(let s=0;s<steps;s++){
+      const wx=fbm(x/W*sc, y/H*sc, seed)*warp;
+      const wy=fbm(x/W*sc+5.3, y/H*sc+2.1, seed)*warp;
+      const ang=fbm(x/W*sc*0.6+wx, y/H*sc*0.6+wy, seed)*Math.PI*2.4+Math.PI*0.5;
+      x+=Math.cos(ang)*step; y+=Math.sin(ang)*step;
+      if(x<0||x>=W||y<0||y>=H) break;
+      const bx=x|0, by=y|0;
+      for(let o=-1;o<=1;o++){
+        const q=bx+o; if(q<0||q>=W) continue;
+        dens[by*W+q]+=w*(o?0.45:1);
+      }
+    }
+  }
+  let maxd=0; for(let i=0;i<dens.length;i++) if(dens[i]>maxd) maxd=dens[i];
+  renderDensity(c,W,H,dens,maxd,EMIT[Math.floor(R(seed,3)*EMIT.length)],false,0.85);
+}
+
+/* ---- round 6: raymarching, pixel sorting, stepped bands, grain ---- */
+
+/* GRAIN — not a system, a finish. Every reference image has it, and it is not
+   decoration: fine noise breaks up flat tone so an 8-bit pipeline cannot band.
+   This is the dithering fix, applied globally. */
+let GRAIN_ON=true;
+const grainTile=(()=>{
+  const t=document.createElement('canvas'); t.width=t.height=192;
+  const g=t.getContext('2d'), img=g.createImageData(192,192);
+  for(let i=0;i<192*192;i++){
+    const v=128+((Math.random()-0.5)*78)|0;
+    img.data[i*4]=v; img.data[i*4+1]=v; img.data[i*4+2]=v; img.data[i*4+3]=255;
+  }
+  g.putImageData(img,0,0); return t;
+})();
+function applyGrain(cv,amt){
+  if(!GRAIN_ON) return;
+  const c=cv.getContext('2d');
+  c.save();
+  c.globalCompositeOperation='overlay';
+  c.globalAlpha=amt||0.17;
+  for(let y=0;y<cv.height;y+=192) for(let x=0;x<cv.width;x+=192) c.drawImage(grainTile,x,y);
+  c.restore();
+}
+
+/* Raymarched SDF field — real 3D, but posterized into flat tones on paper
+   rather than rendered smooth on black. Reads as an engraving of a solid. */
+const F_RAYMARCH=`
+float hash13(vec3 p){ p=fract(p*0.1031); p+=dot(p,p.yzx+33.33); return fract((p.x+p.y)*p.z); }
+float sdBox(vec3 p, vec3 b){ vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0); }
+float mapS(vec3 p){
+  vec3 id=floor((p+1.0)*0.5);
+  float h=hash13(id+floor(u_seed*0.37));
+  vec3 q=mod(p+1.0,2.0)-1.0;
+  float r=0.26+h*0.42;
+  return h<0.5 ? length(q)-r : sdBox(q,vec3(r*0.78))-0.09;
+}
+vec3 nrm(vec3 p){
+  vec2 e=vec2(0.0018,0.0);
+  return normalize(vec3(mapS(p+e.xyy)-mapS(p-e.xyy),
+                        mapS(p+e.yxy)-mapS(p-e.yxy),
+                        mapS(p+e.yyx)-mapS(p-e.yyx)));
+}
+void main(){
+  vec2 uv=uvCentered();
+  float ang=rnd(1.)*6.28318;
+  vec3 ro=vec3(rnd(2.)*9.0, rnd(3.)*9.0, rnd(4.)*9.0);
+  vec3 fw=normalize(vec3(cos(ang), 0.34*(rnd(5.)-0.5), sin(ang)));
+  vec3 rt=normalize(cross(vec3(0.0,1.0,0.0),fw));
+  vec3 up=cross(fw,rt);
+  vec3 rd=normalize(uv.x*rt+uv.y*up+1.55*fw);
+  float t=0.0; bool hit=false;
+  for(int i=0;i<96;i++){
+    float d=mapS(ro+rd*t);
+    if(d<0.0022){ hit=true; break; }
+    t+=d*0.78;
+    if(t>20.0) break;
+  }
+  vec3 col=PAPER;
+  if(hit){
+    vec3 p=ro+rd*t, n=nrm(p);
+    float lam=clamp(dot(n,normalize(vec3(0.55,0.78,-0.42)))*0.5+0.5,0.0,1.0);
+    float ao=clamp(1.0-t*0.042,0.0,1.0);
+    float v=lam*ao;
+    float lv=3.0+floor(rnd(7.)*3.0);
+    float band=floor(clamp(v,0.0,0.999)*lv)/lv;
+    col=oklch(0.24+band*0.68, 0.016+(1.0-band)*0.050, rnd(6.)*6.28318);
+  }
+  outColor=vec4(col,1.0);
+}`;
+
+/* ---------------------------------------------------------------------------
+   WebGPU — optional acceleration only. Nothing is ever gated on it: if the
+   device is missing, blocklisted, or still initialising, the CPU path runs and
+   the output is identical. A storefront must never make a GPU a condition of
+   buying a piece of paper.
+   --------------------------------------------------------------------------- */
+let GPU=null, GPU_STATE='probing';
+(async()=>{
+  if(!navigator.gpu){ GPU_STATE='unsupported'; badgeGPU(); return; }
+  try{
+    const adapter=await navigator.gpu.requestAdapter();
+    if(!adapter){ GPU_STATE='no-adapter'; badgeGPU(); return; }
+    const device=await adapter.requestDevice();
+    device.lost.then(()=>{ GPU=null; GPU_STATE='lost'; badgeGPU(); });
+    GPU={device}; GPU_STATE='ready'; badgeGPU();
+  }catch(e){ GPU_STATE='error'; badgeGPU(); }
+})();
+function badgeGPU(){
+  const el=document.getElementById('gpubadge'); if(!el) return;
+  const ok=GPU_STATE==='ready';
+  el.textContent=ok?'WebGPU active':`WebGPU unavailable (${GPU_STATE}) — CPU fallback`;
+  el.style.color=ok?'#7fb489':'#c9a06a';
+}
+
+/* Bitonic sort, one independent sequence per image column.
+   The span trick: every pixel gets key = groupId<<10 | luminance. Pixels inside
+   a threshold run share a groupId so they sort against each other by luminance;
+   every other pixel gets a groupId of its own so it cannot move at all. One
+   global sort per column then produces exactly the pixel-sort result. */
+const WGSL_SORT=`
+struct P { j:u32, k:u32, n:u32, cols:u32 };
+@group(0) @binding(0) var<storage, read_write> keys : array<u32>;
+@group(0) @binding(1) var<storage, read_write> cols : array<u32>;
+@group(0) @binding(2) var<uniform> p : P;
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
+  let idx = gid.x;
+  if (idx >= p.cols * p.n) { return; }
+  let col = idx / p.n;
+  let i   = idx % p.n;
+  let par = i ^ p.j;
+  if (par <= i) { return; }
+  let a = col * p.n + i;
+  let b = col * p.n + par;
+  let up = (i & p.k) == 0u;
+  let ka = keys[a]; let kb = keys[b];
+  if ((ka > kb) == up) {
+    let ca = cols[a]; let cb = cols[b];
+    keys[a] = kb; keys[b] = ka;
+    cols[a] = cb;  cols[b] = ca;
+  }
+}`;
+let sortPipe=null;
+function gpuSortPipeline(device){
+  if(sortPipe) return sortPipe;
+  /* An explicit layout is required: layout:'auto' infers a bind group layout
+     WITHOUT hasDynamicOffset, so setBindGroup(..., [offset]) is invalid — and
+     WebGPU reports that as an async validation error rather than a throw, which
+     means the pass silently does nothing and the readback is all zeros. */
+  const bgl=device.createBindGroupLayout({entries:[
+    {binding:0,visibility:GPUShaderStage.COMPUTE,buffer:{type:'storage'}},
+    {binding:1,visibility:GPUShaderStage.COMPUTE,buffer:{type:'storage'}},
+    {binding:2,visibility:GPUShaderStage.COMPUTE,
+     buffer:{type:'uniform',hasDynamicOffset:true,minBindingSize:16}}
+  ]});
+  const mod=device.createShaderModule({code:WGSL_SORT});
+  sortPipe={
+    pipeline:device.createComputePipeline({
+      layout:device.createPipelineLayout({bindGroupLayouts:[bgl]}),
+      compute:{module:mod,entryPoint:'main'}}),
+    bgl
+  };
+  return sortPipe;
+}
+async function gpuBitonicSort(device,keys,colors,n,cols){
+  const total=keys.length;
+  const mk=data=>{
+    const b=device.createBuffer({size:data.byteLength,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(b,0,data); return b;
+  };
+  const kb=mk(keys), cb=mk(colors);
+  const steps=[];
+  for(let k=2;k<=n;k<<=1) for(let j=k>>1;j>0;j>>=1) steps.push([j,k]);
+  const ALIGN=256;
+  const uni=new ArrayBuffer(ALIGN*steps.length);
+  steps.forEach(([j,k],i)=>{ new Uint32Array(uni,i*ALIGN,4).set([j,k,n,cols]); });
+  const ub=device.createBuffer({size:uni.byteLength,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+  device.queue.writeBuffer(ub,0,uni);
+  const {pipeline,bgl}=gpuSortPipeline(device);
+  const bg=device.createBindGroup({layout:bgl,entries:[
+    {binding:0,resource:{buffer:kb}},{binding:1,resource:{buffer:cb}},
+    {binding:2,resource:{buffer:ub,offset:0,size:16}}]});
+  /* Error scope is not optional here: without it a validation failure produces
+     a zeroed readback that looks like a legitimate all-black render. */
+  device.pushErrorScope('validation');
+  const enc=device.createCommandEncoder();
+  const pass=enc.beginComputePass();
+  pass.setPipeline(pipeline);
+  const groups=Math.ceil(total/64);
+  steps.forEach((_,i)=>{ pass.setBindGroup(0,bg,[i*ALIGN]); pass.dispatchWorkgroups(groups); });
+  pass.end();
+  const read=device.createBuffer({size:colors.byteLength,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
+  enc.copyBufferToBuffer(cb,0,read,0,colors.byteLength);
+  device.queue.submit([enc.finish()]);
+  const verr=await device.popErrorScope();
+  if(verr){ [kb,cb,ub,read].forEach(b=>b.destroy()); throw new Error('WebGPU validation: '+verr.message); }
+  await read.mapAsync(GPUMapMode.READ);
+  const out=new Uint32Array(read.getMappedRange().slice(0));
+  read.unmap();
+  [kb,cb,ub,read].forEach(b=>b.destroy());
+  return out;
+}
+
+/* Pixel sorting — build a base field, then reorder runs of pixels within each
+   column by luminance wherever they cross a threshold. */
+function pixelSortBase(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const pal=palOf(seed,1);
+  const rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const stops=pal.map(rgb);
+  /* coarse base field, bilinearly upsampled — full-res fbm would be far too slow */
+  const GX=140, GY=176, base=new Float32Array(GX*GY);
+  const fs=1.1+R(seed,2)*2.0, warp=1.0+R(seed,3)*2.2;
+  for(let y=0;y<GY;y++) for(let x=0;x<GX;x++){
+    const u=x/GX*fs, v=y/GY*fs;
+    const wx=fbm(u+3.1,v+1.7,seed)*warp, wy=fbm(u+7.9,v+4.3,seed)*warp;
+    base[y*GX+x]=fbm(u+wx,v+wy,seed);
+  }
+  const sample=(fx,fy)=>{
+    const x=Math.max(0,Math.min(GX-1.001,fx*(GX-1))), y=Math.max(0,Math.min(GY-1.001,fy*(GY-1)));
+    const x0=x|0, y0=y|0, ux=x-x0, uy=y-y0;
+    const a=base[y0*GX+x0], b=base[y0*GX+x0+1], d=base[(y0+1)*GX+x0], e=base[(y0+1)*GX+x0+1];
+    return (a*(1-ux)+b*ux)*(1-uy)+(d*(1-ux)+e*ux)*uy;
+  };
+  const img=c.createImageData(W,H), px=img.data;
+  const lum=new Float32Array(W*H);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+    const v=Math.max(0,Math.min(0.999,sample(x/W,y/H)*1.25));
+    const col=rampAt(stops,v);
+    const i=y*W+x, j=i*4;
+    px[j]=col[0]; px[j+1]=col[1]; px[j+2]=col[2]; px[j+3]=255;
+    lum[i]=col[0]*0.299+col[1]*0.587+col[2]*0.114;
+  }
+  const thr=60+R(seed,4)*120;
+  const below=R(seed,5)<0.5;
+  return {c,W,H,img,px,lum,thr,below};
+}
+
+function drawPixelSortCPU(cv,seed){
+  const {c,W,H,img,px,lum,thr,below}=pixelSortBase(cv,seed);
+  for(let x=0;x<W;x++){
+    let y=0;
+    while(y<H){
+      const inSpan=q=>below?(lum[q*W+x]<thr):(lum[q*W+x]>thr);
+      while(y<H && !inSpan(y)) y++;
+      const s=y;
+      while(y<H && inSpan(y)) y++;
+      const n=y-s;
+      if(n>3){
+        const idx=[]; for(let k=0;k<n;k++) idx.push(s+k);
+        idx.sort((a,b)=>lum[a*W+x]-lum[b*W+x]);
+        const cp=idx.map(q=>{ const j=(q*W+x)*4; return [px[j],px[j+1],px[j+2],lum[q*W+x]]; });
+        for(let k=0;k<n;k++){
+          const j=((s+k)*W+x)*4;
+          px[j]=cp[k][0]; px[j+1]=cp[k][1]; px[j+2]=cp[k][2];
+          lum[(s+k)*W+x]=cp[k][3];
+        }
+      }
+    }
+  }
+  c.putImageData(img,0,0);
+}
+
+async function drawPixelSortGPU(cv,seed){
+  const {c,W,H,img,px,lum,thr,below}=pixelSortBase(cv,seed);
+  c.putImageData(img,0,0);                 // show the unsorted field immediately
+  let n=1; while(n<H) n<<=1;               // bitonic needs a power of two
+  const total=W*n;
+  const keys=new Uint32Array(total), colors=new Uint32Array(total);
+  for(let x=0;x<W;x++){
+    let gid=0, y=0;
+    while(y<H){
+      const inSpan=q=>below?(lum[q*W+x]<thr):(lum[q*W+x]>thr);
+      if(!inSpan(y)){                       // solitary group: cannot move
+        const j=(y*W+x)*4, o=x*n+y;
+        keys[o]=(gid++<<10);
+        colors[o]=px[j]|(px[j+1]<<8)|(px[j+2]<<16)|0xff000000;
+        y++; continue;
+      }
+      const s=y; while(y<H && inSpan(y)) y++;
+      const g=gid++;                        // whole run shares a group
+      for(let q=s;q<y;q++){
+        const j=(q*W+x)*4, o=x*n+q;
+        keys[o]=(g<<10)|Math.min(1023,lum[q*W+x]*4|0);
+        colors[o]=px[j]|(px[j+1]<<8)|(px[j+2]<<16)|0xff000000;
+      }
+    }
+    for(let q=H;q<n;q++){ keys[x*n+q]=0xffffffff; colors[x*n+q]=0; }  // padding sinks
+  }
+  const out=await gpuBitonicSort(GPU.device,keys,colors,n,W);
+  for(let x=0;x<W;x++) for(let y=0;y<H;y++){
+    const v=out[x*n+y], j=(y*W+x)*4;
+    px[j]=v&255; px[j+1]=(v>>8)&255; px[j+2]=(v>>16)&255; px[j+3]=255;
+  }
+  c.putImageData(img,0,0);
+  applyGrain(cv);
+}
+
+function drawPixelSort(cv,seed){
+  if(GPU && GPU.device){
+    drawPixelSortGPU(cv,seed).catch(err=>{
+      /* any GPU failure degrades silently to the identical CPU result */
+      console.warn('pixel sort: GPU path failed, using CPU —',err.message);
+      GPU=null; GPU_STATE='error'; badgeGPU();
+      drawPixelSortCPU(cv,seed); applyGrain(cv);
+    });
+  } else {
+    drawPixelSortCPU(cv,seed);
+  }
+}
+
+/* Stepped bands — nested rotated squares filled with a tonal ramp. */
+function drawSteppedBands(cv,seed){
+  const c=darkGround(cv),W=cv.width,H=cv.height;
+  const ramp=EMIT[Math.floor(R(seed,1)*EMIT.length)];
+  const N=6+Math.floor(R(seed,2)*8);
+  const rot=Math.PI/4+(R(seed,3)-0.5)*0.9;
+  const cx=W*(0.40+R(seed,4)*0.20), cy=H*(0.40+R(seed,5)*0.20);
+  const S=Math.max(W,H)*(0.70+R(seed,6)*0.42);
+  const drift=(R(seed,7)-0.5)*0.10;
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    const s=S*(1-t*0.92);
+    const col=rampAt(ramp, 0.30+Math.pow(1-t,1.6)*0.72);
+    c.save();
+    c.translate(cx+S*drift*t, cy+S*drift*t*0.6);
+    c.rotate(rot+t*(R(seed,8)-0.5)*0.5);
+    c.fillStyle=`rgb(${col[0]|0},${col[1]|0},${col[2]|0})`;
+    c.fillRect(-s/2,-s/2,s,s);
+    c.restore();
+  }
+}
+
+/* Noise Bloom — the painterly reference. Three ingredients, and the third is
+   what the other noise systems here are missing:
+     1. domain warping, folded twice, for the poured-paint contours
+     2. many iso-levels, so the blooms read as nested rings rather than blur
+     3. a DISSOLVE MASK — a second noise field minus a linear gradient — so the
+        paint occupies part of the sheet and leaves the rest as ground.
+   Without (3) it is wallpaper. With it, it is a composition. */
+const F_NOISEBLOOM=`
+float weave(vec2 fc, float n){
+  vec2 w=fc/max(n,1.5);
+  float a=abs(fract(w.x)-0.5), b=abs(fract(w.y)-0.5);
+  return smoothstep(0.5,0.06,min(a,b));
+}
+void main(){
+  vec2 p=uvCentered();
+  float sc=0.95+rnd(1.)*1.05;
+  vec2 o1=vec2(rnd(2.),rnd(3.))*30.0, o2=vec2(rnd(4.),rnd(5.))*30.0, o3=vec2(rnd(6.),rnd(7.))*30.0;
+
+  vec2 q=vec2(fbmG(p*sc+o1), fbmG(p*sc+o1+vec2(5.2,1.3)));
+  vec2 r=vec2(fbmG(p*sc+3.6*q+o2), fbmG(p*sc+3.6*q+o2+vec2(8.3,2.8)));
+  float f=fbmG(p*sc+3.8*r);
+
+  /* dissolve: dense at one corner, bare ground at the opposite one */
+  float ang=rnd(8.)*6.28318;
+  float grad=dot(p,vec2(cos(ang),sin(ang)))*0.62+0.5;
+  float m=fbmG(p*(1.25+rnd(9.)*0.95)+o3)*1.60 - grad*(0.70+rnd(10.)*0.45);
+  float paint=smoothstep(0.04,0.40,m);
+
+  float hue=rnd(11.)*6.28318;
+  vec3 ground=oklch(0.735,0.034,hue);
+
+  float levels=13.0+floor(rnd(12.)*16.0);
+  float g=f*levels;
+  float band=floor(g)/levels;
+  vec3 bloom=oklch(0.82-band*0.44, 0.050+band*0.105, hue+3.05+band*0.55);
+
+  vec3 col=mix(ground,bloom,paint);
+  col=mix(col, oklch(0.19,0.045,hue+3.0), isoLine(g,1.25)*paint*0.80);
+
+  /* dust thrown along the dissolving fringe */
+  float d=hash21(floor(gl_FragCoord.xy*0.5));
+  float fringe=clamp(paint*(1.0-paint)*4.0,0.0,1.0);
+  if(d>0.9950) col=mix(col, bloom*0.72, fringe);
+
+  /* linen weave — the ground is cloth, not paper */
+  col*=1.0-weave(gl_FragCoord.xy, u_res.y/300.0)*0.045;
+  outColor=vec4(col,1.0);
+}`;
+
+/* ---- round 7: the long-form canon ----
+   Built from the two essays rather than from images (a URL gives me text, not
+   pictures). These are reconstructions of the technique each essay discusses. */
+
+/* Shared occupancy grid for collision-packed systems. A ribbon or a disc claims
+   the cells it covers; nothing may be placed where something already sits. This
+   non-overlap constraint is the single thing that separates Fidenza from a
+   scribble — the flow field alone was never the interesting part. */
+function makeOccupancy(W,H,cell){
+  const gw=Math.ceil(W/cell)+4, gh=Math.ceil(H/cell)+4;
+  const g=new Uint8Array(gw*gh);
+  const at=(x,y)=>{ const gx=(x/cell|0)+2, gy=(y/cell|0)+2;
+    return (gx<0||gy<0||gx>=gw||gy>=gh)?-1:gy*gw+gx; };
+  return {
+    free(x,y,r,nx,ny){
+      for(let s=-1;s<=1;s++){
+        const k=at(x+nx*r*s, y+ny*r*s);
+        if(k<0||g[k]) return false;
+      }
+      return true;
+    },
+    claim(x,y,r,nx,ny){
+      const n=Math.max(1,Math.ceil(r/cell));
+      for(let s=-n;s<=n;s++){
+        const k=at(x+nx*(s/n)*r, y+ny*(s/n)*r);
+        if(k>=0) g[k]=1;
+      }
+    }
+  };
+}
+
+/* Fidenza — flow-field ribbons that refuse to overlap, across a wide scale
+   range. Colour placed by strategy, never by lottery. */
+function drawFidenza(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label);
+  const rnd=lcg(seed*911+3);
+  const fs=0.85+R(seed,2)*1.5, turb=1.4+R(seed,3)*2.4;
+  const cell=D*0.0045;
+  const occ=makeOccupancy(W,H,cell);
+  const widths=[D*0.052,D*0.030,D*0.017,D*0.009,D*0.0045];
+  const angAt=(x,y)=>fbm(x/W*fs,y/H*fs,seed)*Math.PI*turb;
+  const out=[];
+  for(let a=0;a<2400;a++){
+    const wi=Math.min(widths.length-1,Math.floor(Math.pow(rnd(),0.55)*widths.length));
+    const r=widths[wi]*(0.7+rnd()*0.55);
+    let x=rnd()*W, y=rnd()*H;
+    let ang=angAt(x,y);
+    if(!occ.free(x,y,r+cell,-Math.sin(ang),Math.cos(ang))) continue;
+    const pts=[];
+    for(let s=0;s<360;s++){
+      ang=angAt(x,y);
+      const nx=-Math.sin(ang), ny=Math.cos(ang);
+      if(x<-r||x>W+r||y<-r||y>H+r) break;
+      if(!occ.free(x,y,r+cell,nx,ny)) break;
+      pts.push([x,y,nx,ny]);
+      x+=Math.cos(ang)*cell*0.95; y+=Math.sin(ang)*cell*0.95;
+    }
+    if(pts.length<5) continue;
+    pts.forEach(p=>occ.claim(p[0],p[1],r,p[2],p[3]));
+    out.push({pts,r,i:a});
+  }
+  c.lineCap='round'; c.lineJoin='round';
+  out.forEach(rb=>{
+    const p0=rb.pts[0];
+    c.beginPath();
+    rb.pts.forEach((p,k)=>k?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+    c.strokeStyle=pal[field(p0[0],p0[1],W,H,rb.i)];
+    c.lineWidth=rb.r*2; c.stroke();
+    if(rb.r>D*0.012){          /* a hairline contour only on the larger ribbons */
+      c.strokeStyle='rgba(20,20,26,0.35)';
+      c.lineWidth=Math.max(0.5,D*0.0009); c.stroke();
+    }
+  });
+}
+
+/* QQL — the same non-overlap discipline, but discs threaded along the field
+   into chains rather than continuous ribbons. */
+function drawQQL(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,field.label);
+  const rnd=lcg(seed*577+9);
+  const fs=0.8+R(seed,2)*1.5, turb=1.2+R(seed,3)*2.6;
+  const cell=D*0.004;
+  const occ=makeOccupancy(W,H,cell);
+  const sizeF=1.0+R(seed,4)*2.0;
+  const ring=R(seed,5)<0.42;
+  let placed=0;
+  for(let a=0;a<2200 && placed<2600;a++){
+    let x=rnd()*W, y=rnd()*H;
+    for(let s=0;s<220;s++){
+      const t=fbm(x/W*sizeF+4.4, y/H*sizeF+2.2, seed+5);
+      const r=D*(0.004+Math.pow(t,2.1)*0.048);
+      const ang=fbm(x/W*fs,y/H*fs,seed)*Math.PI*turb;
+      const nx=-Math.sin(ang), ny=Math.cos(ang);
+      if(x<0||x>W||y<0||y>H) break;
+      if(occ.free(x,y,r+cell*1.2,nx,ny) && occ.free(x,y,r+cell*1.2,Math.cos(ang),Math.sin(ang))){
+        occ.claim(x,y,r,nx,ny); occ.claim(x,y,r,Math.cos(ang),Math.sin(ang));
+        c.beginPath(); c.arc(x,y,r,0,7);
+        c.fillStyle=pal[field(x,y,W,H,placed)];
+        c.fill();
+        if(ring && r>D*0.012){ c.strokeStyle=pal[0]; c.lineWidth=Math.max(0.6,r*0.22); c.stroke(); }
+        placed++;
+        x+=Math.cos(ang)*r*2.05; y+=Math.sin(ang)*r*2.05;
+      } else {
+        x+=Math.cos(ang)*cell*2.0; y+=Math.sin(ang)*cell*2.0;
+      }
+    }
+  }
+}
+
+/* Meridian — strata. Non-uniform band spacing crowding toward a horizon, each
+   boundary warped, filled with a vertical gradient. */
+function drawMeridian(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const pal=palOf(seed,1);
+  const field=makeColorField(seed,pal);
+  noteStrategy(cv,'gradient (strata)');
+  const N=34+Math.floor(R(seed,2)*46);
+  const hz=0.28+R(seed,3)*0.44;                 /* horizon position */
+  const crowd=1.6+R(seed,4)*2.4;
+  const amp=H*(0.020+R(seed,5)*0.055);
+  const fs=0.7+R(seed,6)*1.9;
+  const ys=[];
+  for(let i=0;i<=N;i++){
+    const u=i/N;
+    /* crowd the bands toward the horizon */
+    const b=hz+Math.sign(u-hz)*Math.pow(Math.abs(u-hz),crowd)*(u>hz?(1-hz):hz)/Math.pow(u>hz?(1-hz):hz,crowd);
+    ys.push(isFinite(b)?b:u);
+  }
+  const path=(i,x)=>{
+    const u=ys[i];
+    return u*H + amp*(fbm(x/W*fs+i*0.13, i*0.31+R(seed,7)*20, seed)-0.5)*2
+              * (0.35+Math.abs(u-hz)*2.2);
+  };
+  for(let i=0;i<N;i++){
+    c.beginPath();
+    const S=90;
+    for(let s=0;s<=S;s++){ const x=W*s/S, y=path(i,x); s?c.lineTo(x,y):c.moveTo(x,y); }
+    for(let s=S;s>=0;s--){ const x=W*s/S; c.lineTo(x,path(i+1,x)); }
+    c.closePath();
+    const mid=(ys[i]+ys[i+1])/2;
+    c.fillStyle=pal[field(W/2, mid*H, W, H, i)];
+    c.fill();
+    if(R(seed,400+i)<0.28){                   /* fine striation inside some strata */
+      c.save(); c.clip();
+      c.strokeStyle='rgba(20,20,26,0.20)';
+      c.lineWidth=Math.max(0.5,D*0.0007);
+      for(let k=0;k<8;k++){
+        c.beginPath();
+        for(let s=0;s<=S;s++){
+          const x=W*s/S, y=path(i,x)+(path(i+1,x)-path(i,x))*((k+1)/9);
+          s?c.lineTo(x,y):c.moveTo(x,y);
+        }
+        c.stroke();
+      }
+      c.restore();
+    }
+  }
+}
+
+/* ============================================================
+   3 · registry
+   ============================================================ */
+let typeWord='SHADERPAPER';
+
+const SYSTEMS=[
+/* -- algorithmic (input driven) -- */
+{cat:'A',id:'bloom',name:'Data Bloom',kind:'gl',frag:F_BLOOM,personal:true,
+ blurb:'Layered rose curves whose petal counts, rotations and radii derive from the text you type. The same input always returns the same bloom.'},
+{cat:'A',id:'sigil',name:'CodeSigil',kind:'js',draw:drawSigil,personal:true,
+ blurb:'The input is walked as a sequence of jumps around a ring of nodes, drawing chords as it goes. Of the three, the one that most looks like it means something.'},
+{cat:'A',id:'memory',name:'MemoryLines',kind:'js',draw:drawMemoryLines,personal:true,
+ blurb:'Events along a timeline, connected by arcs whose height encodes distance between them. Closest to the map/sky emotional logic — and the clearest gift object in your list.'},
+
+/* -- geometric -- */
+{cat:'G',id:'guilloche',name:'Guilloche / engine-turning',kind:'gl',frag:F_GUILLOCHE,
+ blurb:'Superimposed rosette curves — the mathematics behind banknotes and passport pages.',
+ meta:'<b>Why it matters:</b> this aesthetic exists <i>because</i> of printing. A screenshot cannot hold it, so gicl&eacute;e resolution becomes the point rather than a risk. <b>Saturation:</b> near zero.'},
+{cat:'G',id:'moire',name:'Interference / moir&eacute;',kind:'gl',frag:F_MOIRE,
+ blurb:'Line fields overlaid at slight rotations. The pattern is not drawn — it emerges from the overlap, and shifts as you move past it.',
+ meta:'<b>Lineage:</b> Bridget Riley, Vasarely, Soto.',
+ note:'Fine periodic patterns alias viciously at 300dpi. Lines here fade toward grey near the sampling limit — you need exactly that in the print export.'},
+{cat:'G',id:'iso',bleed:true,name:'IsoGrid',kind:'gl',frag:F_ISOGRID,
+ blurb:'A hexagonal lattice read as isometric cubes. Some cubes pop out, others sink in — the Escher ambiguity is emergent, not drawn.'},
+{cat:'G',id:'circle',name:'Circle Drift',kind:'js',draw:drawArcField,
+ blurb:'Concentric rings — with the centre pushed outside the sheet, rings clustered into tight hairline groups separated by voids, a few thickened into solid bands carrying the value, and some cut to partial arcs so the symmetry breaks.',
+ meta:'<b>Lineage:</b> M&uuml;ller-Brockmann&rsquo;s Beethoven poster is this exact geometry.'},
+{cat:'G',id:'part',name:'Partition',kind:'js',draw:drawPartition,
+ blurb:'Recursive rectangular subdivision. Most cells stay bare paper; a handful carry solid black, one an accent, a few a hatch. The composition is the distribution of weight, not the subdivision.',
+ meta:'<b>Lineage:</b> Mondrian, Vera Moln&aacute;r.'},
+{cat:'G',id:'bands',name:'Interference Bands',kind:'js',draw:drawBands,
+ blurb:'Horizontal bands whose thickness swings from hairline to heavy mass, each boundary riding a wave. Reads as a single optical event rather than a pattern.',
+ meta:'<b>Lineage:</b> Bridget Riley.'},
+{cat:'G',id:'disp',name:'Displacement Grid',kind:'js',draw:drawDisplacement,
+ blurb:'A strict grid of nested quadrilaterals whose corners are displaced by an amount growing outward from an off-centre origin — order dissolving into disorder across the sheet.',
+ meta:'<b>Lineage:</b> Vera Moln&aacute;r built a career on this one idea.'},
+{cat:'G',id:'poly',name:'Polygon Echo',kind:'gl',frag:F_POLYECHO,
+ blurb:'Nested regular polygons scaling outward while rotating. The twist rate is the whole design.'},
+{cat:'G',id:'spiral',name:'Spiral Code',kind:'js',draw:drawDriftFragment,
+ blurb:'Phyllotaxis — each dot at the golden angle from the last, radius growing as the square root of the count. Zoomed until only a fragment is on the page, origin pushed off-sheet, dot scale driven by a density field so there are solid black passages and near-empty ones rather than one even texture.'},
+{cat:'G',id:'fractal',name:'Fractal Form',kind:'gl',frag:F_FRACTAL,
+ blurb:'Sierpi&#324;ski carpet and triangle, computed per pixel. Perfectly crisp at any resolution — the safest thing here to print large.'},
+{cat:'G',id:'oklab',name:'Colour fields (OKLab)',kind:'gl',frag:F_OKLABFIELD,
+ blurb:'Nested hard-edge rectangles where the palette is computed from relationships in a perceptually uniform colour space rather than chosen.',
+ meta:'<b>Lineage:</b> Josef Albers, <i>Homage to the Square</i> — with the colour theory actually calculated.'},
+{cat:'G',id:'penrose',name:'Aperiodic tiling (Penrose P3)',kind:'js',draw:drawPenrose,
+ blurb:'Two rhombus shapes tiling the plane forever without repeating, built by subdivision rather than placement.',
+ meta:'<b>The hook:</b> in March 2023 the first true aperiodic <i>monotile</i> — the &ldquo;hat&rdquo;, then the &ldquo;spectre&rdquo; — was discovered. Almost nobody has made editions from it. P3 is the well-established ancestor.'},
+{cat:'G',id:'inversive',bleed:true,name:'Circle inversion (Apollonian family)',kind:'gl',frag:F_INVERSIVE,
+ blurb:'Space folded repeatedly through circles, producing infinitely nested tangent structures.',
+ meta:'<b>Lineage:</b> Descartes&rsquo; circle theorem, Kleinian groups. Adjacent to Cherniak&rsquo;s <i>Ringers</i>.'},
+{cat:'G',id:'harmo',name:'Harmonograph (Orbit Lines)',kind:'js',draw:drawHarmonograph,
+ blurb:'Two decaying pendulums plotted against each other. The line spirals inward for fourteen thousand steps, thinning and fading as the swing dies — so weight variation is built into the physics rather than added.',
+ meta:'<b>Lineage:</b> Victorian scientific instrument, and the direct ancestor of guilloche. <b>Strongest new addition</b> — genuinely print-native and almost unused in generative art.'},
+{cat:'G',id:'sacred',name:'SacredCode (mandala symmetry)',kind:'js',draw:drawSacred,
+ blurb:'A motif generated once, then repeated around N-fold rotational symmetry. Arc, spoke and node elements at varying radii, with weight and one accent distributed across rings.',
+ meta:'<b>Commercially the safest</b> of the round-2 additions — mandala symmetry sells consistently as decor and needs no explanation.'},
+
+/* -- organic -- */
+{cat:'O',id:'contour',bleed:true,name:'Contour / domain warp (TopoPrint)',kind:'gl',frag:F_CONTOUR,
+ blurb:'A noise field folded through itself, rendered as elevation bands and iso-lines. Cartography with no territory.',
+ meta:'<b>Why it matters:</b> the easiest sell here to someone who does not care what a shader is.'},
+{cat:'O',id:'rd',name:'Reaction&ndash;diffusion, posterized',kind:'rd',
+ blurb:'Turing&rsquo;s morphogenesis equations, hard-thresholded into flat colour instead of the usual soft render — so it reads as Matisse cut-outs or screenprint.',
+ meta:'<b>Lineage:</b> Alan Turing, 1952. The only system here needing feedback simulation.'},
+{cat:'O',id:'cellnet',bleed:true,name:'CellNet',kind:'js',draw:drawCellNet,
+ blurb:'A cyclic cellular automaton — each cell advances only when a neighbour is one step ahead. Random noise self-organises into spirals. Flat colour throughout, so it prints like a screenprint.'},
+{cat:'O',id:'ca',name:'Elementary cellular automata',kind:'js',draw:drawCA,
+ blurb:'One line of cells, one rule, applied over and over. Time runs down the page. Nothing is random after the first row.',
+ meta:'<b>Lineage:</b> Wolfram&rsquo;s rule space, and visually close to <b>Manfred Mohr</b>.'},
+{cat:'O',id:'branch',name:'BranchLoop',kind:'js',draw:drawBranch,
+ blurb:'Recursive branching with jittered angles and tapering weight. Small changes to spread and length ratio move it from bare winter tree to dense coral.'},
+{cat:'O',id:'flow',name:'FlowField',kind:'js',draw:drawFlow,
+ blurb:'Particles traced through an invisible noise field, leaving their paths behind.',
+ note:'The single most saturated aesthetic in generative art — Fidenza made it the default. The hardest one here to claim as yours.'},
+{cat:'O',id:'attract',name:'Strange Attractor (ChaosLoop)',kind:'js',draw:drawAttractor,
+ blurb:'A de Jong attractor — two trigonometric equations iterated seven hundred thousand times, with visit density accumulated per pixel and mapped logarithmically. The smoky structure is not drawn; it is where the orbit spends its time.',
+ meta:'<b>Highest artistic ceiling on the whole list.</b> Deterministic, infinitely variable from four numbers, and it produces value structure for free — which is exactly what the weak systems lacked.'},
+{cat:'O',id:'fidenza',name:'Ribbon Field (Fidenza construction)',bleed:true,kind:'js',draw:drawFidenza,
+ blurb:'Ribbons traced through a flow field across a twelve-to-one scale range, each one halting the instant it would touch another. Colour placed by strategy rather than lottery.',
+ meta:'<b>Reconstructed from Tyler Hobbs&rsquo; method, not from an image.</b> The flow field was never the interesting part — <b>the non-overlap constraint is</b>. Compare it with FlowField further down, which has the same vector maths and no collision rule at all, and reads as a scribble beside it.'},
+{cat:'O',id:'flowdash',name:'Flow Dashes',kind:'js',draw:drawFlowDash,
+ blurb:'Streamlines through a noise field, drawn as round-capped dashes — but spaced. An occupancy grid stops each line the moment it crowds one already drawn, so the field reads as combed rather than scribbled.',
+ meta:'<b>The strongest of your references, and the most important lesson in it:</b> the difference between this and the FlowField below is not the maths, it is the even spacing. One constraint turns a scribble into a textile.'},
+{cat:'O',id:'gravink',name:'Gravity (Ink)',kind:'js',draw:drawGravityInk,
+ blurb:'The identical particle simulation as Gravity in the Emissive tab — same masses, same paths, same density buffer. Only the final mapping differs: dense becomes dark ink on stock rather than bright light on black.',
+ meta:'<b>This is the translation that matters.</b> Compare the two side by side. The structure survives completely; what is lost is the glow, because glow is light and paper does not emit. What is gained is a piece that can actually be printed at size without 85% ink coverage.'},
+{cat:'O',id:'diffgrow',name:'Differential Growth',kind:'js',draw:drawDiffGrowth,
+ blurb:'A closed curve whose nodes repel their neighbours, pull toward the line, and split when a segment stretches too far. Meanders, coral, brain folds and cabbage leaves all fall out of those three local rules with no global plan.',
+ meta:'<b>Rebuilt from the blue plotter reference</b> (Anders Hoff / Inconvergent territory). Spatially hashed, so it stays fast as the node count climbs past a thousand.'},
+{cat:'O',id:'pixsort',name:'Pixel Sorting <span style="font-size:11px;color:#8d8a84">· <span id="gpubadge">probing GPU…</span></span>',kind:'js',draw:drawPixelSort,
+ blurb:'A warped colour field, then every column scanned for runs of pixels crossing a luminance threshold — each run reordered by brightness. The melting waterfall is not painted; it is the original image with its pixels put in order.',
+ meta:'<b>Rebuilt from the Pixel Sorting card.</b> The only system here that is a <i>process applied to an image</i> rather than a drawing rule, so it composes with everything else — sort the output of Marbling or Flow Dashes and you get something neither could produce alone.',
+ note:'<b>WebGPU when available, CPU otherwise — output is identical either way, and nothing is ever gated.</b> The GPU path runs a bitonic sort as a compute shader; each pixel gets key = groupId&lt;&lt;10 | luminance, so a threshold run sorts against itself while every other pixel is locked in a group of its own. At preview size the CPU is honestly no slower — the buffer upload and readback eat the gain. It only pays at print resolution, where sorting 8,268 columns of 11,811 pixels on the CPU stops being practical.'},
+{cat:'O',id:'noisebloom',name:'Noise Bloom',bleed:true,kind:'gl',frag:F_NOISEBLOOM,
+ blurb:'Domain-warped noise folded twice, read at fifteen to thirty iso-levels so the blooms resolve as nested rings rather than blur — then masked by a second noise field minus a linear gradient, so the paint occupies one corner and leaves the rest as bare cloth.',
+ meta:'<b>Rebuilt from the Noise card, and the mask is the whole lesson.</b> Marbling two cards down uses the same warping and fills the entire sheet, which makes it wallpaper. Add a dissolve and identical maths becomes a composition. Same insight as Flow Dashes versus FlowField: the constraint, not the algorithm.'},
+{cat:'O',id:'marble',name:'Marbling',bleed:true,kind:'gl',frag:F_MARBLE,
+ blurb:'Four rounds of domain warping — the coordinate field folded through itself repeatedly — then posterized into flat bands.',
+ note:'Rebuilt from the teal fluid reference. Deliberately posterized: the original is a smooth gradient, which is exactly the thing that bands badly on an 8-bit print pipeline. Flat bands print; smooth ramps gamble.'},
+{cat:'O',id:'dendrite',name:'Dendrite (DLA)',kind:'js',draw:drawDendrite,
+ blurb:'Diffusion-limited aggregation — particles released at the edge random-walk until they touch the cluster, then freeze where they land. Nobody designs the branching; it falls out of the fact that outer tips are hit first.',
+ meta:'<b>Lineage:</b> Witten &amp; Sander, 1981. The same process as frost on glass, mineral dendrites in rock, and copper electrodeposition.'},
+{cat:'O',id:'botanic',name:'Botanic Code',kind:'js',draw:drawBotanic,
+ blurb:'An L-system: a string rewritten by grammar rules four or five times, then read as turtle-graphics instructions. Four grammars, jittered branch angle, weight tapering with recursion depth.',
+ meta:'<b>Lineage:</b> Lindenmayer, 1968 — the formal model behind most plant growth simulation.'},
+
+{cat:'G',id:'qql',bleed:true,name:'Disc Chains (QQL construction)',kind:'js',draw:drawQQL,
+ blurb:'The same non-overlap discipline as Ribbon Field, but discs threaded along the flow into chains instead of continuous strokes. Radius comes from a second noise field, so scale clusters into regions rather than scattering.',
+ meta:'Sits between Circle Packing (no field, purely spatial) and Ribbon Field (continuous, no gaps). Worth comparing all three — one constraint changed each time.'},
+{cat:'G',id:'cpack',bleed:true,name:'Circle Packing',kind:'js',draw:drawCirclePack,
+ blurb:'Random insertion: drop a candidate anywhere, grow it until it touches a neighbour or the edge, discard it if it never earned enough radius. Fifteen hundred survivors, no two overlapping.',
+ meta:'<b>Rebuilt from your reference grid.</b> The size distribution is a consequence of insertion order, not a design choice — early circles get room, late ones fill gaps.'},
+{cat:'G',id:'quad',bleed:true,name:'Quadtree',kind:'js',draw:drawQuadtree,
+ blurb:'Recursive four-way subdivision where the recursion probability is driven by a noise field, so fine detail concentrates in regions instead of spreading evenly across the sheet.',
+ meta:'<b>Rebuilt from your reference grid.</b> Distinct from Partition, which splits in two along the longer axis — this splits four ways and keeps the square.'},
+{cat:'G',id:'hypno',name:'Hypnotic Squares',kind:'js',draw:drawHypnoSquares,
+ blurb:'A grid of cells, each holding nested squares that drift toward a direction chosen once per cell. The drift is constant within a cell and random between them, which is what produces the illusion of separate vanishing points.',
+ meta:'<b>Rebuilt from your reference grid.</b>'},
+{cat:'G',id:'stepped',name:'Stepped Bands',dark:true,kind:'js',draw:drawSteppedBands,
+ blurb:'Nested rotated squares, each filled flat from a tonal ramp, drifting off-axis as they shrink. The depth is entirely an artefact of value ordering — there is no perspective and no gradient anywhere in it.',
+ meta:'<b>Rebuilt from the Geometric Shapes card.</b> The whole effect rests on the tonal ramp being monotonic; break the ordering and the tunnel collapses into flat wallpaper.'},
+{cat:'G',id:'shards',bleed:true,name:'Shards',kind:'js',draw:drawShards,
+ blurb:'Long translucent triangles thrown from random origins, overlapping into a stained-glass field.',
+ note:'The weakest of the rebuilt set — it is composition by accumulation rather than by decision, and it shows.'},
+
+/* -- spatial (3D projected flat) -- */
+{cat:'S',id:'isoarch',name:'IsoArchitecture',kind:'js',draw:drawIsoArch,
+ blurb:'A height field of boxes in isometric projection, drawn strictly back to front. Hidden-line removal comes free from the draw order — nothing is computed away, it is simply painted over.',
+ meta:'<b>Lineage:</b> Sol LeWitt&rsquo;s structures, and pre-computer technical illustration. Three flat tones and an outline, which is exactly how this prints best.'},
+{cat:'S',id:'meridian',name:'Strata (Meridian construction)',bleed:true,kind:'js',draw:drawMeridian,
+ blurb:'Bands crowding toward a horizon line, each boundary warped by noise that grows with distance from that horizon, filled by vertical gradient. Some strata carry fine internal striation.',
+ meta:'<b>Named directly in the long-form essay</b> (Matt DesLauriers&rsquo; <i>Meridian</i>, whose nine &ldquo;Charcoal&rdquo; editions are the rarity example given). The non-uniform band spacing is the whole illusion — evenly spaced bands read as stripes, crowded ones read as depth.'},
+{cat:'S',id:'ridge',name:'Ridgeline',kind:'js',draw:drawRidge,
+ blurb:'A three-dimensional surface read as a stack of profiles, each filled with paper so it occludes the rows behind it. Depth is produced entirely by occlusion — there is no perspective and no shading.',
+ meta:'<b>The construction behind <i>Unknown Pleasures</i></b> — one of the most reproduced graphic images of the last fifty years, which is both the opportunity and the warning.'},
+{cat:'S',id:'wire',name:'Wire Solid',kind:'js',draw:drawWireSolid,
+ blurb:'A torus knot sampled into 1,400 depth-sorted segments. Each is stroked first in paper, then in ink — the paper halo occludes whatever sits behind it, producing correct over/under crossings with no hidden-line maths at all.',
+ meta:'<b>Lineage:</b> knot diagrams, and the trick is the same one draughtsmen used with a white gouache halo.'},
+
+{cat:'S',id:'raymarch',name:'Raymarched Field',kind:'gl',frag:F_RAYMARCH,
+ blurb:'A genuine 3D scene — an infinite lattice of spheres and rounded boxes defined only by a distance function, with the camera flown through it. No geometry is ever stored; every pixel walks a ray until it lands on a surface.',
+ meta:'<b>Rebuilt from the Raymarching card, but posterized onto paper</b> rather than rendered smooth on black. The reference glows because it is lit; this bands the same lighting into three to five flat tones, which reads as an engraving of a solid and survives print.'},
+
+/* -- formula -- */
+{cat:'F',id:'chladni',name:'Chladni Figures',kind:'gl',frag:F_CHLADNI,
+ blurb:'The nodal set of a vibrating square plate — the curve where the surface does not move, which is where scattered sand collects. Two modes superposed, so the pattern is richer than a single harmonic.',
+ meta:'<b>Lineage:</b> Ernst Chladni, 1787. The physical demonstration predates the equation, which makes it one of the few systems here with a story you can tell in one sentence to someone who hates maths.'},
+{cat:'F',id:'times',name:'Modular Times Table',kind:'js',draw:drawTimesTable,
+ blurb:'Place N points on a circle, then join every n to n&times;k modulo N. The cardioid at k=2 and nephroid at k=3 are never drawn — they are simply where the chords crowd together.',
+ meta:'<b>The purest idea in the catalogue.</b> Two numbers, one rule, and the envelope is an emergent consequence rather than a design decision.'},
+{cat:'F',id:'mandel',name:'Mandelbrot',kind:'gl',frag:F_MANDEL,
+ blurb:'Escape-time iteration of z &rarr; z&sup2; + c, sampled at eight known-interesting points on the boundary. Interior solid, exterior paper, filigree carried by banded escape counts.',
+ meta:'<b>Rebuilt as the black-and-white treatment</b>, not the rainbow one. Your two monochrome references are the print-appropriate version — the 1980s spectrum palette is what makes fractals read as dated screensaver rather than art.',
+ note:'Zoom is capped: float32 runs out of precision below about a thousandth of the span, and past that the detail turns to mush at print size. Deep zooms need double-precision or perturbation maths.'},
+{cat:'F',id:'caustic',name:'Chord Caustic',kind:'js',draw:drawChordCaustic,
+ blurb:'Several hundred lines, each tangent to an inner circle of random radius drawn from a biased distribution. The bright envelope in the middle is never drawn — it is simply where the tangents crowd.',
+ meta:'<b>Rebuilt from your reference grid.</b> Same family as the Modular Times Table: the visible form is a by-product of a rule about lines, not a shape anyone specified.'},
+{cat:'F',id:'super',name:'Superformula',kind:'js',draw:drawSuperformula,
+ blurb:'Gielis&rsquo; 2003 equation, which generates most natural two-dimensional outlines — starfish, diatoms, petals, shells — from six numbers. Layered here with per-ring parameter drift.',
+ meta:'<b>Why it matters:</b> a single formula with an enormous reachable space, which is exactly the property you want when a collection has to feel related but not repetitive.'},
+
+/* -- emissive (screen-native) -- */
+{cat:'E',id:'gravity',name:'Gravity',dark:true,kind:'js',draw:drawGravity,
+ blurb:'Three thousand particle paths through a field of point masses — some attracting, some repelling. Nothing is drawn but the trajectories: the bright filaments are where paths converge, and the teardrop voids are the shadows behind repulsors.',
+ meta:'<b>Rebuilt from JMY&rsquo;s <i>Gravity 12</i>, <i>Gravity 16</i> and <i>Time travel in a subconscious mind</i></b> — all three are the same system with different mass configurations and launch modes. <b>See Gravity (Ink) in Organic for what this becomes on paper.</b>'},
+{cat:'E',id:'nebula',name:'Nebula',dark:true,kind:'js',draw:drawNebula,
+ blurb:'A family of two hundred–plus 3D Lissajous curves with slowly drifting phase, projected and accumulated. The glowing edges are caustics — places where neighbouring curves in the family land on the same pixels.',
+ meta:'<b>Rebuilt from RVig&rsquo;s <i>Nebula</i></b> (Art Blocks Factory). Closely related to the Harmonograph in Geometric: same Lissajous mathematics, but a swept family rather than a single decaying trace.'},
+{cat:'E',id:'fushi',name:'Soft Ribbons',dark:true,kind:'js',draw:drawFushi,
+ blurb:'Long streamlines through a doubly warped field, accumulated at deliberately low contrast so the result reads as painted rather than drawn.',
+ meta:'<b>Rebuilt from Samsy&rsquo;s <i>Fushi No Reality</i></b> (Art Blocks Presents). The softness is the hardest property to reproduce — the original almost certainly uses real blur passes rather than density alone.'},
+
+/* -- typographic -- */
+{cat:'T',id:'echo',name:'EchoType',kind:'js',draw:(cv,seed)=>drawEchoType(cv,seed,typeWord),
+ blurb:'Your word, set two ways depending on the seed: stacked and cropped so the letterforms bleed off both edges, or wrapped around concentric rings with per-character rotation. Weight alternates between solid, outline and accent.',
+ meta:'<b>The most differentiated category in your list.</b> Typographic posters sell reliably, the personalization is legible at a glance, and nothing else in this catalogue reads as language.'},
+{cat:'T',id:'maze',name:'MonoMaze',kind:'js',draw:drawMonoMaze,
+ blurb:'A modular tile set — quarter arcs or diagonals — chosen per cell by hash, so paths connect across the grid into a maze that was never planned. Occasional solid cells and heavy-weight tiles carry the value structure.',
+ meta:'<b>Lineage:</b> Truchet tiles (1704), and the one-line Commodore 64 program <code>10 PRINT CHR$(205.5+RND(1))</code>.'}
+];
+
+const TABS=[
+ {key:'P',label:'Principles'},
+ {key:'A',label:'Algorithmic'},
+ {key:'G',label:'Geometric'},
+ {key:'O',label:'Organic'},
+ {key:'S',label:'Spatial'},
+ {key:'F',label:'Formula'},
+ {key:'T',label:'Typographic'},
+ {key:'E',label:'Emissive'},
+ {key:'X',label:'Coverage map'}
+];
+const INTROS={
+ A:{cls:'A',title:'1 — Algorithmic',
+    desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
+ G:{cls:'G',title:'2 — Geometric',
+    desc:'Visual clarity and mathematical structure. No input, no sliders — these are artist decisions. Flat, hard-edged, and the easiest category to print well.'},
+ O:{cls:'O',title:'3 — Organic',
+    desc:'Simulated growth and flow. Richest detail, most alive, and the category most likely to read as decor rather than tech.'},
+ S:{cls:'G',title:'4 — Spatial',
+    desc:'Three dimensions resolved onto flat paper. No shading, no perspective tricks, no rendering — depth comes entirely from occlusion and draw order, which is how technical illustrators solved it before computers and why it prints so cleanly.'},
+ F:{cls:'O',title:'5 — Formula',
+    desc:'One equation, no simulation, no noise. Every plate here is fully determined by a handful of numbers — which means the whole reachable space of a collection can be written on one line, and any output can be reproduced exactly, forever, from its parameters.'},
+ E:{cls:'D',title:'7 — Emissive <span style="font-size:13px;color:#c9a06a">· screen-native</span>',
+    desc:'Density accumulated additively on black — the Art Blocks house style, and genuinely beautiful. Kept in its own tab because it does not obey the same physics as the rest of the catalogue: these are made of light, and paper does not emit. On matte cotton rag the deepest achievable black sits around L*16, so a piece that is 85% black on screen arrives as flat charcoal grey, and that much ink also cockles the sheet and costs more to lay down. Gravity (Ink) in the Organic tab is the same simulation mapped for stock — compare them.'},
+ T:{cls:'A',title:'6 — Typographic',
+    desc:'Generative typography. The most differentiated category in the list — nothing else here reads as language, the personalization is legible without explanation, and typographic posters have a proven market. Type in the field below to change the word.'}
+};
+
+/* ============================================================
+   4 · build + lazy render
+   ============================================================ */
+const app=document.getElementById('app'), nav=document.getElementById('nav');
+const state={}, panes={};
+let personalInput='ANNA & LÉO · 14.02.2019';
+const PRESETS=['MOUSSA','14.02.2019','PARIS 48.85N'];
+const POOL=['LÉA','THOMAS','01.09.2024','TOKYO 35.6N','MARIE & SAM','12.12.2012','LISBOA','NOÉMIE','23.07.2018'];
+
+/* ---- acceptance gate ------------------------------------------------------
+   Rejection sampling. A generative system produces duds — blank sheets, a
+   speck in the middle, everything shoved into one corner. Rather than hoping
+   the parameters behave, every plate is measured after rendering and re-rolled
+   until it passes, keeping the least-bad attempt if none do.               */
+const SAFE={tries:7, minCov:0.030, maxCov:0.955, minCells:5};
+/* full-bleed by construction (never blank) and/or too costly to re-roll */
+const NOGATE=new Set(['rd','pixsort']);
+const probeCv=document.createElement('canvas'); probeCv.width=100; probeCv.height=125;
+const probeCtx=probeCv.getContext('2d',{willReadFrequently:true});
+
+function measure(cv,dark){
+  /* dark systems are measured against black, not paper — otherwise a correct
+     emissive plate reads as 100% coverage and gets rejected every time */
+  const gr=dark?[0,0,0]:[242,240,234];
+  probeCtx.fillStyle=dark?'#000':PAPER; probeCtx.fillRect(0,0,100,125);
+  probeCtx.drawImage(cv,0,0,100,125);
+  const px=probeCtx.getImageData(0,0,100,125).data;
+  const cells=new Array(9).fill(0), tot=new Array(9).fill(0);
+  let ink=0;
+  for(let y=0;y<125;y++) for(let x=0;x<100;x++){
+    const i=(y*100+x)*4;
+    const dev=Math.abs(px[i]-gr[0])+Math.abs(px[i+1]-gr[1])+Math.abs(px[i+2]-gr[2]);
+    const cell=Math.min(2,(y/42)|0)*3+Math.min(2,(x/34)|0);
+    tot[cell]++;
+    if(dev>12){ ink++; cells[cell]++; }
+  }
+  let occupied=0;
+  for(let i=0;i<9;i++) if(cells[i]/Math.max(1,tot[i])>0.015) occupied++;
+  return {cov:ink/12500, occupied};
+}
+
+function paint(sys,cv,seed){
+  if(sys.kind==='gl'){ renderGL(sys.frag,seed); blit(cv); }
+  else if(sys.kind==='rd'){
+    if(!FLOAT_OK){ const c=prep(cv); c.fillStyle='#777'; c.font='13px sans-serif'; c.textAlign='center';
+      c.fillText('float textures unavailable',cv.width/2,cv.height/2); return; }
+    const tex=runRD(seed);
+    renderGL(RD_SHOW,seed,p=>{ gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D,tex);
+      gl.uniform1i(gl.getUniformLocation(p,'u_rd'),0); });
+    blit(cv); gl.deleteTexture(tex);
+  }
+  else sys.draw(cv,seed);
+}
+
+function paintGated(sys,cv,base){
+  if(NOGATE.has(sys.id)){ paint(sys,cv,base); applyGrain(cv); return; }
+  let best=null;
+  for(let t=0;t<SAFE.tries;t++){
+    /* deterministic re-roll: same input always lands on the same accepted plate */
+    const seed=base+t*137.13;
+    paint(sys,cv,seed);
+    const m=measure(cv,sys.dark);
+    /* `bleed` systems legitimately cover the whole sheet in colour, so the upper
+       coverage bound (which exists to catch all-ink plates) does not apply. */
+    const capped=sys.bleed||m.cov<=SAFE.maxCov;
+    if(m.cov>=SAFE.minCov && capped && m.occupied>=SAFE.minCells){ applyGrain(cv); return; }
+    const score=(m.occupied/9)+Math.min(1,m.cov/SAFE.minCov)*0.5
+                -(sys.bleed?0:Math.max(0,m.cov-SAFE.maxCov)*3);
+    if(!best||score>best.score) best={score,seed};
+  }
+  paint(sys,cv,best.seed);
+  applyGrain(cv);   /* finish applied after acceptance, so it never skews the measurement */
+}
+
+function renderSystem(sys){
+  const vals=sys.personal?[personalInput,...PRESETS]:state[sys.id];
+  sys.plates.forEach((cv,i)=>{
+    try{
+      const base=sys.personal?seedFrom(String(vals[i])):vals[i];
+      cv.dataset.strategy='';
+      paintGated(sys,cv,base);
+      if(sys.personal) sys.caps[i].textContent='“'+vals[i]+'”';
+      else if(cv.dataset.strategy)
+        sys.caps[i].textContent=`${sys.id.toUpperCase()} · 0${i+1} · ${cv.dataset.strategy}`;
+    }catch(err){ fail('X '+sys.id+' plate '+(i+1)+': '+err.message); }
+  });
+}
+
+function buildSystemCard(sys){
+  const catName={A:'algorithmic',G:'geometric',O:'organic',S:'spatial',F:'formula',T:'typographic',E:'emissive'}[sys.cat]||'';
+  const sec=document.createElement('section');
+  sec.innerHTML=`<div class="head"><h3>${sys.name}</h3>
+      <span class="tag ${sys.cat}">${catName}</span>
+      ${sys.personal?'<span class="tag">input driven</span>':''}</div>
+    <p class="blurb">${sys.blurb}</p>
+    ${sys.meta?`<p class="meta">${sys.meta}</p>`:''}
+    ${sys.note?`<p class="note">${sys.note}</p>`:''}
+    <div class="grid"></div>
+    <div class="bar"><button class="act">${sys.personal?'Reshuffle the three examples':'Regenerate all four'}</button>
+      <span class="status">${sys.kind==='gl'?'single-pass shader':sys.kind==='rd'?'shader + feedback simulation':'canvas geometry · vector-exportable'}</span></div>`;
+  const g=sec.querySelector('.grid'); sys.plates=[]; sys.caps=[];
+  for(let i=0;i<4;i++){
+    const hold=document.createElement('div');
+    const pl=document.createElement('div'); pl.className='plate';
+    const cv=document.createElement('canvas'); pl.appendChild(cv); hold.appendChild(pl);
+    const cap=document.createElement('div'); cap.className='cap';
+    cap.textContent=sys.personal?'—':`${sys.id.toUpperCase()} · 0${i+1}`;
+    hold.appendChild(cap); g.appendChild(hold);
+    sys.plates.push(cv); sys.caps.push(cap);
+  }
+  state[sys.id]=[0,1,2,3].map(i=>sys.id.length*53+i*37.7+3.0);
+  sec.querySelector('button').addEventListener('click',()=>{
+    if(sys.personal){ for(let i=0;i<3;i++) PRESETS[i]=POOL[Math.floor(Math.random()*POOL.length)]; }
+    else state[sys.id]=[0,1,2,3].map(()=>Math.random()*997);
+    renderSystem(sys);
+  });
+  return sec;
+}
+
+TABS.forEach(tab=>{
+  const pane=document.createElement('div');
+  pane.className='hidden'; pane.dataset.key=tab.key;
+  panes[tab.key]={el:pane,rendered:false,systems:[]};
+
+  if(tab.key==='P'){
+    pane.innerHTML=`
+      <div class="intro"><h2>Composition over rule</h2>
+        <p>A rule on its own produces a diagram: centred, symmetric, evenly margined, one line weight, one density. <b>These six rules are applied to every system in the catalogue</b> — there is no separate tier of directed work, because a system without composition is not a lesser product, it is not a product. The comparison below shows the same equation before and after.</p></div>
+      <div class="rules">
+        <div class="rule"><b>1 · Crop hard</b><span>The form is larger than the frame and bleeds off at least two edges. Implies continuation.</span></div>
+        <div class="rule"><b>2 · Move off centre</b><span>Anchor at a third or the golden section. Radial symmetry mid-rectangle is the most inert composition available.</span></div>
+        <div class="rule"><b>3 · Vary weight 10:1</b><span>Hairline next to heavy mass. Uniform stroke is what makes something read as a chart.</span></div>
+        <div class="rule"><b>4 · Build a value structure</b><span>At least one large solid dark passage, readable from five metres.</span></div>
+        <div class="rule"><b>5 · Compose the rest</b><span>A quarter of the sheet stays near-empty, deliberately placed — not leftover.</span></div>
+        <div class="rule"><b>6 · One accent, restrained</b><span>Black, paper, one muted colour. More and it turns into a data visualisation.</span></div>
+      </div>
+      <div class="compare">
+        <div class="bad"><h4>Rule only</h4><div class="plate"><canvas id="cv-bad"></canvas></div>
+          <p>Centred, symmetric, even margin, one line weight, one grey. Nothing decides anything. This is a chart of a formula.</p></div>
+        <div class="good"><h4>Same maths, directed</h4><div class="plate"><canvas id="cv-good"></canvas></div>
+          <p>Origin off-sheet, clustered hairlines against voids, solid bands carrying value, partial arcs breaking symmetry, one accent.</p></div>
+      </div>`;
+  } else if(tab.key==='X'){
+    const cov=[
+     ['1 · Geometric Flow',[
+      ['Circle Drift','done','built — Geometric'],
+      ['Polygon Echo','done','built — Geometric'],
+      ['IsoGrid','done','built — Geometric'],
+      ['Fractal Bloom','dup','covered by Fractal Form + BranchLoop'],
+      ['Waveform Mesh','open','trivial from here; closest to Circle Drift, lowest marginal value'],
+      ['Orbit Lines','done','built as <b>Harmonograph</b> — strongest new addition']]],
+     ['2 · Organic Code',[
+      ['Particle Drift','dup','built as FlowField'],
+      ['Botanic Code','done','built — Organic'],
+      ['TopoLines','dup','built as Contour / domain warp'],
+      ['BranchLoop','done','built — Organic'],
+      ['CellNet','done','built — Organic (cyclic automaton, plus separate reaction–diffusion)'],
+      ['Weather Print','open','needs a live weather API. Real data → real gift logic, same family as MemoryLines']]],
+     ['3 · Type Constructs',[
+      ['EchoType','done','built — Typographic'],
+      ['MonoMaze','done','built — Typographic'],
+      ['Glyph Grid','open','straightforward; close to MonoMaze'],
+      ['ASCII Flux','open','retro flair dates fast — weakest of the six'],
+      ['TypoWave','open','letters on flowing curves; EchoType radial mode is halfway there'],
+      ['CodePhrase','open','a quote is just a longer EchoType input — no new system needed']]],
+     ['4 · Cosmic Systems',[
+      ['Star Code','open','a starfield from a date is <b>your other business</b>. Building it here competes with your own map/sky brand'],
+      ['OrbitSynth','open','n-body traces; overlaps Harmonograph and Strange Attractor'],
+      ['Mandelverse','open','Mandelbrot zooms read as 1990s screensaver unless very carefully directed'],
+      ['GlitchSpace','flag','RGB shift and noise is a screen aesthetic. It depends on emissive display — the exact thing you correctly moved away from'],
+      ['Quantum Path','dup','this is Strange Attractor, built'],
+      ['DreamMap','open','too vague to build — no rule stated']]],
+     ['5 · Data Portraits',[
+      ['MemoryLinks','done','built as MemoryLines'],
+      ['CodeSigil','done','built — Algorithmic'],
+      ['DateWeave','open','a date is already driving Data Bloom; this is a treatment, not a system'],
+      ['TimePrint','open','daily routine → abstract. Interesting, but requires the buyer to do data entry work. High friction'],
+      ['SoundShape','flag','soundwave art sells at €12–25 on Etsy in volume. It would anchor the brand to that price'],
+      ['EmotionField','flag','customizer-as-liability in pure form — the mapping from “melancholy 70%” to a composition is arbitrary, and the buyer knows it']]],
+     ['6 · Cultural Algorithms',[
+      ['SacredCode','done','built as mandala symmetry — commercially the safest new addition'],
+      ['PatternScript','flag','see note below'],
+      ['RuneGrid','flag','see note below'],
+      ['GlyphLine','open','abstract calligraphy from motion — genuinely good, and the safest item in this category'],
+      ['SignalMark','open','overlaps CodeSigil'],
+      ['Tradition Shift','flag','see note below']]],
+     ['7 · Motion Static',[
+      ['ChaosLoop','done','built as Strange Attractor — highest artistic ceiling on the list'],
+      ['FieldTrace','dup','built as FlowField'],
+      ['Kinetic Still','open','bouncing paths; close to Harmonograph'],
+      ['WindMark','dup','same as Weather Print — one system, two names'],
+      ['DriftLines','open','“virtual dancer” needs a motion model defined first'],
+      ['SoundMotion','flag','same price-anchor problem as SoundShape']]]
+    ];
+    const badge={done:['#7fb489','built'],dup:['#6f8fb8','duplicate'],open:['#8d8a84','open'],flag:['#c9a06a','flagged']};
+    let html=`<div class="intro"><h2>Coverage map</h2>
+      <p>All 42 concepts from your seven categories, mapped against what exists. <b>17 are built</b>, 7 are duplicates of something already built under a different name, 6 are flagged, and 12 are genuinely open. The count that matters is not how many are named — it is how many have been printed, which is still zero.</p></div>`;
+    cov.forEach(([cat,items])=>{
+      html+=`<section><div class="head"><h3>${cat}</h3></div><div style="margin-top:10px">`;
+      items.forEach(([n,st,why])=>{
+        const [col,lab]=badge[st];
+        html+=`<div style="display:flex;gap:12px;padding:9px 0;border-top:1px solid #202024;align-items:baseline;flex-wrap:wrap">
+          <span style="min-width:120px;font-size:14px">${n}</span>
+          <span class="tag" style="color:${col};border-color:${col}44">${lab}</span>
+          <span style="color:#8d8a84;font-size:13.5px;flex:1;min-width:220px">${why}</span></div>`;
+      });
+      html+='</div></section>';
+    });
+    html+=`<div class="skipped"><h4>On Cultural Algorithms</h4>
+      <p>Worth saying plainly, as a practical risk rather than a moral one: <b>“patterns inspired by world cultures, algorithmically recombined”</b> is the kind of positioning that gets a brand publicly criticised, and at €250–400 with your name on the work you would be the one answering for it. Recombining traditional motifs you have no relationship to — and selling the output as fine art — is a reputational exposure you do not need, and it would land hardest with exactly the small, well-informed audience you spent eighteen months building.</p>
+      <p>The category is still workable. <b>SacredCode</b> is fine because rotational symmetry is mathematics, not heritage. <b>GlyphLine</b> is fine because abstract calligraphic motion is your own gesture. What is risky is anything that borrows a specific culture&rsquo;s visual language as raw material. If you want to work in that space, the honest route is collaboration with someone from the tradition, credited and paid — which is a real project, not a generator.</p></div>`;
+    pane.innerHTML=html;
+  } else {
+    const intro=INTROS[tab.key];
+    const ih=document.createElement('div');
+    ih.className='intro '+intro.cls;
+    ih.innerHTML=`<h2>${intro.title}</h2><p>${intro.desc}</p>`;
+    pane.appendChild(ih);
+    if(tab.key==='A'){
+      const row=document.createElement('div');
+      row.className='inputrow';
+      row.innerHTML=`<label for="pin">Your input</label>
+        <input type="text" id="pin" value="${personalInput.replace(/"/g,'&quot;')}" spellcheck="false">
+        <span class="status">drives plate 01 of all three systems</span>`;
+      pane.appendChild(row);
+      row.querySelector('#pin').addEventListener('input',e=>{
+        personalInput=e.target.value||' ';
+        SYSTEMS.filter(s=>s.personal).forEach(renderSystem);
+      });
+    }
+    if(tab.key==='T'){
+      const row=document.createElement('div');
+      row.className='inputrow';
+      row.innerHTML=`<label for="tword">Your word</label>
+        <input type="text" id="tword" value="${typeWord.replace(/"/g,'&quot;')}" spellcheck="false">
+        <span class="status">all four EchoType plates, four treatments</span>`;
+      pane.appendChild(row);
+      row.querySelector('#tword').addEventListener('input',e=>{
+        typeWord=(e.target.value||'ECHO');
+        SYSTEMS.filter(s=>s.id==='echo').forEach(renderSystem);
+      });
+    }
+    SYSTEMS.filter(s=>s.cat===tab.key).forEach(sys=>{
+      pane.appendChild(buildSystemCard(sys));
+      panes[tab.key].systems.push(sys);
+    });
+  }
+  app.appendChild(pane);
+
+  const btn=document.createElement('button');
+  const n=SYSTEMS.filter(s=>s.cat===tab.key).length;
+  btn.innerHTML=tab.label+(n?`<span class="count">${n}</span>`:'');
+  btn.addEventListener('click',()=>show(tab.key));
+  nav.appendChild(btn);
+  panes[tab.key].btn=btn;
+});
+
+/* grain toggle — a finish, applied to every plate in every tab */
+{
+  const wrap=document.createElement('label');
+  wrap.style.cssText='margin-left:auto;display:flex;align-items:center;gap:7px;color:#8d8a84;font-size:13px;cursor:pointer;padding:0 4px';
+  wrap.innerHTML=`<input type="checkbox" id="grain" checked style="accent-color:#c8a45c"> Grain`;
+  nav.appendChild(wrap);
+  wrap.querySelector('#grain').addEventListener('change',e=>{
+    GRAIN_ON=e.target.checked;
+    Object.entries(panes).forEach(([k,p])=>{
+      if(!p.rendered||p.el.classList.contains('hidden')||k==='P'||k==='X') return;
+      p.systems.forEach(renderSystem);
+    });
+  });
+}
+
+function show(key){
+  Object.entries(panes).forEach(([k,p])=>{
+    p.el.classList.toggle('hidden',k!==key);
+    p.btn.classList.toggle('on',k===key);
+  });
+  const p=panes[key];
+  if(p.rendered) return;
+  p.rendered=true;
+  requestAnimationFrame(()=>{
+    if(key==='P'){
+      try{ drawNaiveRings(document.getElementById('cv-bad'),3.0); }catch(e){ fail('X naive: '+e.message); }
+      try{ drawArcField(document.getElementById('cv-good'),3.0); }catch(e){ fail('X directed: '+e.message); }
+    } else p.systems.forEach(renderSystem);
+  });
+}
+show('P');
+addEventListener('resize',()=>{ clearTimeout(window.__rt);
+  window.__rt=setTimeout(()=>{
+    Object.entries(panes).forEach(([k,p])=>{
+      if(!p.rendered||p.el.classList.contains('hidden')) return;
+      if(k==='P'){ drawNaiveRings(document.getElementById('cv-bad'),3.0); drawArcField(document.getElementById('cv-good'),3.0); }
+      else p.systems.forEach(renderSystem);
+    });
+  },250); });
+</script>
+</body>
+</html>
