@@ -200,7 +200,7 @@ function renderGL(body,seed,extra){
   gl.viewport(0,0,glc.width,glc.height);
   gl.uniform2f(gl.getUniformLocation(p,'u_res'),glc.width,glc.height);
   gl.uniform1f(gl.getUniformLocation(p,'u_seed'),seed);
-  gl.uniform1f(gl.getUniformLocation(p,'u_vivid'),POSTER_VIVID?1.4:1.0);
+  gl.uniform1f(gl.getUniformLocation(p,'u_vivid'),1+0.4*POSTER_LEVEL);
   if(extra) extra(p);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
@@ -2711,19 +2711,22 @@ function vivid(h,k){
   const d=mx-mn; let s=l>0.5?d/(2-mx-mn):d/(mx+mn), hu;
   hu=mx===r?((g-b)/d+(g<b?6:0)):mx===g?((b-r)/d+2):((r-g)/d+4); hu/=6;
   /* light tints (paper-like) barely move, mid and dark tones move most */
-  const kk=l>0.86?1:k; s=Math.min(1,s*kk+(kk>1?0.06:0));
+  k=1+(k-1)*POSTER_LEVEL;
+  const kk=l>0.86?1:k; s=Math.min(1,s*kk+(kk>1?0.06*POSTER_LEVEL:0));
   const q=l<0.5?l*(1+s):l+s-l*s, p=2*l-q, f=t=>{ t=(t+1)%1; return t<1/6?p+(q-p)*6*t:t<1/2?q:t<2/3?p+(q-p)*(2/3-t)*6:p; };
   return '#'+[f(hu+1/3),f(hu),f(hu-1/3)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
 }
 const VIVID=1.6;
 /* The vivid treatment can be switched off to compare: each palette registers
    its untouched values and the boost to apply, and setPosterVivid() rebuilds
-   them. The contrast finish (punch) and the GL chroma boost follow the flag. */
-let POSTER_VIVID=true;
+   them. The contrast finish (punch) and the GL chroma boost follow the flag.
+   POSTER_LEVEL scales all of it: 1 vivid, 0.5 balanced, 0 natural. */
+let POSTER_VIVID=true, POSTER_LEVEL=1;
 const VIVID_REG=[];
 function vividReg(arr,boost){ VIVID_REG.push([arr,JSON.parse(JSON.stringify(arr)),boost]); if(POSTER_VIVID) boost(arr); }
 function setPosterVivid(on){
-  POSTER_VIVID=!!on;
+  POSTER_LEVEL=typeof on==='number'?Math.max(0,Math.min(1,on)):(on?1:0);
+  POSTER_VIVID=POSTER_LEVEL>0;
   VIVID_REG.forEach(([arr,orig,boost])=>{ arr.splice(0,arr.length,...JSON.parse(JSON.stringify(orig))); if(POSTER_VIVID) boost(arr); });
 }
 const POSTER_INKS=[
@@ -3772,6 +3775,43 @@ void main(){
   outColor=vec4(toSRGB(col*col*0.9+col*0.1),1.0);
 }`;
 
+/* Satin ribbon — one wide ribbon (sometimes a pair) swinging down the sheet
+   and twisting as it goes. The strip's tilt gives its apparent width, so it
+   pinches where it turns edge-on; the tilt and a slight curl across the width
+   give the normal for a soft key light and a satin sheen. The colour runs
+   along its length through the seed's ramp; the back face is a deeper tone. */
+const F_K_SATIN=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 p=uvCentered();
+  vec3 col=mix(g,mix(g,a,0.35),smoothstep(1.7,0.0,length(p-vec2(0.0,0.3))));
+  float n=rnd(2.)<0.6?1.0:2.0, ang=(rnd(16.)-0.5)*0.3;
+  vec3 L=normalize(vec3(-0.45,0.5,0.75)), Hh=normalize(L+vec3(0.0,0.0,1.0));
+  for(int i=0;i<2;i++){ float fi=float(i); if(fi>=n) break;
+    float A=(0.2+rnd(10.+fi)*0.22)*(n>1.0?0.6:1.0), w=1.3+rnd(11.+fi)*1.2, ph=rnd(12.+fi)*6.283;
+    float tw=1.0+rnd(13.+fi)*1.6, tph=rnd(14.+fi)*6.283;
+    float hw=(n>1.0?0.28:0.44)+rnd(15.+fi)*0.08, off=n>1.0?(fi-0.5)*0.56:0.0;
+    vec2 q=rot2(ang+(fi-0.5)*0.2*(n-1.0))*p;
+    float xc=off+A*sin(w*q.y+ph), dxc=A*w*cos(w*q.y+ph);
+    float d=(q.x-xc)/sqrt(1.0+dxc*dxc);
+    float th=tw*q.y+tph, ct=cos(th), st=sin(th);
+    float hwv=hw*max(abs(ct),0.03), v=d/hwv;
+    float shw=1.0-smoothstep(1.0,1.0+0.25/max(abs(ct),0.2),abs((d-0.05)/hwv));
+    float aa=fwidth(d)/hwv, m=1.0-smoothstep(1.0-aa,1.0+aa,abs(v));
+    col*=1.0-0.35*shw*(1.0-m);
+    if(m<=0.0) continue;
+    float face=sign(ct+1e-4);
+    vec3 nn=normalize(vec3(st*face+v*0.45,-dxc*0.25,abs(ct)+0.08));
+    float dif=clamp(dot(nn,L),0.0,1.0), spe=pow(clamp(dot(nn,Hh),0.0,1.0),36.0);
+    float t=0.5+0.42*sin(q.y*1.1+rnd(17.+fi)*6.283);
+    vec3 base=face>0.0?ramp(g,a,b,c,0.35+0.65*t):ramp(g,a,b,c,0.2+0.45*t);
+    vec3 rc=base*(0.3+0.85*dif)+mix(c,vec3(1.0),0.5)*spe*0.55;
+    rc*=1.0-0.3*pow(abs(v),8.0);
+    col=mix(col,rc,m);
+  }
+  outColor=vec4(col,1.0);
+}`;
+
 /* ---- fourth poster batch: after the second reference board -------------- */
 
 /* Maze stripes — the sheet split into three to six rectangles; each holds
@@ -4289,6 +4329,8 @@ SYSTEMS.push(
  blurb:'A slow warped noise field cut into iso-bands: two dark tones and a light gutter between them, so the sheet reads as lava-lamp shapes.'},
 {cat:'K',id:'mesh',bleed:true,name:'Mesh Gradient',kind:'gl',frag:F_K_MESH,
  blurb:'After Fragments&rsquo; mesh gradient lesson: a warped field read as satin folds in one hue, dark to bright. Most seeds cut it into horizontal slats, each sampled slightly offset, like satin seen through blinds.'},
+{cat:'K',id:'satin',bleed:true,name:'Satin Ribbon',kind:'gl',frag:F_K_SATIN,
+ blurb:'One wide ribbon, sometimes a pair, swinging down the sheet and twisting as it goes. It pinches where it turns edge-on, catches a satin sheen on the turns, and runs through the colour gradient along its length, with the back face a deeper tone.'},
 {cat:'K',id:'maze',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
  blurb:'The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.'},
 {cat:'K',id:'fprint',bleed:true,name:'Fingerprint',kind:'js',draw:drawFingerprint,
@@ -4400,14 +4442,14 @@ function paint(sys,cv,seed){
    steepens contrast around mid-grey and pushes chroma away from each pixel's
    own luminance. Applied after acceptance, like the grain. */
 function punch(cv){
-  const c=cv.getContext('2d'), W=cv.width, H=cv.height, img=c.getImageData(0,0,W,H), d=img.data;
+  const c=cv.getContext('2d'), W=cv.width, H=cv.height, img=c.getImageData(0,0,W,H), d=img.data, ch=1+0.3*POSTER_LEVEL;
   const lut=new Uint8ClampedArray(256);
-  for(let i=0;i<256;i++){ const v=i/255, s=v<0.5?0.5*Math.pow(2*v,1.35):1-0.5*Math.pow(2*(1-v),1.35); lut[i]=Math.round(s*255); }
+  for(let i=0;i<256;i++){ const v=i/255, e=1+0.35*POSTER_LEVEL, s=v<0.5?0.5*Math.pow(2*v,e):1-0.5*Math.pow(2*(1-v),e); lut[i]=Math.round(s*255); }
   for(let i=0;i<d.length;i+=4){
     const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
-    d[i]=lut[Math.max(0,Math.min(255,l+(d[i]-l)*1.3))|0];
-    d[i+1]=lut[Math.max(0,Math.min(255,l+(d[i+1]-l)*1.3))|0];
-    d[i+2]=lut[Math.max(0,Math.min(255,l+(d[i+2]-l)*1.3))|0];
+    d[i]=lut[Math.max(0,Math.min(255,l+(d[i]-l)*ch))|0];
+    d[i+1]=lut[Math.max(0,Math.min(255,l+(d[i+1]-l)*ch))|0];
+    d[i+2]=lut[Math.max(0,Math.min(255,l+(d[i+2]-l)*ch))|0];
   }
   c.putImageData(img,0,0);
 }
