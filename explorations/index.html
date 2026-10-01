@@ -3589,11 +3589,7 @@ function drawContourDisc(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
   const R0=M*0.4, cx=W/2, cy=H/2, n=9+R(seed,2)*5, fs=0.9+R(seed,3)*0.6, wk=1.2+R(seed,4)*1.6, duty=0.42+R(seed,5)*0.12;
-  const rim=M*0.006;
   paintPixels(c,W,H,(x,y)=>{
-    const d=Math.hypot(x-cx,y-cy);
-    if(d>R0) return Pp;
-    if(d>R0-rim) return Pi;
     const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+5.2,v+1.3,seed);
     const g=fbm(u+wk*qx,v+wk*qy,seed+3)*n;
     return (g-Math.floor(g))<duty?Pi:Pp;
@@ -3609,17 +3605,16 @@ function drawStrandDisc(cv,seed){
   const [paper,ink,nm]=posterInk(seed,1);
   c.fillStyle=paper; c.fillRect(0,0,W,H);
   const R0=M*0.41, cx=W/2, cy=H/2, n=3+Math.floor(R(seed,2)*4), pts=[];
-  for(let k=0;k<n;k++){ const a=R(seed,10+k)*6.283, r=Math.sqrt(R(seed,20+k))*R0*0.8;
-    pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r,(R(seed,30+k)-0.5)*3.0,R(seed,40+k)<0.5?1:-1]); }
+  for(let k=0;k<n;k++){
+    pts.push([W*(0.12+0.76*R(seed,10+k)),H*(0.12+0.76*R(seed,20+k)),(R(seed,30+k)-0.5)*3.0,R(seed,40+k)<0.5?1:-1]); }
   const dir=(x,y)=>{ let vx=0,vy=0;
     for(const [px,py,al,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.002, ca=Math.cos(al), sa=Math.sin(al);
       vx+=sg*(dx*ca-dy*sa)/d2; vy+=sg*(dx*sa+dy*ca)/d2; }
     const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l]; };
-  const inside=(x,y)=>Math.hypot(x-cx,y-cy)<R0-M*0.004;
+  const inside=(x,y)=>x>-2&&y>-2&&x<W+2&&y<H+2;
   const lines=streamlines(W,H,seed,M*(0.0105+R(seed,3)*0.004),dir,inside,900);
   c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=M*0.0042;
   for(const L of lines){ c.beginPath(); c.moveTo(L[0][0],L[0][1]); for(const q of L) c.lineTo(q[0],q[1]); c.stroke(); }
-  c.beginPath(); c.arc(cx,cy,R0,0,7); c.lineWidth=M*0.006; c.stroke();
   noteStrategy(cv,n+' singular points · '+nm);
 }
 
@@ -4122,10 +4117,10 @@ SYSTEMS.push(
  blurb:'One lit sphere at the centre, set entirely in halftone dots on a rotated screen, sitting on its own shadow over a soft gradient ground. A print-native way to show volume.'},
 {cat:'K',id:'groovy',bleed:true,name:'Groovy Bloom',kind:'js',draw:drawGroovyBloom,
  blurb:'Flat wavy bands radiating from one focal point low on the centre axis, pinched at the focus and billowing to every edge. Retro five-colour sets.'},
-{cat:'K',id:'cdisc',bleed:true,name:'Contour Disc',kind:'js',draw:drawContourDisc,
- blurb:'One centred circle filled with the iso-bands of a domain-warped noise field, ink and paper alternating, on a plain sheet.'},
-{cat:'K',id:'sdisc',bleed:true,name:'Strand Disc',kind:'js',draw:drawStrandDisc,
- blurb:'A centred circle of evenly spaced strands flowing around a few hidden sources and swirls, so the disc breaks into petal-like patches of parallel lines.'},
+{cat:'K',id:'cdisc',bleed:true,name:'Contour Field',kind:'js',draw:drawContourDisc,
+ blurb:'The iso-bands of a domain-warped noise field, ink and paper alternating, filling the whole sheet.'},
+{cat:'K',id:'sdisc',bleed:true,name:'Strand Field',kind:'js',draw:drawStrandDisc,
+ blurb:'Evenly spaced strands flowing around a few hidden sources and swirls, edge to edge, so the sheet breaks into petal-like patches of parallel lines.'},
 {cat:'K',id:'ttree',bleed:true,name:'Turing Tree',kind:'js',draw:drawTuringTree,
  blurb:'A tree drawn only with broken, wobbly ink stripes, the way reaction&ndash;diffusion labyrinths look: horizontal ground bands, a trunk on the centre axis, and a canopy fanning from the top of the trunk.'},
 {cat:'K',id:'dunes',bleed:true,name:'Line Dunes',kind:'js',draw:drawLineDunes,
