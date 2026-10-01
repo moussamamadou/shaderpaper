@@ -3112,37 +3112,32 @@ function drawArches(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,pal]=posterSet(seed,1);
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
-  const ground=H*(0.66+R(seed,2)*0.22);
-  /* the disc sits in the upper third, on the side away from the main arch */
-  const mainX=W*(R(seed,3)<0.5?0.3+R(seed,4)*0.12:0.58+R(seed,4)*0.12);
-  const sx=mainX<W/2?W*(0.66+R(seed,5)*0.16):W*(0.18+R(seed,5)*0.16);
-  const sr=M*(0.10+R(seed,6)*0.08);
-  c.beginPath(); c.arc(sx,H*(0.18+R(seed,7)*0.14),sr,0,7); c.fillStyle=pal[1+Math.floor(R(seed,8)*4)]; c.fill();
-  const groups=[{x:mainX,r:M*(0.36+R(seed,9)*0.14)}];
-  const ng=1+Math.floor(R(seed,10)*3);
-  for(let g=0;g<ng;g++) groups.push({x:R(seed,20+g)<0.5?-M*0.05+R(seed,21+g)*W*0.3:W*0.75+R(seed,21+g)*W*0.3, r:M*(0.16+R(seed,22+g)*0.18)});
-  /* smaller groups first, then the dominant one in front — the overlap is the composition */
-  const order=groups.slice().sort((a,b)=>a.r-b.r);
-  /* either every arch stands on a ground block, or every arch runs its legs
-     off the bottom edge as a doorway — never a mix */
-  const groundBlock=R(seed,71)<0.6, legs=!groundBlock;
-  order.forEach((g,gi)=>{
-    const n=4+Math.floor(R(seed,40+gi)*4), bw=g.r/(n+0.6);
-    const off=Math.floor(R(seed,60+gi)*4);
-    for(let k=0;k<n;k++){
-      const r=g.r-k*bw;
-      c.beginPath(); c.moveTo(g.x-r,ground+(legs?H:0)); c.lineTo(g.x-r,ground);
-      c.arc(g.x,ground,r,Math.PI,0); c.lineTo(g.x+r,ground+(legs?H:0)); c.closePath();
-      c.fillStyle=pal[1+((k+off)%4)]; c.fill();
-    }
-    const r0=g.r-n*bw;
-    c.beginPath(); c.moveTo(g.x-r0,ground+(legs?H:0)); c.lineTo(g.x-r0,ground); c.arc(g.x,ground,r0,Math.PI,0); c.lineTo(g.x+r0,ground+(legs?H:0)); c.closePath();
-    c.fillStyle=pal[0]; c.fill();
+  /* balanced layouts only: one centred arch, a mirrored pair, or a large
+     arch flanked by two equal smaller ones. The group is centred as a whole
+     and kept inside the side margins; the sun sits on the centre axis. */
+  const layout=Math.floor(R(seed,2)*3), mg=W*0.08, span=W-2*mg;
+  const ground=H*(0.64+R(seed,3)*0.12);
+  let groups;
+  if(layout===0){ const r=span*(0.36+R(seed,4)*0.08); groups=[{x:W/2,r}]; }
+  else if(layout===1){ const r=span/4*(0.92+R(seed,4)*0.08); groups=[{x:W/2-r,r},{x:W/2+r,r}]; }
+  else { const rb=span*(0.27+R(seed,4)*0.04), rs=rb*(0.55+R(seed,5)*0.12), gap=rb+rs*0.75;
+    groups=[{x:W/2-gap,r:rs},{x:W/2+gap,r:rs},{x:W/2,r:rb}]; }
+  const top=ground-Math.max(...groups.map(g=>g.r));
+  /* the sun sits midway between the top margin and the arch crowns */
+  const sr=M*(0.09+R(seed,6)*0.05), sy=Math.max(H*0.08+sr,(H*0.08+top)/2);
+  c.beginPath(); c.arc(W/2,sy,sr,0,7); c.fillStyle=pal[1+Math.floor(R(seed,7)*4)]; c.fill();
+  const groundBlock=R(seed,8)<0.6, legs=!groundBlock;
+  const n=4+Math.floor(R(seed,9)*4), off=Math.floor(R(seed,10)*4);
+  groups.forEach((g,gi)=>{
+    /* mirrored arches share band count and colour order, so the pair reads as one */
+    const bw=g.r/(n+0.6), o=layout===1?off:(off+gi)%4;
+    const shape=r=>{ c.beginPath(); c.moveTo(g.x-r,ground+(legs?H:0)); c.lineTo(g.x-r,ground);
+      c.arc(g.x,ground,r,Math.PI,0); c.lineTo(g.x+r,ground+(legs?H:0)); c.closePath(); };
+    for(let k=0;k<n;k++){ shape(g.r-k*bw); c.fillStyle=pal[1+((k+o)%4)]; c.fill(); }
+    shape(g.r-n*bw); c.fillStyle=pal[0]; c.fill();
   });
-  /* ground block */
-  c.fillStyle=pal[1+Math.floor(R(seed,70)*4)];
-  if(groundBlock) c.fillRect(0,ground,W,H-ground);
-  noteStrategy(cv,nm);
+  if(groundBlock){ c.fillStyle=pal[1+Math.floor(R(seed,11)*4)]; c.fillRect(0,ground,W,H-ground); }
+  noteStrategy(cv,['single','pair','triptych'][layout]+' · '+nm);
 }
 
 /* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
@@ -3226,20 +3221,37 @@ function drawDiscRhythm(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,pal]=posterSet(seed,1);
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
-  if(R(seed,2)<0.5){ c.fillStyle=pal[1+Math.floor(R(seed,3)*4)]; const sp=W*(0.35+R(seed,4)*0.3); c.fillRect(sp,0,W-sp,H); }
-  const nd=2+Math.floor(R(seed,5)*3), discs=[];
-  discs.push({x:W*(0.35+R(seed,6)*0.3),y:H*(0.35+R(seed,7)*0.3),r:M*(0.38+R(seed,8)*0.14)});
-  for(let k=1;k<nd;k++) discs.push({x:W*R(seed,10+k),y:H*R(seed,20+k),r:M*(0.14+R(seed,30+k)*0.2)});
-  discs.sort((a,b)=>b.r-a.r);
-  discs.forEach((d,di)=>{
-    const n=3+Math.floor(R(seed,40+di)*4), a0=R(seed,50+di)*6.283, da=(R(seed,60+di)-0.5)*1.4;
+  /* balanced layouts only: one centred disc, a vertical stack on the centre
+     axis, or a large disc with a satellite placed so the area-weighted centre
+     of the pair falls on the centre of the sheet. Nothing is cropped. */
+  const layout=Math.floor(R(seed,2)*3), mg=M*0.07;
+  let discs;
+  if(layout===0) discs=[{x:W/2,y:H/2,r:(M/2-mg)*(0.92+R(seed,3)*0.08)}];
+  else if(layout===1){
+    const n=R(seed,3)<0.5?2:3, r=Math.min(W/2-mg,(H-2*mg)/(2*n))*(0.96);
+    discs=[...Array(n)].map((_,k)=>({x:W/2,y:H/2+(k-(n-1)/2)*2*r,r}));
+  } else {
+    const R1=(M/2-mg)*0.82, r2=R1*(0.38+R(seed,3)*0.14), a=R(seed,4)*6.283, d=R1+r2*0.15;
+    const w1=R1*R1, w2=r2*r2, cx=W/2, cy=H/2;
+    /* place both, then shift so the weighted centroid is the sheet centre */
+    let p1=[0,0], p2=[Math.cos(a)*d,Math.sin(a)*d];
+    const gx=(p1[0]*w1+p2[0]*w2)/(w1+w2), gy=(p1[1]*w1+p2[1]*w2)/(w1+w2);
+    discs=[{x:cx+p1[0]-gx,y:cy+p1[1]-gy,r:R1},{x:cx+p2[0]-gx,y:cy+p2[1]-gy,r:r2}];
+    /* if the satellite would leave the sheet, pull the pair in along its axis */
+    let over=0; discs.forEach(q=>{ over=Math.max(over,mg-(q.x-q.r),(q.x+q.r)-(W-mg),mg-(q.y-q.r),(q.y+q.r)-(H-mg)); });
+    if(over>0){ const s2=1-over/(d+R1); discs.forEach(q=>{ q.x=cx+(q.x-cx)*s2; q.y=cy+(q.y-cy)*s2; q.r*=s2; }); }
+  }
+  const n=4+Math.floor(R(seed,5)*3), a0=R(seed,6)*6.283, da=0.25+R(seed,7)*0.45;
+  discs.forEach((q,di)=>{
+    /* same ring count and turn in every disc, so a stack reads as a sequence */
     for(let k=0;k<n;k++){
-      const r=d.r*(1-k/n), a=a0+k*da, c1=1+((k+di)%4), c2=1+((k+di+2)%4);
-      c.beginPath(); c.moveTo(d.x,d.y); c.arc(d.x,d.y,r,a,a+Math.PI); c.closePath(); c.fillStyle=pal[c1]; c.fill();
-      c.beginPath(); c.moveTo(d.x,d.y); c.arc(d.x,d.y,r,a+Math.PI,a+2*Math.PI); c.closePath(); c.fillStyle=pal[k===n-1?0:c2]; c.fill();
+      const r=q.r*(1-k/n), a=a0+k*da+di*Math.PI/n, c1=1+((k+di)%4), c2=1+((k+di+2)%4);
+      c.beginPath(); c.moveTo(q.x,q.y); c.arc(q.x,q.y,r,a,a+Math.PI); c.closePath(); c.fillStyle=pal[c1]; c.fill();
+      c.beginPath(); c.moveTo(q.x,q.y); c.arc(q.x,q.y,r,a+Math.PI,a+2*Math.PI); c.closePath(); c.fillStyle=pal[c2]; c.fill();
     }
+    c.beginPath(); c.arc(q.x,q.y,q.r/n*0.55,0,7); c.fillStyle=pal[0]; c.fill();
   });
-  noteStrategy(cv,nm);
+  noteStrategy(cv,['single','stack','satellite'][layout]+' · '+nm);
 }
 
 /* Stacked stones — rounded pebbles balanced on an axis, widest at the
@@ -3514,14 +3526,14 @@ SYSTEMS.push(
 {cat:'K',id:'waves',bleed:true,name:'Wave Bands',kind:'js',draw:drawWaveBands,
  blurb:'Stacked bands whose edges are all the same wave at a shifted phase. Either a few wide bands in a four- or five-tone palette, or many thin two-colour bands bulging through a single swell.'},
 {cat:'K',id:'arches',bleed:true,name:'Arches',kind:'js',draw:drawArches,
- blurb:'Nested rainbow arches standing on a common ground. One group dominates, the others are cropped or tucked behind it, and a single disc gives the eye somewhere to rest. Every band in a group has the same width, so each stack reads as one object.'},
+ blurb:'Nested rainbow arches on a common ground, in one of three balanced layouts: a single centred arch, a mirrored pair, or a large arch flanked by two equal smaller ones. The sun sits on the centre axis, and every band in a group has the same width so each stack reads as one object.'},
 {cat:'K',id:'tiles',bleed:true,name:'Bauhaus Tiles',kind:'js',draw:drawBauhausTiles,
  blurb:'A square grid, each cell one primitive — quarter disc, half disc, disc, triangle, half block — in a four- or five-colour set placed by a colour field rather than at random. A few 2&times;2 blocks share one large circle, which is what turns a tile sheet into a composition.',
  meta:'<b>Lineage:</b> Bauhaus tile studies, and the modular posters of Josef M&uuml;ller-Brockmann.'},
 {cat:'K',id:'horizon',bleed:true,name:'Horizon',kind:'js',draw:drawHorizon,
  blurb:'A landscape reduced to bands: a large sun, three to five ridges each one value darker, the horizon on the lower third. The sun is sometimes cut by paper lines, the way screen-printed travel posters showed heat.'},
 {cat:'K',id:'rhythm',bleed:true,name:'Disc Rhythm',kind:'js',draw:drawDiscRhythm,
- blurb:'Two to four large discs, each a set of concentric rings, every ring split along one diameter into two colours. The split angle turns from ring to ring, and that turning is the rhythm.',
+ blurb:'Concentric rings, each split along one diameter into two colours, with the split turning from ring to ring. Three balanced layouts: one centred disc, a stack on the centre axis, or a large disc with a satellite placed so the weight of the pair sits on the centre of the sheet. Nothing is cropped.',
  meta:'<b>Lineage:</b> Sonia Delaunay, <i>Rythme</i> (1938).'},
 {cat:'K',id:'stones',bleed:true,name:'Stacked Stones',kind:'js',draw:drawStackedStones,
  blurb:'Rounded pebbles balanced on one axis, widest at the bottom, each resting on the one below, with one large disc behind the stack in a contrasting colour.',
