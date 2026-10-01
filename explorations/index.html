@@ -3783,56 +3783,6 @@ function drawCellNet2(cv,seed){
   noteStrategy(cv,nm);
 }
 
-/* Coral panels — the sheet cut into polygonal panels by four to six straight
-   paper gutters. Each panel is filled with a gradient and the branching glyphs
-   are cut out in paper; each panel is a gradient from one sky family, all
-   running top to bottom with a slightly different tilt. */
-function drawCoralPanels(cv,seed){
-  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
-  const paper=['#f2ece1','#efe8dc','#f4efe6'][Math.floor(R(seed,1)*3)];
-  const fam=Math.floor(R(seed,4)*SKIES.length);
-  const nl=4+Math.floor(R(seed,2)*3), lines=[];
-  for(let k=0;k<nl;k++){ const a=R(seed,10+k)*Math.PI, px=W*(0.2+0.6*R(seed,20+k)), py=H*(0.2+0.6*R(seed,30+k)); lines.push([px,py,Math.cos(a),Math.sin(a)]); }
-  const region=(x,y)=>{ let h=0; lines.forEach((l,i)=>{ if((x-l[0])*l[3]-(y-l[1])*l[2]>0) h|=1<<i; }); return h; };
-  /* panel h → gradient stops (neighbouring sky families) and an angle */
-  /* one family for the whole sheet, light stops dropped so no glyph fades into the paper */
-  let base=SKIES[fam][1].filter(h=>lumOfHex(h)<175); if(base.length<2) base=SKIES[fam][1].slice().sort((a,b)=>lumOfHex(a)-lumOfHex(b)).slice(0,2);
-  /* no inversion: every panel runs the gradient the same way round, top to
-     bottom; only the tilt changes a little from panel to panel */
-  const panel=h=>{ const a=Math.PI/2+(R(seed,1200+h)-0.5)*1.0;
-    return [base,Math.cos(a),Math.sin(a)]; };
-  const cache=new Map(), P=h=>cache.get(h)||(cache.set(h,panel(h)),cache.get(h));
-  /* glyph mask */
-  const mk=document.createElement('canvas'); mk.width=W; mk.height=H; const m=mk.getContext('2d');
-  const cell=M*(0.11+R(seed,3)*0.03), st=cell/4, lw=st*0.5;
-  m.lineCap='round'; m.lineJoin='round'; m.strokeStyle='#000'; m.lineWidth=lw;
-  for(let gy=0;gy<H/cell;gy++) for(let gx=0;gx<W/cell;gx++){
-    const ox=gx*cell+st/2, oy=gy*cell+st/2, idx=gy*97+gx;
-    const seen=new Set(), stack=[[Math.floor(R(seed,idx*5+1)*4),Math.floor(R(seed,idx*5+2)*4)]]; seen.add(stack[0]+'');
-    m.beginPath(); let steps=0;
-    while(stack.length&&steps<26){ const [i,j]=stack[Math.floor(R(seed,idx*13+steps)*stack.length)];
-      const d=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(R(seed,idx*17+steps)*4)], ni=i+d[0], nj=j+d[1]; steps++;
-      if(ni<0||nj<0||ni>3||nj>3||seen.has(ni+','+nj)) continue;
-      seen.add(ni+','+nj); stack.push([ni,nj]);
-      m.moveTo(ox+i*st*0.95,oy+j*st*0.95); m.lineTo(ox+ni*st*0.95,oy+nj*st*0.95); }
-    m.stroke();
-  }
-  /* paint the gradients through the mask */
-  const md=m.getImageData(0,0,W,H).data, pr=hexRGB(paper);
-  const img=c.createImageData(W,H), D=img.data;
-  for(let y=0;y<H;y++) for(let x=0;x<W;x++){
-    const n=(y*W+x)*4, al=md[n+3]/255;
-    /* the panels carry the gradient; the glyphs are cut out of it in paper */
-    const [stp,dx,dy]=P(region(x+0.5,y+0.5)), t=0.5+((x/W-0.5)*dx+(y/H-0.5)*dy)*0.95, g=gradRGB(stp,t);
-    const q=[g[0]+(pr[0]-g[0])*al,g[1]+(pr[1]-g[1])*al,g[2]+(pr[2]-g[2])*al];
-    D[n]=q[0]; D[n+1]=q[1]; D[n+2]=q[2]; D[n+3]=255;
-  }
-  c.putImageData(img,0,0);
-  c.strokeStyle=paper; c.lineWidth=M*0.022; c.lineCap='butt';
-  lines.forEach(l=>{ c.beginPath(); c.moveTo(l[0]-l[2]*W*3,l[1]-l[3]*W*3); c.lineTo(l[0]+l[2]*W*3,l[1]+l[3]*W*3); c.stroke(); });
-  noteStrategy(cv,nl+' cuts · '+SKIES[fam][0]);
-}
-
 /* Gradients — the colour-field register: no form at all, only colour moving.
    Sky gradients run vertically through four stops in perceptual space with
    a faint horizontal drift; the stepped variant quantises one hue into
@@ -4281,8 +4231,6 @@ SYSTEMS.push(
  blurb:'Thick paper stripes on an ink ground, evenly spaced and flowing around a few whorls, edge to edge.'},
 {cat:'K',id:'cellnet2',bleed:true,name:'Cell Net',kind:'js',draw:drawCellNet2,
  blurb:'A dense warped Voronoi field: ink cells separated by a paper net, edge to edge.'},
-{cat:'K',id:'coral',bleed:true,name:'Coral Panels',kind:'js',draw:drawCoralPanels,
- blurb:'Panels cut by straight paper gutters, each filled with one top-to-bottom gradient at a slightly different tilt, with branching glyphs cut out of it in paper.'},
 {cat:'K',id:'sky',bleed:true,name:'Gradients',kind:'js',draw:drawSkyGradient,
  blurb:'Colour fields with no form: a vertical sky gradient with a faint drift, one hue stepped into vertical columns, or one gradient framed inside another.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
@@ -4313,7 +4261,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, twelve after two decor reference boards, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, eleven after two decor reference boards, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
