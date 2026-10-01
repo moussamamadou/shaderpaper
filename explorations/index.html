@@ -2271,6 +2271,425 @@ function drawMeridian(cv,seed){
 }
 
 /* ============================================================
+   2b · Radiant ports
+   Six constructions taken from Radiant (github.com/pbakaus/radiant) and rebuilt
+   as still, seeded plates. The animation, glow and metal shading are dropped;
+   what survives is the geometry. Radiant is MIT-licensed:
+
+     MIT License — Copyright (c) 2025 Paul Bakaus
+     Permission is hereby granted, free of charge, to any person obtaining a copy
+     of this software and associated documentation files (the "Software"), to deal
+     in the Software without restriction, including without limitation the rights
+     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     copies of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions: The above copyright
+     notice and this permission notice shall be included in all copies or
+     substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
+     WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+   ============================================================ */
+
+/* Star lattice (from Radiant Geometry). A zig-zag chain of segments is mirrored
+   into every sector of an n-fold fold, and the resulting rosette is repeated on a
+   lattice — hexagonal for 6-fold, square for 8-fold. A second lattice at another
+   scale and angle is laid over the first in hairline, which is where the
+   interlace appears. */
+const STAR_CHAINS={
+  6:[[0.50,0.00],[0.35,0.15],[0.22,0.00],[0.12,0.07],[0,0]],
+  8:[[0.45,0.00],[0.32,0.13],[0.18,0.00],[0.10,0.06],[0,0]]
+};
+function foldMotif(c,x,y,s,n,rot){
+  const ch=STAR_CHAINS[n], m=n*2;
+  c.beginPath();
+  for(let j=0;j<m;j++){
+    const a0=rot+j*2*Math.PI/m;
+    for(const sg of [1,-1]){
+      ch.forEach(([px,py],k)=>{
+        const ang=a0+Math.atan2(py*sg,px), r=Math.hypot(px,py)*s;
+        const X=x+Math.cos(ang)*r, Y=y+Math.sin(ang)*r;
+        k?c.lineTo(X,Y):c.moveTo(X,Y);
+      });
+    }
+  }
+  c.moveTo(x+ch[0][0]*s,y); c.arc(x,y,ch[0][0]*s,0,7);
+  c.moveTo(x+ch[2][0]*s,y); c.arc(x,y,ch[2][0]*s,0,7);
+}
+function starShape(c,x,y,s,n,rot){
+  /* the outer star of the rosette: tips on the outer ring, notches at the
+     first chain point — filled, it is the motif's solid mass */
+  const ch=STAR_CHAINS[n], m=n*2;
+  const rt=ch[0][0]*s, rn=Math.hypot(ch[1][0],ch[1][1])*s, an=Math.atan2(ch[1][1],ch[1][0]);
+  c.beginPath();
+  for(let j=0;j<m;j++){
+    const a=rot+j*2*Math.PI/m;
+    c.lineTo(x+Math.cos(a)*rt,y+Math.sin(a)*rt);
+    c.lineTo(x+Math.cos(a+an)*rn,y+Math.sin(a+an)*rn);
+  }
+  c.closePath();
+}
+function latticePoints(W,H,step,hex,rot,ox,oy){
+  const pts=[], ca=Math.cos(rot), sa=Math.sin(rot), span=Math.hypot(W,H);
+  const n=Math.ceil(span/step)+2, rowH=hex?step*Math.sqrt(3)/2:step;
+  for(let j=-n;j<=n;j++) for(let i=-n;i<=n;i++){
+    const u=i*step+(hex&&(j&1)?step/2:0), v=j*rowH;
+    const x=ox+u*ca-v*sa, y=oy+u*sa+v*ca;
+    if(x>-step&&x<W+step&&y>-step&&y<H+step) pts.push([x,y,i,j]);
+  }
+  return pts;
+}
+function drawStarLattice(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const n=R(seed,2)<0.55?6:8, hex=n===6;
+  const step=Math.min(W,H)*(0.26+R(seed,3)*0.20);
+  const rot=R(seed,4)*Math.PI/n;
+  const ox=W*(0.2+R(seed,5)*0.6), oy=H*(0.2+R(seed,6)*0.6);
+  /* rule 5: a diagonal void — cells beyond a seeded line thin out to nothing */
+  const va=R(seed,7)*6.283, vx=Math.cos(va), vy=Math.sin(va);
+  const vcut=0.18+R(seed,8)*0.22;
+  const keep=(x,y,k)=>{
+    const t=((x/W-0.5)*vx+(y/H-0.5)*vy)+0.5;
+    return t<1-vcut || R(seed,900+k)<(1-t)*0.6;
+  };
+  const s=step*(hex?1.0:1.1);
+  const pts=latticePoints(W,H,step,hex,rot,ox,oy).filter((p,k)=>keep(p[0],p[1],k));
+  /* rule 4: solid stars carry the value, chosen as a clump not as confetti */
+  const fx=W*R(seed,10), fy=H*R(seed,11), fr=D*(0.18+R(seed,12)*0.2);
+  pts.forEach(([x,y],k)=>{
+    const near=Math.hypot(x-fx,y-fy)<fr;
+    if(near&&R(seed,1000+k)<0.75){
+      starShape(c,x,y,s,n,rot); c.fillStyle=(R(seed,1100+k)<0.12)?accent:INKC; c.fill();
+    }
+  });
+  c.lineJoin='round';
+  pts.forEach(([x,y],k)=>{
+    foldMotif(c,x,y,s,n,rot);
+    c.strokeStyle=INKC; c.lineWidth=Math.max(0.8,D*0.0021); c.stroke();
+  });
+  /* second lattice: other symmetry, other scale, hairline, inside a window */
+  const n2=hex?8:6, step2=step*(0.38+R(seed,20)*0.22), rot2=rot+0.2+R(seed,21)*0.6;
+  const wx=W*(0.25+R(seed,22)*0.5), wy=H*(0.25+R(seed,23)*0.5), wr=D*(0.22+R(seed,24)*0.18);
+  c.save(); c.beginPath(); c.arc(wx,wy,wr,0,7); c.clip();
+  latticePoints(W,H,step2,!hex,rot2,wx,wy).forEach(([x,y],k)=>{
+    if(!keep(x,y,5000+k)) return;
+    foldMotif(c,x,y,step2*(hex?1.1:1.0),n2,rot2);
+    c.strokeStyle=(k%17===0)?accent:INKC; c.lineWidth=Math.max(0.5,D*0.0006); c.stroke();
+  });
+  c.restore();
+}
+
+/* Weave draft (from Woven Radiance). Warp and weft threads crossing, each
+   crossing decided by the structure: plain, twill, satin, basket, herringbone.
+   Different structures in different bands, the same threads running through.
+   The source's textile colouring is left behind on purpose — the structures are
+   the common property of every loom, the colour schemes are not. */
+const WEAVES=[
+  ['plain',(h,v)=>(h+v)%2===0],
+  ['twill 2/2',(h,v)=>((h+v)%4)<2],
+  ['twill 3/1',(h,v)=>((h+v)%4)<3],
+  ['satin 5',(h,v)=>((h*2+v)%5)!==0],
+  ['basket 2×2',(h,v)=>(((h>>1)+(v>>1))%2)===0],
+  ['herringbone',(h,v)=>((((h>>2)&1)?(h-v+400):(h+v))%4)<2]
+];
+function drawWeaveDraft(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cols=22+Math.floor(R(seed,2)*30);
+  const cell=W/cols, gap=Math.max(1,cell*(0.10+R(seed,3)*0.12)), th=cell-gap;
+  const rows=Math.ceil(H/cell)+1;
+  /* structure bands, horizontal — two to four, seeded order */
+  const nb=2+Math.floor(R(seed,4)*3), cuts=[0];
+  for(let i=1;i<nb;i++) cuts.push(Math.floor(rows*(i/nb+(R(seed,10+i)-0.5)*0.18)));
+  cuts.push(rows);
+  const bandOf=v=>{ for(let i=0;i<nb;i++) if(v<cuts[i+1]) return i; return nb-1; };
+  const struct=[]; for(let i=0;i<nb;i++) struct.push(WEAVES[Math.floor(R(seed,20+i)*WEAVES.length)]);
+  /* rule 5: the loom stops — below this row the warp hangs as fringe */
+  const stop=Math.floor(rows*(0.62+R(seed,30)*0.22)), fringeTop=R(seed,31)<0.5;
+  const woven=v=>fringeTop?v>=rows-stop:v<stop;
+  /* warp colour by stripe, weft colour by band: one accent stripe at most */
+  const warpCol=h=>{
+    const st=Math.floor(h/(3+Math.floor(R(seed,40)*5)));
+    return R(seed,41+st)<0.14?accent:INKC;
+  };
+  const weftCol=v=>['#cfcac0','#8d8a84','#3a3a40',PAPER][Math.floor(R(seed,60+bandOf(v))*4)];
+  /* warp first, the full woven length, so it shows in the gaps between wefts */
+  for(let h=0;h<cols;h++){
+    const x=h*cell+gap/2, col=warpCol(h);
+    for(let v=0;v<rows;v++){
+      const y=v*cell;
+      c.fillStyle=col;
+      if(woven(v)) c.fillRect(x,y,th,cell);
+      else {
+        /* fringe: warp ends at seeded lengths, thinned to a thread */
+        const reach=fringeTop?(rows-stop)-v:v-stop;
+        if(reach<3+R(seed,300+h)*8) c.fillRect(x+th*0.35,y,th*0.30,cell);
+      }
+    }
+  }
+  for(let v=0;v<rows;v++){
+    if(!woven(v)) continue;
+    c.fillStyle=weftCol(v); c.fillRect(0,v*cell+gap/2,W,th);
+  }
+  /* then the warp again, only at the crossings where the structure lifts it */
+  for(let h=0;h<cols;h++){
+    const x=h*cell+gap/2; c.fillStyle=warpCol(h);
+    for(let v=0;v<rows;v++){
+      if(!woven(v)) continue;
+      if(struct[bandOf(v)][1](h,v)) c.fillRect(x,v*cell,th,cell);
+    }
+  }
+  noteStrategy(cv,struct.map(s=>s[0]).join(' / '));
+}
+
+/* Dipole field (from Magnetic Field). The field lines of a magnetic dipole are
+   exactly r = R·sin²θ, one curve per value of R. Nothing is simulated — every
+   line here is that one equation with a different constant. */
+function drawDipoleField(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const cx=W*(-0.05+R(seed,2)*0.6), cy=H*(0.25+R(seed,3)*0.6);
+  const ax=R(seed,4)*Math.PI, ca=Math.cos(ax), sa=Math.sin(ax);
+  const tr=(x,y)=>[cx+x*ca-y*sa, cy+x*sa+y*ca];
+  const line=(Rk,sg)=>{
+    for(let i=0;i<=420;i++){
+      const th=0.004+i/420*(Math.PI-0.008), r=Rk*Math.sin(th)**2;
+      const [X,Y]=tr(r*Math.cos(th), sg*r*Math.sin(th));
+      i?c.lineTo(X,Y):c.moveTo(X,Y);
+    }
+  };
+  const lobe=(R0,R1,sg)=>{
+    c.beginPath(); line(R1,sg);
+    for(let i=420;i>=0;i--){
+      const th=0.004+i/420*(Math.PI-0.008), r=R0*Math.sin(th)**2;
+      const [X,Y]=tr(r*Math.cos(th), sg*r*Math.sin(th)); c.lineTo(X,Y);
+    }
+    c.closePath();
+  };
+  /* constants clustered like Circle Drift: hairline groups, voids, a few bands */
+  const both=R(seed,5)<0.6;
+  let Rk=D*0.03, i=0;
+  c.lineJoin='round';
+  while(Rk<D*2.2 && i<240){
+    i++;
+    const mode=R(seed,10+i);
+    if(mode<0.10){ Rk*=1.12+R(seed,200+i)*0.25; continue; }
+    if(mode<0.20){
+      const w=Rk*(0.04+R(seed,300+i)*0.10);
+      for(const sg of both?[1,-1]:[1]){
+        if(!both&&R(seed,350+i)<0.5) continue;
+        lobe(Rk,Rk+w,sg); c.fillStyle=(R(seed,400+i)<0.2)?accent:INKC; c.fill();
+      }
+      Rk+=w*(1.4+R(seed,450+i)); continue;
+    }
+    const n=3+Math.floor(R(seed,600+i)*9), g=Rk*(0.012+R(seed,700+i)*0.02);
+    for(let k=0;k<n;k++){
+      c.beginPath(); line(Rk,1); if(both) line(Rk,-1);
+      c.strokeStyle=INKC; c.lineWidth=Math.max(0.5,D*0.0008*(0.5+R(seed,800+i*11+k)*1.3)); c.stroke();
+      Rk+=g;
+    }
+    Rk*=1.02+R(seed,900+i)*0.08;
+  }
+  /* the dipole itself, drawn as the two pole marks on its axis */
+  const pr=D*0.006;
+  for(const sg of [1,-1]){
+    const [X,Y]=tr(sg*D*0.012,0);
+    c.beginPath(); c.arc(X,Y,pr,0,7); c.fillStyle=sg>0?INKC:PAPER; c.fill();
+    c.strokeStyle=INKC; c.lineWidth=Math.max(0.6,D*0.0012); c.stroke();
+  }
+}
+
+/* Gear train (from Clockwork Mind). Every gear shares one module, so pitch
+   radius = teeth × module / 2 and any two of them mesh. Each child is placed at
+   the sum of the two pitch radii and phased so a tooth of the parent sits in a
+   gap of the child — the same meshing rule as the source, frozen at t=0. */
+function gearPath(c,g){
+  const n=g.teeth, pitch=2*Math.PI/n, tipR=g.pr+g.mod, rootR=g.pr-g.mod*1.25;
+  const half=pitch*0.40/2, fl=pitch*0.06, ctrlR=(rootR+tipR)/2+(tipR-rootR)*0.15;
+  c.moveTo(g.x+Math.cos(g.phase-pitch/2)*rootR, g.y+Math.sin(g.phase-pitch/2)*rootR);
+  for(let t=0;t<n;t++){
+    const b=g.phase+t*pitch;
+    c.arc(g.x,g.y,rootR,b-pitch/2,b-half-fl);
+    const ra=b-half-fl/2;
+    c.quadraticCurveTo(g.x+Math.cos(ra)*ctrlR,g.y+Math.sin(ra)*ctrlR, g.x+Math.cos(b-half)*tipR,g.y+Math.sin(b-half)*tipR);
+    c.arc(g.x,g.y,tipR,b-half,b+half);
+    const fa=b+half+fl/2;
+    c.quadraticCurveTo(g.x+Math.cos(fa)*ctrlR,g.y+Math.sin(fa)*ctrlR, g.x+Math.cos(b+half+fl)*rootR,g.y+Math.sin(b+half+fl)*rootR);
+    c.arc(g.x,g.y,rootR,b+half+fl,b+pitch/2);
+  }
+  c.closePath();
+}
+function drawGearTrain(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const mod=D*(0.0045+R(seed,2)*0.004);
+  /* rule 5: one quadrant-sized region the train may not grow into */
+  const ex=R(seed,3)<0.5?0:W, ey=R(seed,4)<0.5?0:H, er=Math.min(W,H)*(0.42+R(seed,5)*0.2);
+  const T0=34+Math.floor(R(seed,6)*26);
+  /* the driver sits in the corner diagonally opposite the void, cropped */
+  const gears=[{teeth:T0,pr:T0*mod/2,phase:R(seed,7),mod,parent:-1,
+    x:ex?W*(0.18+R(seed,8)*0.2):W*(0.62+R(seed,8)*0.2),
+    y:ey?H*(0.22+R(seed,9)*0.2):H*(0.58+R(seed,9)*0.2)}];
+  const tipR=g=>g.pr+g.mod;
+  for(let a=0;a<260&&gears.length<16;a++){
+    const p=gears[Math.floor(R(seed,100+a)*gears.length)];
+    const nt=9+Math.floor(R(seed,200+a)*(R(seed,250+a)<0.3?40:20));
+    const pr=nt*mod/2, phi=R(seed,300+a)*6.283, dist=p.pr+pr;
+    const x=p.x+Math.cos(phi)*dist, y=p.y+Math.sin(phi)*dist;
+    if(Math.hypot(x-ex,y-ey)<er+pr) continue;
+    if(x<-pr*0.6||x>W+pr*0.6||y<-pr*0.6||y>H+pr*0.6) continue;
+    const g={teeth:nt,pr,x,y,mod,parent:gears.indexOf(p)};
+    if(gears.some(o=>o!==p&&Math.hypot(o.x-x,o.y-y)<tipR(o)+pr+mod*1.6)) continue;
+    /* meshing: if the contact sits u teeth past a parent tooth, the child must
+       sit 0.5−u past one of its own — a gap facing the tooth */
+    const pp=2*Math.PI/p.teeth, pc=2*Math.PI/nt;
+    const u=(((phi-p.phase)%pp)+pp)%pp/pp;
+    g.phase=(phi+Math.PI)-(0.5-u)*pc;
+    gears.push(g);
+  }
+  /* technical-drawing layer first: pitch circles and centre lines */
+  c.setLineDash([D*0.006,D*0.004]);
+  c.strokeStyle='#8d8a84'; c.lineWidth=Math.max(0.5,D*0.0006);
+  gears.forEach(g=>{ c.beginPath(); c.arc(g.x,g.y,g.pr,0,7); c.stroke(); });
+  c.setLineDash([]);
+  gears.forEach(g=>{ if(g.parent<0) return; const p=gears[g.parent];
+    c.beginPath(); c.moveTo(p.x,p.y); c.lineTo(g.x,g.y); c.stroke(); });
+  /* bodies: solid with cut-outs, or outline only. Weight comes from the solids */
+  gears.forEach((g,k)=>{
+    const style=k===0?1:Math.floor(R(seed,500+k)*4);
+    const col=(k>0&&R(seed,600+k)<0.14)?accent:INKC;
+    c.beginPath(); gearPath(c,g);
+    if(style===3){ c.strokeStyle=col; c.lineWidth=Math.max(0.8,D*0.0016); c.stroke(); }
+    else {
+      const rim=g.pr-g.mod*2.6, hub=g.pr*0.22;
+      if(style===0){ c.moveTo(g.x+hub*0.5,g.y); c.arc(g.x,g.y,hub*0.5,0,7,true); }
+      else if(style===1){
+        c.moveTo(g.x+rim,g.y); c.arc(g.x,g.y,rim,0,7,true);
+      } else {
+        const nh=4+Math.floor(R(seed,700+k)*4), hr=(rim-hub)*0.38, hm=(rim+hub)/2;
+        for(let h=0;h<nh;h++){ const a=g.phase+h*2*Math.PI/nh;
+          c.moveTo(g.x+Math.cos(a)*hm+hr,g.y+Math.sin(a)*hm); c.arc(g.x+Math.cos(a)*hm,g.y+Math.sin(a)*hm,hr,0,7,true); }
+        c.moveTo(g.x+hub*0.5,g.y); c.arc(g.x,g.y,hub*0.5,0,7,true);
+      }
+      c.fillStyle=col; c.fill('evenodd');
+      if(style===1){
+        const ns=3+Math.floor(R(seed,800+k)*4);
+        c.lineCap='butt'; c.strokeStyle=col; c.lineWidth=g.pr*0.09;
+        for(let s=0;s<ns;s++){ const a=g.phase+s*2*Math.PI/ns;
+          c.beginPath(); c.moveTo(g.x,g.y); c.lineTo(g.x+Math.cos(a)*(rim+1),g.y+Math.sin(a)*(rim+1)); c.stroke(); }
+        c.beginPath(); c.arc(g.x,g.y,hub,0,7); c.fillStyle=col; c.fill();
+        c.beginPath(); c.arc(g.x,g.y,hub*0.45,0,7); c.fillStyle=PAPER; c.fill();
+      }
+    }
+    /* axle cross */
+    c.strokeStyle=style===3?col:PAPER; c.lineWidth=Math.max(0.6,D*0.0009);
+    const a=D*0.005; c.beginPath(); c.moveTo(g.x-a,g.y); c.lineTo(g.x+a,g.y); c.moveTo(g.x,g.y-a); c.lineTo(g.x,g.y+a); c.stroke();
+  });
+}
+
+/* Tesseract (from Tesseract Shadow). Sixteen vertices at (±1,±1,±1,±1), the 32
+   edges between vertices one coordinate apart, rotated in two 4D planes and
+   projected 4D→3D→2D. The source animates it; here the rotation is laid down
+   as a chronophotograph — earlier positions in hairline, the last one solid. */
+const TESS_V=[...Array(16)].map((_,i)=>[i&1?1:-1,i&2?1:-1,i&4?1:-1,i&8?1:-1]);
+const TESS_E=[]; for(let i=0;i<16;i++) for(let k=0;k<4;k++){ const j=i^(1<<k); if(j>i) TESS_E.push([i,j,k]); }
+const TESS_F=[]; for(let i=0;i<16;i++) for(let a=0;a<4;a++) for(let b=a+1;b<4;b++)
+  if(!(i&(1<<a))&&!(i&(1<<b))) TESS_F.push([i,i|(1<<a),i|(1<<a)|(1<<b),i|(1<<b)]);
+function tessProject(v,ang){
+  const r=(p,a,b,t)=>{ const o=p.slice(),cs=Math.cos(t),sn=Math.sin(t); o[a]=p[a]*cs-p[b]*sn; o[b]=p[a]*sn+p[b]*cs; return o; };
+  let p=r(v,0,3,ang[0]); p=r(p,1,2,ang[1]); p=r(p,0,1,ang[2]); p=r(p,2,3,ang[3]);
+  const s4=3.6/(3.6-p[3]), x=p[0]*s4, y=p[1]*s4, z=p[2]*s4, s3=5/(5-z);
+  return [x*s3,y*s3,z+p[3]];
+}
+function drawTesseract(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const base=[R(seed,2)*6.283,R(seed,3)*6.283,R(seed,4)*6.283,R(seed,5)*6.283];
+  const sp=[0.04+R(seed,6)*0.08,0.02+R(seed,7)*0.05,R(seed,8)*0.03,0.03+R(seed,9)*0.06];
+  const frames=10+Math.floor(R(seed,10)*14);
+  const sc=Math.min(W,H)*(0.24+R(seed,11)*0.12);
+  const ox=W*(0.38+R(seed,12)*0.24), oy=H*(0.36+R(seed,13)*0.28);
+  const wAxis=Math.floor(R(seed,14)*4);
+  const at=f=>base.map((b,i)=>b+sp[i]*f);
+  const P=f=>TESS_V.map(v=>{ const q=tessProject(v,at(f)); return [ox+q[0]*sc, oy+q[1]*sc, q[2]]; });
+  c.lineCap='round'; c.lineJoin='round';
+  /* the trail: hairlines, fading toward the earliest frame */
+  for(let f=0;f<frames;f++){
+    const pts=P(f), life=f/frames;
+    c.strokeStyle=`rgba(20,20,26,${0.12+life*0.4})`;
+    c.lineWidth=Math.max(0.5,D*0.0005*(1+life));
+    c.beginPath(); TESS_E.forEach(([a,b])=>{ c.moveTo(pts[a][0],pts[a][1]); c.lineTo(pts[b][0],pts[b][1]); }); c.stroke();
+  }
+  /* the final frame, depth sorted. Two faces filled for value; every edge
+     gets a paper underlay so nearer edges cut farther ones */
+  const pts=P(frames), items=[];
+  const solid=new Set([Math.floor(R(seed,20)*24),Math.floor(R(seed,21)*24)]);
+  TESS_F.forEach((q,k)=>{ if(solid.has(k)) items.push({z:q.reduce((s,i)=>s+pts[i][2],0)/4,face:q}); });
+  TESS_E.forEach(([a,b,ax])=>items.push({z:(pts[a][2]+pts[b][2])/2,a,b,ax}));
+  items.sort((u,v)=>u.z-v.z);
+  const lw=Math.max(1.4,D*0.0042);
+  items.forEach(it=>{
+    if(it.face){
+      c.beginPath(); it.face.forEach((i,k)=>k?c.lineTo(pts[i][0],pts[i][1]):c.moveTo(pts[i][0],pts[i][1]));
+      c.closePath(); c.fillStyle=INKC; c.fill(); return;
+    }
+    const [x1,y1]=pts[it.a],[x2,y2]=pts[it.b];
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.strokeStyle=PAPER; c.lineWidth=lw*2.2; c.stroke();
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.strokeStyle=it.ax===wAxis?accent:INKC; c.lineWidth=lw; c.stroke();
+  });
+  pts.forEach(([x,y])=>{ c.beginPath(); c.arc(x,y,lw*1.1,0,7); c.fillStyle=INKC; c.fill(); });
+}
+
+/* GlyphLine (from Ink Calligraphy). A brush is steered by noise, its width
+   swells and tapers thin–thick–thin and narrows when it moves fast, exactly as
+   in the source. On paper it is drawn as separate bristles, so a fast or ending
+   stroke breaks into dry-brush streaks instead of a smooth ribbon. */
+function drawGlyphLine(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
+  const accent=pick(seed,1,ACCENTS);
+  const n=4+Math.floor(R(seed,2)*4), accentAt=R(seed,3)<0.5?1+Math.floor(R(seed,4)*(n-1)):-1;
+  c.lineCap='round';
+  for(let b=0;b<n;b++){
+    const kind=b===0?2:(R(seed,10+b)<0.45?0:1);           /* 0 hairline 1 medium 2 bold */
+    const maxW=D*[0.004,0.018,0.085][kind]*(0.7+R(seed,20+b)*0.6);
+    const len=D*[0.75,0.6,0.85][kind]*(0.7+R(seed,30+b)*0.5);
+    const steps=300;
+    /* bold strokes enter from an edge (rule 1); the rest start inside */
+    let x,y,ang;
+    if(kind===2||R(seed,40+b)<0.4){
+      const e=Math.floor(R(seed,41+b)*4);
+      x=e===0?W*0.03:e===1?W*0.97:W*(0.15+R(seed,42+b)*0.7); y=e===2?H*0.03:e===3?H*0.97:H*(0.15+R(seed,43+b)*0.7);
+      ang=Math.atan2(H*(0.35+R(seed,44+b)*0.3)-y, W*(0.35+R(seed,45+b)*0.3)-x)+(R(seed,46+b)-0.5)*0.9;
+    } else { x=W*(0.15+R(seed,47+b)*0.7); y=H*(0.15+R(seed,48+b)*0.7); ang=R(seed,49+b)*6.283; }
+    const curve=(R(seed,50+b)-0.5)*0.016, pf=0.6+R(seed,51+b)*1.5, pp=R(seed,52+b)*6.283;
+    const bristles=kind===0?1:6+Math.floor(maxW/(D*0.003));
+    const off=[...Array(bristles)].map((_,k)=>bristles===1?0:(k/(bristles-1)-0.5));
+    const col=(b===accentAt&&kind===1)?accent:INKC;
+    let w=1, px=x, py=y;
+    for(let i=0;i<steps;i++){
+      const t=i/steps;
+      ang+=((noise2(x/D*2+b*7,y/D*2,seed)-0.5)*0.035+curve*(t>0.7?(1-t)/0.3:1));
+      const sEnv=t<0.03?t/0.03:(t>0.85?(1-t)/0.15:1);
+      const spd=len/steps*(0.35+0.65*sEnv)*(0.85+(noise2(t*6,b*3,seed+5)-0.5)*0.5);
+      px=x; py=y; x+=Math.cos(ang)*spd; y+=Math.sin(ang)*spd;
+      let wEnv=t<0.15?t/0.15:(t>0.7?(1-t)/0.3:1); wEnv=Math.sqrt(Math.max(0,wEnv));
+      const wave=Math.sin(t*pf*6.283+pp)*0.2+0.8;
+      w+=(maxW*wEnv*wave-w)*0.15;
+      if(w<0.4) continue;
+      const nx=-Math.sin(ang), ny=Math.cos(ang);
+      const bw=bristles===1?w:w/bristles*1.9;
+      c.strokeStyle=col; c.lineWidth=Math.max(0.4,bw);
+      c.beginPath();
+      off.forEach((o,k)=>{
+        /* dry brush: bristles drop out as the stroke runs fast or runs out */
+        const dry=noise2(i*0.08,k*1.7+b*11,seed+9);
+        if(bristles>1 && dry<(t>0.6?(t-0.6)*1.6:0)+0.12) return;
+        c.moveTo(px+nx*o*w,py+ny*o*w); c.lineTo(x+nx*o*w,y+ny*o*w);
+      });
+      c.stroke();
+    }
+  }
+}
+
+/* ============================================================
    3 · registry
    ============================================================ */
 let typeWord='SHADERPAPER';
@@ -2327,6 +2746,16 @@ const SYSTEMS=[
 {cat:'G',id:'sacred',name:'SacredCode (mandala symmetry)',kind:'js',draw:drawSacred,
  blurb:'A motif generated once, then repeated around N-fold rotational symmetry. Arc, spoke and node elements at varying radii, with weight and one accent distributed across rings.',
  meta:'<b>Commercially the safest</b> of the round-2 additions — mandala symmetry sells consistently as decor and needs no explanation.'},
+{cat:'G',id:'starlat',name:'Star lattice',kind:'js',draw:drawStarLattice,
+ blurb:'A zig-zag chain of five points, mirrored into every sector of a 12- or 16-fold fold, makes one rosette; the rosette repeats on a hexagonal or square lattice. A second lattice of the other symmetry, at another scale and angle, is overlaid in hairline inside a single window — the interlace is where the two disagree.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Radiant Geometry</i> (Paul Bakaus, MIT). The glow and counter-rotation are gone; the lattice is what is left.',
+ note:'Read this against the Cultural Algorithms note in the coverage map before editioning. The construction is mathematics, but at a glance the plate reads as Islamic geometric ornament, and it is close to the line drawn there. SacredCode is the safe side of that line; this one sits on it.'},
+{cat:'G',id:'weave',name:'Weave draft',kind:'js',draw:drawWeaveDraft,
+ blurb:'Warp and weft crossing on a grid, each crossing decided by a weave structure — plain, 2/2 and 3/1 twill, 5-end satin, basket, herringbone. Two to four structures in horizontal bands with the same warp running through all of them, and the loom stops short so the warp hangs loose as fringe.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Woven Radiance</i> (Paul Bakaus, MIT). Its kente colouring is deliberately dropped: the structures belong to every loom, the colour schemes do not. <b>Lineage:</b> Anni Albers&rsquo; weaving drafts.'},
+{cat:'G',id:'gears',bleed:true,name:'Gear train',kind:'js',draw:drawGearTrain,
+ blurb:'Gears sharing one module, so any two mesh: each child sits at the sum of the two pitch radii, phased so a tooth of the parent lands in a gap of the child. Drawn as a technical drawing — dashed pitch circles and centre lines under solid and outlined bodies — with one region of the sheet the train may not grow into.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Clockwork Mind</i> (Paul Bakaus, MIT). The meshing rule is the source&rsquo;s, frozen at t=0; the metal shading is gone.'},
 
 /* -- organic -- */
 {cat:'O',id:'contour',bleed:true,name:'Contour / domain warp (TopoPrint)',kind:'gl',frag:F_CONTOUR,
@@ -2410,6 +2839,9 @@ const SYSTEMS=[
  blurb:'A torus knot sampled into 1,400 depth-sorted segments. Each is stroked first in paper, then in ink — the paper halo occludes whatever sits behind it, producing correct over/under crossings with no hidden-line maths at all.',
  meta:'<b>Lineage:</b> knot diagrams, and the trick is the same one draughtsmen used with a white gouache halo.'},
 
+{cat:'S',id:'tess',name:'Tesseract',kind:'js',draw:drawTesseract,
+ blurb:'A 4D hypercube — 16 vertices, 32 edges — rotated in four planes and projected twice, 4D to 3D to 2D. The rotation is laid down as a chronophotograph: every earlier position in fading hairline, the last one solid and depth-sorted, with two faces filled and the edges along one axis in the accent.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Tesseract Shadow</i> (Paul Bakaus, MIT). <b>Lineage:</b> Marey&rsquo;s chronophotographs, Duchamp&rsquo;s <i>Nude Descending a Staircase</i>.'},
 {cat:'S',id:'raymarch',name:'Raymarched Field',kind:'gl',frag:F_RAYMARCH,
  blurb:'A genuine 3D scene — an infinite lattice of spheres and rounded boxes defined only by a distance function, with the camera flown through it. No geometry is ever stored; every pixel walks a ray until it lands on a surface.',
  meta:'<b>Rebuilt from the Raymarching card, but posterized onto paper</b> rather than rendered smooth on black. The reference glows because it is lit; this bands the same lighting into three to five flat tones, which reads as an engraving of a solid and survives print.'},
@@ -2431,6 +2863,9 @@ const SYSTEMS=[
 {cat:'F',id:'super',name:'Superformula',kind:'js',draw:drawSuperformula,
  blurb:'Gielis&rsquo; 2003 equation, which generates most natural two-dimensional outlines — starfish, diatoms, petals, shells — from six numbers. Layered here with per-ring parameter drift.',
  meta:'<b>Why it matters:</b> a single formula with an enormous reachable space, which is exactly the property you want when a collection has to feel related but not repetitive.'},
+{cat:'F',id:'dipole',name:'Dipole field',kind:'js',draw:drawDipoleField,
+ blurb:'The field lines of a magnetic dipole are exactly r&nbsp;=&nbsp;R&middot;sin&sup2;&theta;, one curve per constant R. Constants are clustered — hairline groups, voids, a few filled lobes carrying the value — and the dipole is pushed off-centre so the outer lines run off the sheet.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Magnetic Field</i> (Paul Bakaus, MIT). One equation, as the Formula tab requires: the source already used the closed form rather than a simulation.'},
 
 /* -- emissive (screen-native) -- */
 {cat:'E',id:'gravity',name:'Gravity',dark:true,kind:'js',draw:drawGravity,
@@ -2449,7 +2884,10 @@ const SYSTEMS=[
  meta:'<b>The most differentiated category in your list.</b> Typographic posters sell reliably, the personalization is legible at a glance, and nothing else in this catalogue reads as language.'},
 {cat:'T',id:'maze',name:'MonoMaze',kind:'js',draw:drawMonoMaze,
  blurb:'A modular tile set — quarter arcs or diagonals — chosen per cell by hash, so paths connect across the grid into a maze that was never planned. Occasional solid cells and heavy-weight tiles carry the value structure.',
- meta:'<b>Lineage:</b> Truchet tiles (1704), and the one-line Commodore 64 program <code>10 PRINT CHR$(205.5+RND(1))</code>.'}
+ meta:'<b>Lineage:</b> Truchet tiles (1704), and the one-line Commodore 64 program <code>10 PRINT CHR$(205.5+RND(1))</code>.'},
+{cat:'T',id:'glyph',name:'GlyphLine',kind:'js',draw:drawGlyphLine,
+ blurb:'Four to seven brush strokes steered by noise. Width swells and tapers thin&ndash;thick&ndash;thin and narrows when the brush moves fast; one bold stroke always enters from an edge. Each stroke is drawn as separate bristles, so a fast or ending stroke breaks into dry-brush streaks.',
+ meta:'<b>Source:</b> rebuilt from Radiant&rsquo;s <i>Ink Calligraphy</i> (Paul Bakaus, MIT). Closes the GlyphLine item on the coverage map: abstract calligraphic gesture, belonging to no script.'}
 ];
 
 const TABS=[
@@ -2663,7 +3101,7 @@ TABS.forEach(tab=>{
       ['SacredCode','done','built as mandala symmetry — commercially the safest new addition'],
       ['PatternScript','flag','see note below'],
       ['RuneGrid','flag','see note below'],
-      ['GlyphLine','open','abstract calligraphy from motion — genuinely good, and the safest item in this category'],
+      ['GlyphLine','done','built — Typographic (brush model from Radiant&rsquo;s Ink Calligraphy)'],
       ['SignalMark','open','overlaps CodeSigil'],
       ['Tradition Shift','flag','see note below']]],
      ['7 · Motion Static',[
@@ -2676,7 +3114,7 @@ TABS.forEach(tab=>{
     ];
     const badge={done:['#7fb489','built'],dup:['#6f8fb8','duplicate'],open:['#8d8a84','open'],flag:['#c9a06a','flagged']};
     let html=`<div class="intro"><h2>Coverage map</h2>
-      <p>All 42 concepts from your seven categories, mapped against what exists. <b>17 are built</b>, 7 are duplicates of something already built under a different name, 6 are flagged, and 12 are genuinely open. The count that matters is not how many are named — it is how many have been printed, which is still zero.</p></div>`;
+      <p>All 42 concepts from your seven categories, mapped against what exists. <b>18 are built</b>, 7 are duplicates of something already built under a different name, 6 are flagged, and 11 are genuinely open. The count that matters is not how many are named — it is how many have been printed, which is still zero.</p></div>`;
     cov.forEach(([cat,items])=>{
       html+=`<section><div class="head"><h3>${cat}</h3></div><div style="margin-top:10px">`;
       items.forEach(([n,st,why])=>{
