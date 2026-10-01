@@ -3705,7 +3705,7 @@ function drawLineDunes(cv,seed){
   c.fillStyle=paper; c.fillRect(0,0,W,H);
   const n=3+Math.floor(R(seed,2)*2), lw=M*0.0055, gap=M*(0.016+R(seed,3)*0.006);
   for(let k=0;k<n;k++){
-    const base=H*(0.14+0.8*k/(n-0.5)), amp=H*(0.06+R(seed,10+k)*0.08);
+    const base=H*(-0.02+0.92*k/(n-0.5)), amp=H*(0.06+R(seed,10+k)*0.08);
     const f1=0.6+R(seed,20+k)*1.2, p1=R(seed,30+k)*6.283, sk=0.4+R(seed,40+k)*0.5;
     const crest=x=>{ const u=x/W*f1*6.283+p1, s=Math.sin(u)+sk*Math.sin(2*u+0.8); return base-amp*(0.5+0.5*s/(1+sk)); };
     const xs=[]; for(let i=0;i<=160;i++) xs.push(-2+i/160*(W+4));
@@ -4273,7 +4273,7 @@ SYSTEMS.push(
 {cat:'K',id:'ttree',bleed:true,name:'Turing Tree',kind:'js',draw:drawTuringTree,
  blurb:'A tree drawn only with broken, wobbly ink stripes, the way reaction&ndash;diffusion labyrinths look: horizontal ground bands, a trunk on the centre axis, and a canopy fanning from the top of the trunk.'},
 {cat:'K',id:'dunes',bleed:true,name:'Line Dunes',kind:'js',draw:drawLineDunes,
- blurb:'Four to six ridges from the top of the sheet to the bottom, each a bundle of contour lines following its crest and spreading as it falls.'},
+ blurb:'Three or four ridges from the top edge of the sheet to the bottom, each a bundle of contour lines following its crest and spreading as it falls.'},
 {cat:'K',id:'lava',bleed:true,name:'Lava Blobs',kind:'js',draw:drawLavaBlobs,
  blurb:'A slow warped noise field cut into iso-bands: two dark tones and a light gutter between them, so the sheet reads as lava-lamp shapes.'},
 {cat:'K',id:'mesh',bleed:true,name:'Mesh Gradient',kind:'gl',frag:F_K_MESH,
