@@ -153,7 +153,7 @@ in vec2 a; void main(){ gl_Position=vec4(a,0.,1.); }`;
 const PRELUDE=`#version 300 es
 precision highp float;
 out vec4 outColor;
-uniform vec2 u_res; uniform float u_seed;
+uniform vec2 u_res; uniform float u_seed; uniform float u_vivid;
 const vec3 PAPER=vec3(0.949,0.941,0.919);
 const vec3 INK  =vec3(0.078,0.078,0.102);
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
@@ -200,6 +200,7 @@ function renderGL(body,seed,extra){
   gl.viewport(0,0,glc.width,glc.height);
   gl.uniform2f(gl.getUniformLocation(p,'u_res'),glc.width,glc.height);
   gl.uniform1f(gl.getUniformLocation(p,'u_seed'),seed);
+  gl.uniform1f(gl.getUniformLocation(p,'u_vivid'),POSTER_VIVID?1.4:1.0);
   if(extra) extra(p);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
@@ -2715,6 +2716,16 @@ function vivid(h,k){
   return '#'+[f(hu+1/3),f(hu),f(hu-1/3)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('');
 }
 const VIVID=1.6;
+/* The vivid treatment can be switched off to compare: each palette registers
+   its untouched values and the boost to apply, and setPosterVivid() rebuilds
+   them. The contrast finish (punch) and the GL chroma boost follow the flag. */
+let POSTER_VIVID=true;
+const VIVID_REG=[];
+function vividReg(arr,boost){ VIVID_REG.push([arr,JSON.parse(JSON.stringify(arr)),boost]); if(POSTER_VIVID) boost(arr); }
+function setPosterVivid(on){
+  POSTER_VIVID=!!on;
+  VIVID_REG.forEach(([arr,orig,boost])=>{ arr.splice(0,arr.length,...JSON.parse(JSON.stringify(orig))); if(POSTER_VIVID) boost(arr); });
+}
 const POSTER_INKS=[
   ['#f1e9dc','#7a1f1f','oxblood'],
   ['#f3ece0','#a3201b','vermilion'],
@@ -2724,14 +2735,14 @@ const POSTER_INKS=[
   ['#f2eadc','#a9472a','terracotta'],
   ['#ebe5d9','#1c1c1c','black']
 ];
-POSTER_INKS.forEach(e=>{ e[1]=vivid(e[1],VIVID); });
+vividReg(POSTER_INKS,a=>a.forEach(e=>{ e[1]=vivid(e[1],VIVID); }));
 const POSTER_TONES=[
   ['teal',['#e9dcc6','#9ccfc6','#3b9a9c','#1f6f78','#164a5a']],
   ['sunset',['#f2dca8','#e9a33c','#de7a2b','#c9542a','#a8362a']],
   ['clay',['#efe4d2','#d9a78a','#b5623f','#7a2f22','#3d1c18']],
   ['indigo',['#ece6da','#9fb2cf','#4b6aa3','#22396e','#141f3d']]
 ];
-POSTER_TONES.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); });
+vividReg(POSTER_TONES,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
 function posterInk(seed,i){ return POSTER_INKS[Math.floor(R(seed,i)*POSTER_INKS.length)]; }
 
 /* -- convex polygon kit: clip, split, inset, round, warp ------------------- */
@@ -3141,7 +3152,7 @@ const POSTER_SETS=[
   ['coast',['#eee8dc','#a9c4c2','#4f8a8b','#1f4e5f','#d9a05b']],
   ['rose',['#f2e8dc','#e7b9a8','#c46a5a','#7a2f3a','#2d2a32']]
 ];
-POSTER_SETS.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); });
+vividReg(POSTER_SETS,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
 function posterSet(seed,i){ return POSTER_SETS[Math.floor(R(seed,i)*POSTER_SETS.length)]; }
 
 /* Recolour an existing system with a poster set. palOf() picks from
@@ -3273,7 +3284,7 @@ const FREE_SETS=[
   ['moss',['#ebe6d8','#203a30','#5f8b6c','#d49a52']],
   ['ink',['#f0ebe1','#121318','#3b4a6b','#c4472d']]
 ];
-FREE_SETS.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); });
+vividReg(FREE_SETS,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
 function freeSet(seed,i){ return FREE_SETS[Math.floor(R(seed,i)*FREE_SETS.length)]; }
 function lerpHex(cols,t){
   t=Math.max(0,Math.min(0.9999,t))*(cols.length-1); const i=Math.floor(t), f=t-i;
@@ -3336,7 +3347,7 @@ void freePal(out vec3 g,out vec3 a,out vec3 b,out vec3 c){
   else if(k<4.0){ g=hx(12.,11.,9.); a=hx(122.,90.,44.); b=hx(201.,154.,78.); c=hx(245.,227.,184.); }
   else { g=hx(14.,22.,20.); a=hx(32.,58.,48.); b=hx(95.,139.,108.); c=hx(232.,200.,150.); }
 }
-vec3 vivid3(vec3 c){ float l=dot(c,vec3(0.299,0.587,0.114)); return clamp(mix(vec3(l),c,1.4),0.0,1.0); }
+vec3 vivid3(vec3 c){ float l=dot(c,vec3(0.299,0.587,0.114)); return clamp(mix(vec3(l),c,u_vivid),0.0,1.0); }
 vec3 ramp(vec3 g,vec3 a,vec3 b,vec3 c,float t){
   t=clamp(t,0.0,1.0); return vivid3( t<0.33?mix(g,a,t/0.33):t<0.66?mix(a,b,(t-0.33)/0.33):mix(b,c,(t-0.66)/0.34)); }
 mat2 rot2(float a){ float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
@@ -3573,7 +3584,7 @@ const GROOVY_SETS=[
   ['lagoon',['#eaf0ee','#1f5f7a','#7cc3c9','#f2c46b','#d9643a','#16323f']],
   ['cocoa',['#9ad0ee','#3a2418','#5a3426','#1d120c','#9ad0ee','#c47a4a']]
 ];
-GROOVY_SETS.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); });
+vividReg(GROOVY_SETS,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
 const hexRGB=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 /* Per-pixel painter with 2×2 supersampling: f(x,y) returns an [r,g,b]. */
 function paintPixels(c,W,H,f){
@@ -3730,7 +3741,7 @@ function drawLineDunes(cv,seed){
 function drawLavaBlobs(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const sets=[['#9ad0ee','#3a2418','#1d120c'],['#f3e6d6','#c2452c','#7a1f1f'],['#eef0a0','#151c33','#1f2a4a'],['#f6d2b0','#5f6a2c','#3a4220']];
-  const S=sets[Math.floor(R(seed,1)*sets.length)].map(h=>hexRGB(vivid(h,VIVID)));
+  const S=sets[Math.floor(R(seed,1)*sets.length)].map(h=>hexRGB(POSTER_VIVID?vivid(h,VIVID):h));
   const fs=1.0+R(seed,2)*0.8, k=2.4+R(seed,3)*1.6, gw=0.16+R(seed,4)*0.08, wk=1.0+R(seed,5)*1.2;
   paintPixels(c,W,H,(x,y)=>{
     const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+3.1,v+7.7,seed);
@@ -3839,7 +3850,7 @@ const SKIES=[
   ['teal',['#bfe0dc','#3a8aa0','#2b6f8f','#9ccfd8']],
   ['evergreen',['#8fb595','#4b7a55','#1f3a22']]
 ];
-SKIES.forEach(e=>{ e[1]=e[1].map(h=>vivid(h,1.3)); });
+vividReg(SKIES,a=>a.forEach(e=>{ e[1]=e[1].map(h=>vivid(h,1.3)); }));
 function gradRGB(stops,t){ t=Math.max(0,Math.min(0.99999,t))*(stops.length-1); const i=Math.floor(t), f=t-i, a=hexRGB(stops[i]), b=hexRGB(stops[i+1]);
   /* smoothstep between stops keeps the joins invisible */
   const g=f*f*(3-2*f); return [a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g,a[2]+(b[2]-a[2])*g]; }
@@ -4401,7 +4412,7 @@ function punch(cv){
   c.putImageData(img,0,0);
 }
 function paintGated(sys,cv,base){
-  if(NOGATE.has(sys.id)){ paint(sys,cv,base); if(sys.cat==='K') punch(cv); applyGrain(cv); return; }
+  if(NOGATE.has(sys.id)){ paint(sys,cv,base); if(sys.cat==='K'&&POSTER_VIVID) punch(cv); applyGrain(cv); return; }
   let best=null;
   for(let t=0;t<SAFE.tries;t++){
     /* deterministic re-roll: same input always lands on the same accepted plate */
@@ -4411,13 +4422,13 @@ function paintGated(sys,cv,base){
     /* `bleed` systems legitimately cover the whole sheet in colour, so the upper
        coverage bound (which exists to catch all-ink plates) does not apply. */
     const capped=sys.bleed||m.cov<=SAFE.maxCov;
-    if(m.cov>=SAFE.minCov && capped && m.occupied>=SAFE.minCells){ if(sys.cat==='K') punch(cv); applyGrain(cv); return; }
+    if(m.cov>=SAFE.minCov && capped && m.occupied>=SAFE.minCells){ if(sys.cat==='K'&&POSTER_VIVID) punch(cv); applyGrain(cv); return; }
     const score=(m.occupied/9)+Math.min(1,m.cov/SAFE.minCov)*0.5
                 -(sys.bleed?0:Math.max(0,m.cov-SAFE.maxCov)*3);
     if(!best||score>best.score) best={score,seed};
   }
   paint(sys,cv,best.seed);
-  if(sys.cat==='K') punch(cv);
+  if(sys.cat==='K'&&POSTER_VIVID) punch(cv);
   applyGrain(cv);   /* finish applied after acceptance, so it never skews the measurement */
 }
 
