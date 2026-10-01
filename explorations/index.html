@@ -3220,6 +3220,180 @@ function drawDistanceField(cv,seed){
   noteStrategy(cv,['single','pair','stack'][layout]+' · '+nm);
 }
 
+/* ---- free-palette posters ----------------------------------------------
+   The second poster batch is not bound to cream and one ink: dark grounds,
+   gradients and shading are allowed. Composition rules still hold: one
+   centred subject, or a field that runs to every edge. Each set is
+   [ground, then three colours from shadow to light]. */
+const FREE_SETS=[
+  ['ember',['#110d0b','#9c2b2b','#e0703a','#f6cf8a']],
+  ['tide',['#08101e','#1f5f8b','#53b3c9','#e8d6a8']],
+  ['orchid',['#130c1c','#4b3fb0','#b46ad6','#f6b6cf']],
+  ['gilt',['#0c0b09','#7a5a2c','#c99a4e','#f5e3b8']],
+  ['moss',['#ebe6d8','#203a30','#5f8b6c','#d49a52']],
+  ['ink',['#f0ebe1','#121318','#3b4a6b','#c4472d']]
+];
+function freeSet(seed,i){ return FREE_SETS[Math.floor(R(seed,i)*FREE_SETS.length)]; }
+function lerpHex(cols,t){
+  t=Math.max(0,Math.min(0.9999,t))*(cols.length-1); const i=Math.floor(t), f=t-i;
+  const a=cols[i], b=cols[i+1], h=(s,k)=>parseInt(s.slice(k,k+2),16);
+  return `rgb(${h(a,1)+(h(b,1)-h(a,1))*f|0},${h(a,3)+(h(b,3)-h(a,3))*f|0},${h(a,5)+(h(b,5)-h(a,5))*f|0})`;
+}
+
+/* Flow field — evenly spaced streamlines (an occupancy grid stops any line
+   that would crowd another) through a noise field. Half the seeds add a
+   vortex at the centre of the sheet that fades out toward the edges, so the
+   strands wheel around one point and then comb out into the corners. Colour
+   runs along a three-stop gradient by position. */
+function drawFlowPoster(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,P]=freeSet(seed,1), cols=P.slice(1);
+  c.fillStyle=P[0]; c.fillRect(0,0,W,H);
+  const vortex=R(seed,2)<0.6, fs=0.9+R(seed,3)*1.4, sw=R(seed,4)<0.5?1:-1, inward=0.12+R(seed,5)*0.3;
+  const cx=W/2, cy=H/2;
+  const dir=(x,y)=>{
+    const n=fbm(x/W*fs,y/H*fs,seed)*Math.PI*2.4; let vx=Math.cos(n), vy=Math.sin(n);
+    if(vortex){ const dx=x-cx, dy=y-cy, r=Math.hypot(dx,dy)/M, ph=Math.atan2(dy,dx)+sw*(Math.PI/2+inward), w=Math.exp(-r*r*2.2);
+      vx=vx*(1-w)+Math.cos(ph)*w; vy=vy*(1-w)+Math.sin(ph)*w; }
+    const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l];
+  };
+  const sep=M*(0.009+R(seed,6)*0.006), stepL=sep*0.5, test=sep*0.85;
+  const gw=Math.ceil(W/sep), gh=Math.ceil(H/sep), grid=new Array(gw*gh);
+  const free=(x,y)=>{ const gi=Math.floor(x/sep), gj=Math.floor(y/sep);
+    for(let j=gj-1;j<=gj+1;j++) for(let i=gi-1;i<=gi+1;i++){ if(i<0||j<0||i>=gw||j>=gh) continue;
+      const b=grid[j*gw+i]; if(b) for(const q of b) if(Math.hypot(q[0]-x,q[1]-y)<test) return false; }
+    return true; };
+  const add=(x,y)=>{ const k=Math.floor(y/sep)*gw+Math.floor(x/sep); (grid[k]||(grid[k]=[])).push([x,y]); };
+  const seeds=[]; for(let j=0;j<gh;j++) for(let i=0;i<gw;i++) seeds.push([(i+R(seed,i*7+j*13))*sep,(j+R(seed,i*11+j*5+3))*sep,R(seed,i*3+j*17+9)]);
+  seeds.sort((a,b)=>a[2]-b[2]);
+  c.lineCap='round'; c.lineJoin='round';
+  const wBase=sep*(0.38+R(seed,7)*0.22);
+  for(const [sx,sy] of seeds){
+    if(!free(sx,sy)) continue;
+    const line=[[sx,sy]];
+    for(const sgn of [1,-1]){ let x=sx,y=sy;
+      for(let k=0;k<500;k++){ const [vx,vy]=dir(x,y); x+=vx*stepL*sgn; y+=vy*stepL*sgn;
+        if(x<-sep||y<-sep||x>W+sep||y>H+sep||!free(x,y)) break;
+        sgn>0?line.push([x,y]):line.unshift([x,y]); } }
+    if(line.length<6) continue;
+    line.forEach(q=>add(q[0],q[1]));
+    const t=0.65*(sy/H)+0.35*fbm(sx/W*2,sy/H*2,seed+5);
+    c.strokeStyle=lerpHex(cols,t); c.lineWidth=wBase;
+    c.beginPath(); c.moveTo(line[0][0],line[0][1]); for(const q of line) c.lineTo(q[0],q[1]); c.stroke();
+  }
+  noteStrategy(cv,(vortex?'centred vortex':'open field')+' · '+nm);
+}
+
+/* GL posters share one palette chooser so a seed picks a coherent set. */
+const GL_FREE=`
+vec3 hx(float r,float g,float b){ return vec3(r,g,b)/255.0; }
+void freePal(out vec3 g,out vec3 a,out vec3 b,out vec3 c){
+  float k=floor(rnd(90.)*5.0);
+  if(k<1.0){ g=hx(17.,13.,11.); a=hx(156.,43.,43.); b=hx(224.,112.,58.); c=hx(246.,207.,138.); }
+  else if(k<2.0){ g=hx(8.,16.,30.); a=hx(31.,95.,139.); b=hx(83.,179.,201.); c=hx(232.,214.,168.); }
+  else if(k<3.0){ g=hx(19.,12.,28.); a=hx(75.,63.,176.); b=hx(180.,106.,214.); c=hx(246.,182.,207.); }
+  else if(k<4.0){ g=hx(12.,11.,9.); a=hx(122.,90.,44.); b=hx(201.,154.,78.); c=hx(245.,227.,184.); }
+  else { g=hx(14.,22.,20.); a=hx(32.,58.,48.); b=hx(95.,139.,108.); c=hx(232.,200.,150.); }
+}
+vec3 ramp(vec3 g,vec3 a,vec3 b,vec3 c,float t){
+  t=clamp(t,0.0,1.0); return t<0.33?mix(g,a,t/0.33):t<0.66?mix(a,b,(t-0.33)/0.33):mix(b,c,(t-0.66)/0.34); }
+mat2 rot2(float a){ float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
+`;
+
+/* Raymarched form — one sculptural object, three to five spheres and
+   sometimes a ring fused with a smooth minimum, floating at the centre of
+   the sheet. Soft key light, ambient from above, a rim, one highlight. The
+   ground is a quiet radial gradient so the object is the whole picture. */
+const F_K_FORM=GL_FREE+`
+float smin(float a,float b,float k){ float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0); return mix(b,a,h)-k*h*(1.0-h); }
+float mapF(vec3 p){
+  p.xz*=rot2(rnd(20.)*6.283); p.xy*=rot2((rnd(21.)-0.5)*0.9);
+  float d=1e9; float n=3.0+floor(rnd(1.)*3.0);
+  for(int i=0;i<5;i++){ float fi=float(i); if(fi>=n) break;
+    vec3 c=(vec3(rnd(10.+fi),rnd(30.+fi),rnd(50.+fi))-0.5)*vec3(1.0,1.2,0.9);
+    d=smin(d,length(p-c)-(0.30+rnd(70.+fi)*0.26),0.38); }
+  if(rnd(5.)<0.45){ vec3 q=p; q.yz*=rot2(1.1+rnd(6.)); vec2 t=vec2(length(q.xz)-0.78,q.y); d=smin(d,length(t)-0.15,0.22); }
+  return d;
+}
+vec3 nrmF(vec3 p){ vec2 e=vec2(0.0015,0.0);
+  return normalize(vec3(mapF(p+e.xyy)-mapF(p-e.xyy),mapF(p+e.yxy)-mapF(p-e.yxy),mapF(p+e.yyx)-mapF(p-e.yyx))); }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  vec3 ro=vec3(0.0,0.0,-4.4), rd=normalize(vec3(uv*0.92,3.0));
+  float t=0.0; bool hit=false;
+  for(int i=0;i<140;i++){ float d=mapF(ro+rd*t); if(d<0.001){ hit=true; break; } t+=d; if(t>9.0) break; }
+  float rr=length(uv);
+  vec3 col=mix(mix(a,g,0.55),g,smoothstep(0.0,1.6,rr));
+  if(hit){
+    vec3 p=ro+rd*t, n=nrmF(p), l=normalize(vec3(-0.55,0.65,-0.55)), h=normalize(l-rd);
+    float dif=clamp(dot(n,l),0.0,1.0), amb=0.5+0.5*n.y;
+    float ao=0.0; for(int k=1;k<=5;k++){ float hk=0.06*float(k); ao+=(hk-mapF(p+n*hk)); } ao=clamp(1.0-ao*2.2,0.0,1.0);
+    float fre=pow(1.0-clamp(dot(n,-rd),0.0,1.0),3.0), spe=pow(clamp(dot(n,h),0.0,1.0),48.0);
+    vec3 base=ramp(g,a,b,c,0.18+0.7*dif);
+    col=base*(0.55+0.45*amb)*ao+c*fre*0.35+vec3(spe*0.55);
+  }
+  outColor=vec4(col,1.0);
+}`;
+
+/* Eclipse — a black disc at the centre of the sheet with a corona of
+   angular noise streaming outward, a bright limb, and the glow fading to the
+   ground at the edges. */
+const F_K_ECLIPSE=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 p=uvCentered(); float r=length(p); vec2 dir=p/max(r,1e-4);
+  float R0=0.36+rnd(1.)*0.1;
+  vec2 o=vec2(rnd(2.),rnd(3.))*40.0;
+  float rays=fbmG(dir*3.0+o)*0.6+fbmG(dir*11.0+o*1.7)*0.4;
+  float fall=(0.10+0.30*rays*rays)*(0.8+rnd(4.)*0.6);
+  float cor=r>R0?exp(-(r-R0)/fall):0.0;
+  float limb=exp(-abs(r-R0)*90.0);
+  vec3 col=g+ramp(g,a,b,c,cor)*cor*1.1+c*limb*0.9;
+  col=mix(col,g*0.6,smoothstep(R0+0.004,R0-0.004,r));
+  col=1.0-exp(-col*1.6);
+  outColor=vec4(col,1.0);
+}`;
+
+/* Vortex — logarithmic spiral ribbons wound around the centre of the sheet.
+   Each ribbon is satin-shaded across its width, dark gaps separate them, and
+   they deepen toward a glowing eye. */
+const F_K_VORTEX=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 p=uvCentered(); float r=length(p)+1e-4, th=atan(p.y,p.x);
+  float arms=2.0+floor(rnd(1.)*5.0), tw=(1.2+rnd(2.)*2.2)*(rnd(3.)<0.5?-1.0:1.0);
+  float v=th/6.28318*arms+log(r)*tw, f=fract(v), aa=fwidth(v)*1.5;
+  float gap=smoothstep(0.0,0.05+aa,f)*smoothstep(1.0,0.95-aa,f);
+  float sat=sin(f*3.14159);
+  float depth=smoothstep(0.0,1.1,r);
+  vec3 col=ramp(g,a,b,c,0.15+0.8*sat*(0.35+0.65*depth));
+  col=mix(g,col,gap*(0.25+0.75*depth));
+  col+=c*exp(-r*7.0)*0.9;
+  outColor=vec4(col,1.0);
+}`;
+
+/* Fracture — a cracked plate: warped Voronoi cells, the cracks between them
+   glowing, a finer second network inside each cell. A field that runs to
+   every edge. */
+const F_K_FRACTURE=GL_FREE+`
+vec2 h22(vec2 p){ return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453); }
+vec3 vor(vec2 x){ vec2 n=floor(x), f=fract(x); float f1=8.0,f2=8.0; vec2 id=vec2(0.0);
+  for(int j=-1;j<=1;j++) for(int i=-1;i<=1;i++){ vec2 g=vec2(float(i),float(j)); vec2 o=h22(n+g+floor(u_seed));
+    float d=length(g+o-f); if(d<f1){ f2=f1; f1=d; id=n+g; } else if(d<f2) f2=d; }
+  return vec3(f2-f1,hash21(id),f1); }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 p=uvCentered()*(2.2+rnd(1.)*1.6);
+  p+=vec2(fbmG(p*0.8+3.0),fbmG(p*0.8+9.0))*0.6;
+  vec3 v1=vor(p), v2=vor(p*3.1+7.0);
+  float crack=exp(-v1.x*28.0), fine=exp(-v2.x*40.0)*0.35;
+  vec3 cell=mix(g,a,0.18+0.25*v1.y)*(0.75+0.25*smoothstep(0.0,0.6,v1.z));
+  vec3 col=cell+ramp(g,a,b,c,crack)*crack*1.3+b*fine*(1.0-crack);
+  col=1.0-exp(-col*1.5);
+  outColor=vec4(col,1.0);
+}`;
+
 /* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
    disc, disc, triangle, plain) in a three- or four-colour set. Quarter discs
    are often grouped four to a 2×2 block so they meet as one large circle,
@@ -3599,6 +3773,16 @@ SYSTEMS.push(
  blurb:'The aperiodic rhombus tiling from the Geometric tab, grown from its five-fold centre placed on the middle of the sheet. Tiles are coloured by type and by concentric ring, so the star carries at poster distance, with paper gutters instead of ink hairlines.'},
 {cat:'K',id:'dfield',bleed:true,name:'Distance Field',kind:'js',draw:drawDistanceField,
  blurb:'The signed distance to one, two or three circles on the sheet\'s axes, merged with a smooth minimum and drawn as contour bands. The shapes are solid ink; the bands spread from them to every edge, so where two shapes meet the rings fuse into one figure.'},
+{cat:'K',id:'flowp',bleed:true,name:'Flow Field',kind:'js',draw:drawFlowPoster,
+ blurb:'Evenly spaced streamlines through a noise field, in a gradient across the sheet. Most seeds add a vortex at the centre that fades toward the edges, so the strands wheel around one point and comb out into the corners. After Radiant&rsquo;s <i>Flow Field</i>.'},
+{cat:'K',id:'form',bleed:true,name:'Raymarched Form',kind:'gl',frag:F_K_FORM,
+ blurb:'One sculptural object raymarched at the centre of the sheet: three to five spheres, sometimes a ring, fused with a smooth minimum. Soft key light, ambient occlusion, a rim and a single highlight on a quiet gradient ground. After Radiant&rsquo;s <i>Metamorphosis</i>.'},
+{cat:'K',id:'eclipse',bleed:true,name:'Eclipse',kind:'gl',frag:F_K_ECLIPSE,
+ blurb:'A black disc at the centre with a corona of angular noise streaming out to the edges and a bright limb. After Radiant&rsquo;s <i>Eclipse Glow</i>.'},
+{cat:'K',id:'vortexp',bleed:true,name:'Vortex',kind:'gl',frag:F_K_VORTEX,
+ blurb:'Logarithmic spiral ribbons wound around the centre, satin-shaded across their width and deepening toward a glowing eye. After Radiant&rsquo;s <i>Vortex</i>.'},
+{cat:'K',id:'fracture',bleed:true,name:'Fracture',kind:'gl',frag:F_K_FRACTURE,
+ blurb:'Warped Voronoi cells with glowing cracks between them and a finer network inside each cell, edge to edge. After Radiant&rsquo;s <i>Gilded Fracture</i> and <i>Magma Core</i>.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
  blurb:'The Geometric tab\'s circle packing in a poster set instead of its screen palette. It is a field, so it runs to every edge.'},
 {cat:'K',id:'qblocks',bleed:true,name:'Quadtree Blocks',kind:'js',draw:drawQuadBlocks,
@@ -3627,7 +3811,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for this register, plus five existing systems recut: three to a single ink, two to a poster colour set. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
