@@ -3718,6 +3718,143 @@ void main(){
   outColor=vec4(toSRGB(col*col*0.9+col*0.1),1.0);
 }`;
 
+/* ---- fourth poster batch: after the second reference board -------------- */
+
+/* Maze stripes — the sheet split into three to six rectangles; each holds
+   concentric stripes that follow its border and open to one side, so they
+   read as nested U and L shapes, like a hand-painted labyrinth. A little
+   noise on the distance gives the edges a brushed wobble. */
+function drawMazeStripes(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
+  const rects=[[0,0,W,H]];
+  const n=3+Math.floor(R(seed,2)*4);
+  for(let k=0;k<n-1;k++){
+    rects.sort((a,b)=>b[2]*b[3]-a[2]*a[3]); const [x,y,w,h]=rects.shift();
+    const t=0.35+R(seed,10+k)*0.3;
+    if(w>h){ const a=Math.round(w*t); rects.push([x,y,a,h],[x+a,y,w-a,h]); }
+    else { const a=Math.round(h*t); rects.push([x,y,w,a],[x,y+a,w,h-a]); }
+  }
+  const sw=M*(0.024+R(seed,3)*0.012), open=rects.map((_,i)=>Math.floor(R(seed,40+i)*5)); /* 4 = closed */
+  const wob=M*0.004;
+  paintPixels(c,W,H,(px,py)=>{
+    let ri=0; for(let i=0;i<rects.length;i++){ const [x,y,w,h]=rects[i]; if(px>=x&&px<x+w&&py>=y&&py<y+h){ ri=i; break; } }
+    const [x,y,w,h]=rects[ri], o=open[ri];
+    const ds=[px-x, x+w-px, py-y, y+h-py]; if(o<4) ds[o]=1e9;
+    let d=Math.max(0,Math.min(...ds)+(noise2(px/M*14,py/M*14,seed)-0.5)*wob*2);
+    return Math.floor(d/sw)%2?Pp:Pi;
+  });
+  noteStrategy(cv,rects.length+' blocks · '+nm);
+}
+
+/* Fingerprint — thick paper stripes on an ink ground, evenly spaced and
+   flowing around a few whorls and deltas, the way a fingerprint or a
+   finger-painted canvas does. Edge to edge. */
+function drawFingerprint(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1);
+  c.fillStyle=ink; c.fillRect(0,0,W,H);
+  const n=2+Math.floor(R(seed,2)*3), pts=[];
+  for(let k=0;k<n;k++) pts.push([W*(0.15+0.7*R(seed,10+k)),H*(0.15+0.7*R(seed,20+k)),R(seed,30+k)<0.5?1:-1]);
+  const dir=(x,y)=>{ const a0=(fbm(x/M*0.9,y/M*0.9,seed)-0.5)*3; let vx=Math.cos(a0)*0.4, vy=Math.sin(a0)*0.4;
+    for(const [px,py,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.004; vx+=sg*-dy/d2*M*0.3; vy+=sg*dx/d2*M*0.3; }
+    const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l]; };
+  const sep=M*(0.019+R(seed,3)*0.006);
+  const lines=streamlines(W,H,seed,sep,dir,(x,y)=>x>-sep&&y>-sep&&x<W+sep&&y<H+sep,1200);
+  c.strokeStyle=paper; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=sep*0.46;
+  for(const L of lines){ c.beginPath(); c.moveTo(L[0][0],L[0][1]); for(const q of L) c.lineTo(q[0],q[1]); c.stroke(); }
+  noteStrategy(cv,n+' whorls · '+nm);
+}
+
+/* Cell net — a dense Voronoi field: ink cells separated by a paper net with
+   rounded joints, slightly warped so the cells look organic. Edge to edge. */
+function drawCellNet2(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
+  const sc=(14+R(seed,2)*12)/M, gw=0.13+R(seed,3)*0.09;
+  const h2=(i,j)=>{ const a=Math.sin(i*127.1+j*311.7+seed*1.3)*43758.5453, b=Math.sin(i*269.5+j*183.3+seed*2.1)*43758.5453; return [a-Math.floor(a),b-Math.floor(b)]; };
+  paintPixels(c,W,H,(x,y)=>{
+    let u=x*sc+(noise2(x/M*3,y/M*3,seed)-0.5)*1.2, v=y*sc+(noise2(x/M*3+7,y/M*3,seed)-0.5)*1.2;
+    const iu=Math.floor(u), iv=Math.floor(v); let f1=9,f2=9;
+    for(let j=-1;j<=1;j++) for(let i=-1;i<=1;i++){ const o=h2(iu+i,iv+j), dx=iu+i+0.15+o[0]*0.7-u, dy=iv+j+0.15+o[1]*0.7-v, d=Math.hypot(dx,dy);
+      if(d<f1){ f2=f1; f1=d; } else if(d<f2) f2=d; }
+    return f2-f1<gw?Pp:Pi;
+  });
+  noteStrategy(cv,nm);
+}
+
+/* Coral panels — the sheet cut into polygonal panels by four to six straight
+   paper gutters; each panel is a flat colour filled with small branching
+   glyphs in a contrasting colour, like coral or a script nobody reads. */
+function drawCoralPanels(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const sets=[['#efe8dc',['#a31d24','#141414','#a8927a','#e8dccb']],['#f2ece1',['#1f3c9e','#141414','#c4472d','#e8dccb']],['#ece6da',['#2d5b7c','#d9a05b','#1c1c1c','#e6dccb']]];
+  const [paper,cols]=sets[Math.floor(R(seed,1)*sets.length)];
+  const nl=4+Math.floor(R(seed,2)*3), lines=[];
+  for(let k=0;k<nl;k++){ const a=R(seed,10+k)*Math.PI, px=W*(0.2+0.6*R(seed,20+k)), py=H*(0.2+0.6*R(seed,30+k)); lines.push([px,py,Math.cos(a),Math.sin(a)]); }
+  const region=(x,y)=>{ let h=0; lines.forEach((l,i)=>{ if((x-l[0])*l[3]-(y-l[1])*l[2]>0) h|=1<<i; }); return h; };
+  const colOf=h=>Math.floor(R(seed,1000+h)*cols.length);
+  const cell=M*(0.11+R(seed,3)*0.03), st=cell/4, lw=st*0.5;
+  c.lineCap='round'; c.lineJoin='round';
+  for(let gy=-1;gy<H/cell+1;gy++) for(let gx=-1;gx<W/cell+1;gx++){
+    const cx=gx*cell, cy=gy*cell, h=region(cx+cell/2,cy+cell/2), bi=colOf(h);
+    c.fillStyle=cols[bi]; c.fillRect(cx,cy,cell+1,cell+1);
+  }
+  /* repaint the panel colours exactly, then glyphs on top */
+  const img=c.getImageData(0,0,W,H), D=img.data, rgbC=cols.map(hexRGB);
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const q=rgbC[colOf(region(x+0.5,y+0.5))], n=(y*W+x)*4; D[n]=q[0]; D[n+1]=q[1]; D[n+2]=q[2]; }
+  c.putImageData(img,0,0);
+  for(let gy=0;gy<H/cell;gy++) for(let gx=0;gx<W/cell;gx++){
+    const ox=gx*cell+st/2, oy=gy*cell+st/2, idx=gy*97+gx, h=region(ox+cell/2,oy+cell/2), bi=colOf(h);
+    const fg=cols[(bi+1+Math.floor(R(seed,1500+h)*(cols.length-1)))%cols.length];
+    c.strokeStyle=bi===3?cols[1]:(cols[bi]===cols[3]?cols[1]:cols[3]);
+    if(R(seed,1700+h)<0.5) c.strokeStyle=fg===cols[bi]?cols[3]:fg;
+    /* random tree on a 4×4 lattice */
+    const seen=new Set(), stack=[[Math.floor(R(seed,idx*5+1)*4),Math.floor(R(seed,idx*5+2)*4)]]; seen.add(stack[0]+'');
+    c.beginPath(); let steps=0;
+    while(stack.length&&steps<26){ const [i,j]=stack[Math.floor(R(seed,idx*13+steps)*stack.length)];
+      const d=[[1,0],[-1,0],[0,1],[0,-1]][Math.floor(R(seed,idx*17+steps)*4)], ni=i+d[0], nj=j+d[1]; steps++;
+      if(ni<0||nj<0||ni>3||nj>3||seen.has(ni+','+nj)) continue;
+      seen.add(ni+','+nj); stack.push([ni,nj]);
+      c.moveTo(ox+i*st*0.95,oy+j*st*0.95); c.lineTo(ox+ni*st*0.95,oy+nj*st*0.95); }
+    c.lineWidth=lw; c.stroke();
+  }
+  c.strokeStyle=paper; c.lineWidth=M*0.022; c.lineCap='butt';
+  lines.forEach(l=>{ c.beginPath(); c.moveTo(l[0]-l[2]*W*3,l[1]-l[3]*W*3); c.lineTo(l[0]+l[2]*W*3,l[1]+l[3]*W*3); c.stroke(); });
+  noteStrategy(cv,nl+' cuts');
+}
+
+/* Gradients — the colour-field register: no form at all, only colour moving.
+   Sky gradients run vertically through four stops in perceptual space with
+   a faint horizontal drift; the stepped variant quantises one hue into
+   eleven to fifteen vertical columns; the framed variant sets one gradient
+   inside a frame of another, after the colour-field paintings on the board. */
+const SKIES=[
+  ['dusk',['#14141f','#1f4f8f','#9a8ad0','#e8b4c8','#f0a050']],
+  ['golden',['#e85a1a','#f08a3a','#f6c09a','#f5e6dc']],
+  ['lagoon',['#2a5f97','#5f9acb','#b9d6e6','#7fb3ad','#5a8f94']],
+  ['ember',['#a96a9c','#d28aa0','#e8a888','#c45a4a','#6a2328']],
+  ['teal',['#bfe0dc','#3a8aa0','#2b6f8f','#9ccfd8']],
+  ['evergreen',['#8fb595','#4b7a55','#1f3a22']]
+];
+function gradRGB(stops,t){ t=Math.max(0,Math.min(0.99999,t))*(stops.length-1); const i=Math.floor(t), f=t-i, a=hexRGB(stops[i]), b=hexRGB(stops[i+1]);
+  /* smoothstep between stops keeps the joins invisible */
+  const g=f*f*(3-2*f); return [a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g,a[2]+(b[2]-a[2])*g]; }
+function drawSkyGradient(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const mode=Math.floor(R(seed,1)*3), [nm,st]=SKIES[Math.floor(R(seed,2)*SKIES.length)];
+  if(mode===0){ const tilt=(R(seed,3)-0.5)*0.15;
+    paintPixels(c,W,H,(x,y)=>gradRGB(st,y/H+tilt*(x/W-0.5)+(noise2(x/W*1.5,y/H*1.5,seed)-0.5)*0.08)); }
+  else if(mode===1){ const n=11+Math.floor(R(seed,4)*5), s2=[st[0],st[st.length-1]], dirn=R(seed,5)<0.5;
+    for(let i=0;i<n;i++){ const q=gradRGB(s2,dirn?i/(n-1):1-i/(n-1)); c.fillStyle=`rgb(${q[0]|0},${q[1]|0},${q[2]|0})`; c.fillRect(Math.floor(i*W/n),0,Math.ceil(W/n)+1,H); } }
+  else { const [,st2]=SKIES[(Math.floor(R(seed,2)*SKIES.length)+1+Math.floor(R(seed,6)*(SKIES.length-1)))%SKIES.length];
+    const mx=W*0.12, my=H*0.1, inv=R(seed,7)<0.5;
+    paintPixels(c,W,H,(x,y)=>{ const inside=x>mx&&x<W-mx&&y>my&&y<H-my;
+      if(inside) return gradRGB(st,(y-my)/(H-2*my));
+      const t=y/H; return gradRGB(inv?st.slice().reverse():st2,t); }); }
+  noteStrategy(cv,['sky','stepped','framed'][mode]+' · '+nm);
+}
+
 /* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
    disc, disc, triangle, plain) in a three- or four-colour set. Quarter discs
    are often grouped four to a 2×2 block so they meet as one large circle,
@@ -4129,6 +4266,16 @@ SYSTEMS.push(
  blurb:'A slow warped noise field cut into iso-bands: two dark tones and a light gutter between them, so the sheet reads as lava-lamp shapes.'},
 {cat:'K',id:'mesh',bleed:true,name:'Mesh Gradient',kind:'gl',frag:F_K_MESH,
  blurb:'After Fragments&rsquo; mesh gradient lesson: a warped field read as satin folds in one hue, dark to bright. Most seeds cut it into horizontal slats, each sampled slightly offset, like satin seen through blinds.'},
+{cat:'K',id:'maze',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
+ blurb:'The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.'},
+{cat:'K',id:'fprint',bleed:true,name:'Fingerprint',kind:'js',draw:drawFingerprint,
+ blurb:'Thick paper stripes on an ink ground, evenly spaced and flowing around a few whorls, edge to edge.'},
+{cat:'K',id:'cellnet2',bleed:true,name:'Cell Net',kind:'js',draw:drawCellNet2,
+ blurb:'A dense warped Voronoi field: ink cells separated by a paper net, edge to edge.'},
+{cat:'K',id:'coral',bleed:true,name:'Coral Panels',kind:'js',draw:drawCoralPanels,
+ blurb:'The sheet cut into polygonal panels by straight paper gutters, each panel a flat colour filled with small branching glyphs in a contrasting colour.'},
+{cat:'K',id:'sky',bleed:true,name:'Gradients',kind:'js',draw:drawSkyGradient,
+ blurb:'Colour fields with no form: a vertical sky gradient with a faint drift, one hue stepped into vertical columns, or one gradient framed inside another.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
  blurb:'The Geometric tab\'s circle packing in a poster set instead of its screen palette. It is a field, so it runs to every edge.'},
 {cat:'K',id:'qblocks',bleed:true,name:'Quadtree Blocks',kind:'js',draw:drawQuadBlocks,
@@ -4157,7 +4304,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, seven after a decor reference board, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, twelve after two decor reference boards, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
