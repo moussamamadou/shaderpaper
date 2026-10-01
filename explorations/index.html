@@ -3523,6 +3523,206 @@ function drawHalftoneOrb(cv,seed){
 }
 function lumOfHex(h){ return parseInt(h.slice(1,3),16)*0.3+parseInt(h.slice(3,5),16)*0.59+parseInt(h.slice(5,7),16)*0.11; }
 
+/* ---- third poster batch: after the user's decor reference board ---------- */
+/* Retro sets for the flat-band pieces: ground first, then five inks. */
+const GROOVY_SETS=[
+  ['autumn',['#efe3cc','#e9792a','#5f6a2c','#c2452c','#f0a83a','#f2b48a']],
+  ['peach',['#f3e6d6','#e86a4a','#f4a64a','#e8a3a8','#c94b3a','#f6d2b0']],
+  ['lagoon',['#eaf0ee','#1f5f7a','#7cc3c9','#f2c46b','#d9643a','#16323f']],
+  ['cocoa',['#9ad0ee','#3a2418','#5a3426','#1d120c','#9ad0ee','#c47a4a']]
+];
+const hexRGB=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+/* Per-pixel painter with 2×2 supersampling: f(x,y) returns an [r,g,b]. */
+function paintPixels(c,W,H,f){
+  const img=c.createImageData(W,H), D=img.data;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ let r=0,g=0,b=0;
+    for(let k=0;k<4;k++){ const p=f(x+(k&1?0.75:0.25),y+(k&2?0.75:0.25)); r+=p[0]; g+=p[1]; b+=p[2]; }
+    const n=(y*W+x)*4; D[n]=r/4; D[n+1]=g/4; D[n+2]=b/4; D[n+3]=255; }
+  c.putImageData(img,0,0);
+}
+/* Evenly spaced streamlines: an occupancy grid stops any line that would
+   crowd another. dir(x,y) gives a unit vector; inside(x,y) bounds the lines. */
+function streamlines(W,H,seed,sep,dir,inside,maxSteps){
+  const stepL=sep*0.5, test=sep*0.85, gw=Math.ceil(W/sep), gh=Math.ceil(H/sep), grid=new Array(gw*gh), out=[];
+  const free=(x,y)=>{ const gi=Math.floor(x/sep), gj=Math.floor(y/sep);
+    for(let j=gj-1;j<=gj+1;j++) for(let i=gi-1;i<=gi+1;i++){ if(i<0||j<0||i>=gw||j>=gh) continue;
+      const b=grid[j*gw+i]; if(b) for(const q of b) if(Math.hypot(q[0]-x,q[1]-y)<test) return false; }
+    return true; };
+  const add=(x,y)=>{ if(x<0||y<0||x>=W||y>=H) return; const k=Math.floor(y/sep)*gw+Math.floor(x/sep); (grid[k]||(grid[k]=[])).push([x,y]); };
+  const seeds=[]; for(let j=0;j<gh;j++) for(let i=0;i<gw;i++) seeds.push([(i+R(seed,i*7+j*13+1))*sep,(j+R(seed,i*11+j*5+3))*sep,R(seed,i*3+j*17+9)]);
+  seeds.sort((a,b)=>a[2]-b[2]);
+  for(const [sx,sy] of seeds){
+    if(!inside(sx,sy)||!free(sx,sy)) continue;
+    const line=[[sx,sy]];
+    for(const sgn of [1,-1]){ let x=sx,y=sy;
+      for(let k=0;k<(maxSteps||600);k++){ const [vx,vy]=dir(x,y); x+=vx*stepL*sgn; y+=vy*stepL*sgn;
+        if(!inside(x,y)||!free(x,y)) break; sgn>0?line.push([x,y]):line.unshift([x,y]); } }
+    if(line.length<5) continue;
+    line.forEach(q=>add(q[0],q[1])); out.push(line);
+  }
+  return out;
+}
+
+/* Groovy bloom — flat wavy bands radiating from one focal point low on the
+   centre axis, like a 1970s flower-power print. Each band edge is a ray from
+   the focus bent by a sine of the distance, so the bands pinch at the focus
+   and billow outward to every edge. */
+function drawGroovyBloom(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,P]=GROOVY_SETS[Math.floor(R(seed,1)*GROOVY_SETS.length)], cols=P.slice(1).map(hexRGB);
+  const fx=W/2, fy=H*(0.6+R(seed,2)*0.12), K=6+Math.floor(R(seed,3)*5);
+  const A=(0.25+R(seed,4)*0.35)*Math.PI/K*1.6, f=(3+R(seed,5)*4), tw=(R(seed,6)-0.5)*1.4, m=2+Math.floor(R(seed,7)*2), ph=R(seed,8)*6.283;
+  const o=Math.floor(R(seed,9)*cols.length);
+  paintPixels(c,W,H,(x,y)=>{
+    const dx=x-fx, dy=y-fy, r=Math.hypot(dx,dy)/M, th=Math.atan2(dy,dx);
+    const t=th-tw*r-A*Math.sin(Math.sqrt(r)*f*3.0+th*m+ph)*Math.min(1,r*4);
+    const b=((Math.floor((t/(2*Math.PI))*K)%K)+K)%K;
+    return cols[(b+o)%cols.length];
+  });
+  noteStrategy(cv,K+' bands · '+nm);
+}
+
+/* Contour disc — one centred circle filled with the iso-bands of a
+   domain-warped noise field, ink and paper alternating, on a plain sheet.
+   After the hand-drawn line discs sold as Scandinavian prints. */
+function drawContourDisc(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
+  const R0=M*0.4, cx=W/2, cy=H/2, n=9+R(seed,2)*5, fs=0.9+R(seed,3)*0.6, wk=1.2+R(seed,4)*1.6, duty=0.42+R(seed,5)*0.12;
+  const rim=M*0.006;
+  paintPixels(c,W,H,(x,y)=>{
+    const d=Math.hypot(x-cx,y-cy);
+    if(d>R0) return Pp;
+    if(d>R0-rim) return Pi;
+    const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+5.2,v+1.3,seed);
+    const g=fbm(u+wk*qx,v+wk*qy,seed+3)*n;
+    return (g-Math.floor(g))<duty?Pi:Pp;
+  });
+  noteStrategy(cv,nm);
+}
+
+/* Strand disc — a centred circle filled with evenly spaced strands that
+   flow around three to six singular points (sources, sinks and swirls), so
+   the disc breaks into petal-like patches of parallel lines. */
+function drawStrandDisc(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1);
+  c.fillStyle=paper; c.fillRect(0,0,W,H);
+  const R0=M*0.41, cx=W/2, cy=H/2, n=3+Math.floor(R(seed,2)*4), pts=[];
+  for(let k=0;k<n;k++){ const a=R(seed,10+k)*6.283, r=Math.sqrt(R(seed,20+k))*R0*0.8;
+    pts.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r,(R(seed,30+k)-0.5)*3.0,R(seed,40+k)<0.5?1:-1]); }
+  const dir=(x,y)=>{ let vx=0,vy=0;
+    for(const [px,py,al,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.002, ca=Math.cos(al), sa=Math.sin(al);
+      vx+=sg*(dx*ca-dy*sa)/d2; vy+=sg*(dx*sa+dy*ca)/d2; }
+    const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l]; };
+  const inside=(x,y)=>Math.hypot(x-cx,y-cy)<R0-M*0.004;
+  const lines=streamlines(W,H,seed,M*(0.0105+R(seed,3)*0.004),dir,inside,900);
+  c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=M*0.0042;
+  for(const L of lines){ c.beginPath(); c.moveTo(L[0][0],L[0][1]); for(const q of L) c.lineTo(q[0],q[1]); c.stroke(); }
+  c.beginPath(); c.arc(cx,cy,R0,0,7); c.lineWidth=M*0.006; c.stroke();
+  noteStrategy(cv,n+' singular points · '+nm);
+}
+
+/* Turing tree — a tree drawn only with wobbly ink stripes, the way
+   reaction–diffusion labyrinths look: horizontal bands for the ground, a
+   vertical trunk on the centre axis, and a canopy whose stripes fan out from
+   the top of the trunk. The stripes break and wobble like brush marks. Set
+   inside a paper margin. */
+function drawTuringTree(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1);
+  c.fillStyle=paper; c.fillRect(0,0,W,H);
+  const mg=M*0.08, x0=mg, x1=W-mg, y0=mg, y1=H-mg, cx=W/2;
+  const ty=y0+(y1-y0)*(0.52+R(seed,2)*0.08), tw=(x1-x0)*(0.035+R(seed,3)*0.02), fy=ty+(y1-ty)*0.25;
+  const dir=(x,y)=>{
+    if(y>ty-tw && Math.abs(x-cx)<tw*(1+Math.max(0,(ty-y)/tw)*0.0)) return [0,1];
+    if(y>ty){ const w=Math.exp(-Math.pow((x-cx)/(tw*2.2),2)); const vx=1-w, vy=w*0.8; const l=Math.hypot(vx,vy); return [vx/l,vy/l]; }
+    const dx=x-cx, dy=y-fy, l=Math.hypot(dx,dy)||1;
+    const bend=0.25*Math.sin(x/M*9+seed)*Math.min(1,(ty-y)/M*3);
+    return [dx/l*Math.cos(bend)-dy/l*Math.sin(bend), dx/l*Math.sin(bend)+dy/l*Math.cos(bend)];
+  };
+  const inside=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;
+  const sep=M*(0.017+R(seed,4)*0.006);
+  const lines=streamlines(W,H,seed,sep,dir,inside,400);
+  c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round';
+  lines.forEach((L,li)=>{
+    /* break each stripe into wobbly dashes */
+    let seg=[], acc=0, cut=sep*(3+R(seed,500+li)*10);
+    const flush=()=>{ if(seg.length>1){ c.lineWidth=sep*(0.42+0.12*R(seed,700+li)); c.beginPath(); c.moveTo(seg[0][0],seg[0][1]); seg.forEach(q=>c.lineTo(q[0],q[1])); c.stroke(); } seg=[]; };
+    for(let i=0;i<L.length;i++){ const q=L[i], p=L[Math.max(0,i-1)], nx=-(q[1]-p[1]), ny=q[0]-p[0], nl=Math.hypot(nx,ny)||1;
+      const wob=Math.sin(i*0.9+li)*sep*0.09;
+      seg.push([q[0]+nx/nl*wob,q[1]+ny/nl*wob]); acc+=Math.hypot(q[0]-p[0],q[1]-p[1]);
+      if(acc>cut){ flush(); acc=0; cut=sep*(3+R(seed,900+li*7+i)*10); i+=1; } }
+    flush();
+  });
+  noteStrategy(cv,nm);
+}
+
+/* Line dunes — four to six ridges from the top of the sheet to the bottom,
+   each drawn as a bundle of contour lines that follow its crest and spread
+   as they fall, the front ridge masking the one behind. One ink on paper. */
+function drawLineDunes(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [paper,ink,nm]=posterInk(seed,1);
+  c.fillStyle=paper; c.fillRect(0,0,W,H);
+  const n=3+Math.floor(R(seed,2)*2), lw=M*0.0032, gap=M*(0.014+R(seed,3)*0.006);
+  for(let k=0;k<n;k++){
+    const base=H*(0.14+0.8*k/(n-0.5)), amp=H*(0.06+R(seed,10+k)*0.08);
+    const f1=0.6+R(seed,20+k)*1.2, p1=R(seed,30+k)*6.283, sk=0.4+R(seed,40+k)*0.5;
+    const crest=x=>{ const u=x/W*f1*6.283+p1, s=Math.sin(u)+sk*Math.sin(2*u+0.8); return base-amp*(0.5+0.5*s/(1+sk)); };
+    const xs=[]; for(let i=0;i<=160;i++) xs.push(-2+i/160*(W+4));
+    c.save(); c.beginPath(); c.moveTo(-2,H+2); xs.forEach(x=>c.lineTo(x,crest(x))); c.lineTo(W+2,H+2); c.closePath();
+    c.fillStyle=paper; c.fill(); c.clip();
+    c.strokeStyle=ink; c.lineWidth=lw;
+    const lines=Math.ceil((H-base+amp)/gap)+4;
+    for(let j=0;j<lines;j++){
+      /* offsets grow monotonically with j, so lines spread and pinch but never cross */
+      const dj=j*gap*(1+j*0.02);
+      c.beginPath(); xs.forEach((x,i)=>{ const y=crest(x)+dj*(1+0.55*Math.sin(x/W*(1.5+k*0.4)*3.14+k*1.7)); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+    }
+    c.lineWidth=lw*2.2; c.beginPath(); xs.forEach((x,i)=>i?c.lineTo(x,crest(x)):c.moveTo(x,crest(x))); c.stroke();
+    c.restore();
+  }
+  noteStrategy(cv,n+' ridges · '+nm);
+}
+
+/* Lava blobs — a slow, warped noise field cut into iso-bands: two dark
+   tones for the bands, a light gutter between them, so the sheet reads as
+   lava-lamp shapes flowing into each other. */
+function drawLavaBlobs(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const sets=[['#9ad0ee','#3a2418','#1d120c'],['#f3e6d6','#c2452c','#7a1f1f'],['#eef0a0','#151c33','#1f2a4a'],['#f6d2b0','#5f6a2c','#3a4220']];
+  const S=sets[Math.floor(R(seed,1)*sets.length)].map(hexRGB);
+  const fs=1.0+R(seed,2)*0.8, k=2.4+R(seed,3)*1.6, gw=0.16+R(seed,4)*0.08, wk=1.0+R(seed,5)*1.2;
+  paintPixels(c,W,H,(x,y)=>{
+    const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+3.1,v+7.7,seed);
+    const g=fbm(u+wk*qx,v+wk*qy,seed+9)*k*2, f=g-Math.floor(g), b=Math.floor(g);
+    if(f<gw) return S[0];
+    return b%2?S[1]:S[2];
+  });
+  noteStrategy(cv,'lava');
+}
+
+/* Mesh gradient — Fragments' warped-coordinate gradient with a procedural
+   cosine palette (a + b·cos 2π(c·t + d)), and on half the seeds the sheet is
+   cut into horizontal slats, each sampled slightly offset, like satin seen
+   through blinds. */
+const F_K_MESH=`
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res; vec2 p=uvCentered();
+  float k=floor(rnd(1.)*4.0);
+  vec3 lo=k<1.?vec3(0.30,0.02,0.10):k<2.?vec3(0.04,0.06,0.28):k<3.?vec3(0.22,0.06,0.02):vec3(0.03,0.14,0.12);
+  vec3 hi=k<1.?vec3(1.00,0.36,0.12):k<2.?vec3(0.35,0.62,1.00):k<3.?vec3(1.00,0.72,0.30):vec3(0.45,0.95,0.78);
+  float slats=rnd(4.)<0.6?floor(14.0+rnd(5.)*14.0):0.0, sh=1.0;
+  if(slats>0.0){ float j=floor(uv.y*slats), f=fract(uv.y*slats);
+    p.x+=(hash11(j+u_seed)-0.5)*0.12; sh=0.75+0.25*smoothstep(0.0,0.35,f)*(1.0-smoothstep(0.9,1.0,f)); }
+  vec2 q=vec2(fbmG(p*0.55+rnd(6.)*10.0),fbmG(p*0.55+rnd(7.)*10.0+3.1));
+  float t=fbmG(p*0.6+q*2.4);
+  float sat=0.5+0.5*sin(t*16.0+q.x*5.0);
+  vec3 col=mix(lo,hi,pow(sat,1.6))*sh;
+  outColor=vec4(toSRGB(col*col*0.9+col*0.1),1.0);
+}`;
+
 /* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
    disc, disc, triangle, plain) in a three- or four-colour set. Quarter discs
    are often grouped four to a 2×2 block so they meet as one large circle,
@@ -3920,6 +4120,20 @@ SYSTEMS.push(
  blurb:'The Japanese wave-scale pattern: rows of concentric half-discs overlapping the row above, with colour drifting slowly across the sheet instead of repeating.'},
 {cat:'K',id:'halftone',bleed:true,name:'Halftone Orb',kind:'js',draw:drawHalftoneOrb,
  blurb:'One lit sphere at the centre, set entirely in halftone dots on a rotated screen, sitting on its own shadow over a soft gradient ground. A print-native way to show volume.'},
+{cat:'K',id:'groovy',bleed:true,name:'Groovy Bloom',kind:'js',draw:drawGroovyBloom,
+ blurb:'Flat wavy bands radiating from one focal point low on the centre axis, pinched at the focus and billowing to every edge. Retro five-colour sets.'},
+{cat:'K',id:'cdisc',bleed:true,name:'Contour Disc',kind:'js',draw:drawContourDisc,
+ blurb:'One centred circle filled with the iso-bands of a domain-warped noise field, ink and paper alternating, on a plain sheet.'},
+{cat:'K',id:'sdisc',bleed:true,name:'Strand Disc',kind:'js',draw:drawStrandDisc,
+ blurb:'A centred circle of evenly spaced strands flowing around a few hidden sources and swirls, so the disc breaks into petal-like patches of parallel lines.'},
+{cat:'K',id:'ttree',bleed:true,name:'Turing Tree',kind:'js',draw:drawTuringTree,
+ blurb:'A tree drawn only with broken, wobbly ink stripes, the way reaction&ndash;diffusion labyrinths look: horizontal ground bands, a trunk on the centre axis, and a canopy fanning from the top of the trunk.'},
+{cat:'K',id:'dunes',bleed:true,name:'Line Dunes',kind:'js',draw:drawLineDunes,
+ blurb:'Four to six ridges from the top of the sheet to the bottom, each a bundle of contour lines following its crest and spreading as it falls.'},
+{cat:'K',id:'lava',bleed:true,name:'Lava Blobs',kind:'js',draw:drawLavaBlobs,
+ blurb:'A slow warped noise field cut into iso-bands: two dark tones and a light gutter between them, so the sheet reads as lava-lamp shapes.'},
+{cat:'K',id:'mesh',bleed:true,name:'Mesh Gradient',kind:'gl',frag:F_K_MESH,
+ blurb:'After Fragments&rsquo; mesh gradient lesson: a warped field read as satin folds in one hue, dark to bright. Most seeds cut it into horizontal slats, each sampled slightly offset, like satin seen through blinds.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
  blurb:'The Geometric tab\'s circle packing in a poster set instead of its screen palette. It is a field, so it runs to every edge.'},
 {cat:'K',id:'qblocks',bleed:true,name:'Quadtree Blocks',kind:'js',draw:drawQuadBlocks,
@@ -3948,7 +4162,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fourteen systems built for the cream-and-ink register, five free-palette systems after Radiant shaders, four after other generative and op-art work, seven after a decor reference board, and five existing systems recut. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
