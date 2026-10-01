@@ -3797,8 +3797,10 @@ function drawCoralPanels(cv,seed){
   /* panel h → gradient stops (neighbouring sky families) and an angle */
   /* one family for the whole sheet, light stops dropped so no glyph fades into the paper */
   let base=SKIES[fam][1].filter(h=>lumOfHex(h)<175); if(base.length<2) base=SKIES[fam][1].slice().sort((a,b)=>lumOfHex(a)-lumOfHex(b)).slice(0,2);
-  const panel=h=>{ const st=base, a=R(seed,1200+h)*6.283;
-    return [R(seed,1300+h)<0.5?st:st.slice().reverse(),Math.cos(a),Math.sin(a)]; };
+  /* no inversion: every panel runs the gradient the same way round, top to
+     bottom; only the tilt changes a little from panel to panel */
+  const panel=h=>{ const a=Math.PI/2+(R(seed,1200+h)-0.5)*1.0;
+    return [base,Math.cos(a),Math.sin(a)]; };
   const cache=new Map(), P=h=>cache.get(h)||(cache.set(h,panel(h)),cache.get(h));
   /* glyph mask */
   const mk=document.createElement('canvas'); mk.width=W; mk.height=H; const m=mk.getContext('2d');
@@ -4280,7 +4282,7 @@ SYSTEMS.push(
 {cat:'K',id:'cellnet2',bleed:true,name:'Cell Net',kind:'js',draw:drawCellNet2,
  blurb:'A dense warped Voronoi field: ink cells separated by a paper net, edge to edge.'},
 {cat:'K',id:'coral',bleed:true,name:'Coral Panels',kind:'js',draw:drawCoralPanels,
- blurb:'Branching glyphs on plain paper, the sheet cut into panels by straight paper gutters. The glyphs carry the colour: each panel paints them with its own gradient at its own angle.'},
+ blurb:'Branching glyphs on plain paper, the sheet cut into panels by straight paper gutters. The glyphs carry the colour: each panel paints them with the same top-to-bottom gradient at a slightly different tilt, never reversed.'},
 {cat:'K',id:'sky',bleed:true,name:'Gradients',kind:'js',draw:drawSkyGradient,
  blurb:'Colour fields with no form: a vertical sky gradient with a faint drift, one hue stepped into vertical columns, or one gradient framed inside another.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
