@@ -3114,28 +3114,6 @@ function withPosterSet(draw){
     noteStrategy(cv,nm);
   };
 }
-const lumOf=s=>parseInt(s.slice(1,3),16)*0.3+parseInt(s.slice(3,5),16)*0.59+parseInt(s.slice(5,7),16)*0.11;
-
-/* Homage — after Albers' Homage to the Square: three or four nested squares,
-   each sitting lower inside the last (top gap three times the bottom gap), so
-   the stack is centred left to right and settles downward. The outer square
-   spans most of the sheet's width and is centred vertically. */
-function drawHomage(cv,seed){
-  const c=prep(cv),W=cv.width,H=cv.height;
-  const [nm,pal]=posterSet(seed,1);
-  const n=3+Math.floor(R(seed,2)*2);
-  let tones=pal.slice(1).sort((a,b)=>lumOf(a)-lumOf(b));
-  if(R(seed,3)<0.5) tones.reverse();
-  const bg=R(seed,4)<0.5?pal[0]:tones[0]; if(bg!==pal[0]) tones=[...tones.slice(1),pal[0]];
-  c.fillStyle=bg; c.fillRect(0,0,W,H);
-  const S=Math.min(W,H)*0.86; let x=(W-S)/2, y=(H-S)/2, s0=S;
-  for(let k=0;k<n;k++){
-    c.fillStyle=tones[k%tones.length]; c.fillRect(x,y,s0,s0);
-    const s1=s0*(0.74-R(seed,10+k)*0.06), g=s0-s1;
-    x+=g/2; y+=g*0.75; s0=s1;
-  }
-  noteStrategy(cv,n+' squares · '+nm);
-}
 
 /* Penrose star — the P3 rhombus tiling grown from its five-fold centre, with
    that centre on the middle of the sheet and the tiling running past every
@@ -3174,27 +3152,6 @@ function drawPenroseStar(cv,seed){
   for(const [col,A,B,C] of tris){ const a=px(A),b=px(B),q=px(C);
     c.beginPath(); c.moveTo(b[0],b[1]); c.lineTo(a[0],a[1]); c.lineTo(q[0],q[1]); c.stroke(); }
   noteStrategy(cv,rings+' rings · '+nm);
-}
-
-/* Polygon echo — one regular polygon repeated inward from beyond the sheet
-   edge to a small core, each ring turned a little against the last. The
-   centre is the middle of the sheet; the bands alternate between paper and
-   one or two inks, which is the op-art register of the 1960s print shops. */
-function drawPolyEcho(cv,seed){
-  const c=prep(cv),W=cv.width,H=cv.height;
-  const [nm,pal]=posterSet(seed,1);
-  const sides=[3,4,5,6,8][Math.floor(R(seed,2)*5)], rings=12+Math.floor(R(seed,3)*10);
-  const twist=(R(seed,4)<0.3?0:(0.02+R(seed,5)*0.07))*(R(seed,6)<0.5?-1:1);
-  const two=R(seed,7)<0.5, i1=1+Math.floor(R(seed,8)*4), i2=1+((i1+1)%4);
-  const Rmax=Math.hypot(W,H)*0.62/Math.cos(Math.PI/sides), a0=-Math.PI/2+(sides%2?0:Math.PI/sides);
-  for(let k=0;k<rings;k++){
-    const t=1-k/rings, r=Rmax*t, a=a0+k*twist;
-    c.beginPath();
-    for(let j=0;j<sides;j++){ const th=a+j*2*Math.PI/sides; c.lineTo(W/2+Math.cos(th)*r,H/2+Math.sin(th)*r); }
-    c.closePath();
-    c.fillStyle=k%2?pal[0]:(two&&k%4===2?pal[i2]:pal[i1]); c.fill();
-  }
-  noteStrategy(cv,sides+'-gon · '+rings+' rings · '+nm);
 }
 
 /* Quadtree blocks — the Geometric tab's quadtree rebuilt at poster scale:
@@ -3598,12 +3555,8 @@ SYSTEMS.push(
  meta:'<b>Lineage:</b> Jean Arp, Barbara Hepworth.'},
 {cat:'K',id:'truchet',bleed:true,name:'Truchet Fields',kind:'js',draw:drawTruchetField,
  blurb:'Smith tiles drawn as filled regions, not lines: two quarter discs per tile, colours swapped with the checkerboard parity, so the regions join across tiles into one continuous two-colour figure. Orientation follows smooth noise, which grows large coherent shapes instead of static.'},
-{cat:'K',id:'homage',bleed:true,name:'Homage',kind:'js',draw:drawHomage,
- blurb:'After Albers: three or four nested squares, each sitting lower inside the last, so the stack is centred side to side and settles downward. The outer square spans most of the sheet. Colours run light to dark or dark to light through one poster set.'},
 {cat:'K',id:'pstar',bleed:true,name:'Penrose Star',kind:'js',draw:drawPenroseStar,
  blurb:'The aperiodic rhombus tiling from the Geometric tab, grown from its five-fold centre placed on the middle of the sheet. Tiles are coloured by type and by concentric ring, so the star carries at poster distance, with paper gutters instead of ink hairlines.'},
-{cat:'K',id:'polyecho',bleed:true,name:'Polygon Echo',kind:'js',draw:drawPolyEcho,
- blurb:'One regular polygon repeated inward from past the sheet edge to a small core at the centre, each ring turned slightly against the last, in alternating paper and ink bands.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
  blurb:'The Geometric tab\'s circle packing in a poster set instead of its screen palette. It is a field, so it runs to every edge.'},
 {cat:'K',id:'qblocks',bleed:true,name:'Quadtree Blocks',kind:'js',draw:drawQuadBlocks,
@@ -3632,7 +3585,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Fifteen systems built for this register, plus five existing systems recut: three to a single ink, two to a poster colour set. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Thirteen systems built for this register, plus five existing systems recut: three to a single ink, two to a poster colour set. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
