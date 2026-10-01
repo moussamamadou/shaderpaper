@@ -3094,6 +3094,206 @@ function openViewer(sys,base,label){
   ov.querySelector('div').textContent=label+(cv.dataset.strategy?' · '+cv.dataset.strategy:'')+' · click or Esc to close';
 }
 
+/* -- posters, second batch: mid-century composition systems ---------------- */
+const POSTER_SETS=[
+  ['bauhaus',['#efe7d8','#c8402c','#e3a72f','#1f3c7a','#1c1c1c']],
+  ['midcentury',['#efe4d0','#d98b4a','#b5532a','#5e7a64','#2e3a3a']],
+  ['terra',['#f1e7d6','#e2b48c','#c0663e','#8c3a26','#3b2420']],
+  ['coast',['#eee8dc','#a9c4c2','#4f8a8b','#1f4e5f','#d9a05b']],
+  ['rose',['#f2e8dc','#e7b9a8','#c46a5a','#7a2f3a','#2d2a32']]
+];
+function posterSet(seed,i){ return POSTER_SETS[Math.floor(R(seed,i)*POSTER_SETS.length)]; }
+
+/* Arches — nested rainbow arches standing on a common ground. One arch group
+   dominates and the others are cropped or tucked behind it; a single disc
+   gives the eye somewhere to rest. Every band in a group has the same width,
+   so the stack reads as one object. */
+function drawArches(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,pal]=posterSet(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const ground=H*(0.66+R(seed,2)*0.22);
+  /* the disc sits in the upper third, on the side away from the main arch */
+  const mainX=W*(R(seed,3)<0.5?0.3+R(seed,4)*0.12:0.58+R(seed,4)*0.12);
+  const sx=mainX<W/2?W*(0.66+R(seed,5)*0.16):W*(0.18+R(seed,5)*0.16);
+  const sr=M*(0.10+R(seed,6)*0.08);
+  c.beginPath(); c.arc(sx,H*(0.18+R(seed,7)*0.14),sr,0,7); c.fillStyle=pal[1+Math.floor(R(seed,8)*4)]; c.fill();
+  const groups=[{x:mainX,r:M*(0.36+R(seed,9)*0.14)}];
+  const ng=1+Math.floor(R(seed,10)*3);
+  for(let g=0;g<ng;g++) groups.push({x:R(seed,20+g)<0.5?-M*0.05+R(seed,21+g)*W*0.3:W*0.75+R(seed,21+g)*W*0.3, r:M*(0.16+R(seed,22+g)*0.18)});
+  /* smaller groups first, then the dominant one in front — the overlap is the composition */
+  const order=groups.slice().sort((a,b)=>a.r-b.r);
+  /* either every arch stands on a ground block, or every arch runs its legs
+     off the bottom edge as a doorway — never a mix */
+  const groundBlock=R(seed,71)<0.6, legs=!groundBlock;
+  order.forEach((g,gi)=>{
+    const n=4+Math.floor(R(seed,40+gi)*4), bw=g.r/(n+0.6);
+    const off=Math.floor(R(seed,60+gi)*4);
+    for(let k=0;k<n;k++){
+      const r=g.r-k*bw;
+      c.beginPath(); c.moveTo(g.x-r,ground+(legs?H:0)); c.lineTo(g.x-r,ground);
+      c.arc(g.x,ground,r,Math.PI,0); c.lineTo(g.x+r,ground+(legs?H:0)); c.closePath();
+      c.fillStyle=pal[1+((k+off)%4)]; c.fill();
+    }
+    const r0=g.r-n*bw;
+    c.beginPath(); c.moveTo(g.x-r0,ground+(legs?H:0)); c.lineTo(g.x-r0,ground); c.arc(g.x,ground,r0,Math.PI,0); c.lineTo(g.x+r0,ground+(legs?H:0)); c.closePath();
+    c.fillStyle=pal[0]; c.fill();
+  });
+  /* ground block */
+  c.fillStyle=pal[1+Math.floor(R(seed,70)*4)];
+  if(groundBlock) c.fillRect(0,ground,W,H-ground);
+  noteStrategy(cv,nm);
+}
+
+/* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
+   disc, disc, triangle, plain) in a three- or four-colour set. Quarter discs
+   are often grouped four to a 2×2 block so they meet as one large circle,
+   which is what turns a tile sheet into a composition. */
+function drawBauhausTiles(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const [nm,pal]=posterSet(seed,1);
+  const cols=3+Math.floor(R(seed,2)*3), cs=W/cols, rows=Math.ceil(H/cs);
+  const used=pal.slice(0,4+(R(seed,3)<0.5?1:0));
+  const field=makeColorField(seed,used);
+  const big=new Set();
+  for(let k=0;k<2+Math.floor(R(seed,4)*3);k++){
+    const i=Math.floor(R(seed,10+k)*(cols-1)), j=Math.floor(R(seed,20+k)*(rows-1));
+    const key=[i+','+j,(i+1)+','+j,i+','+(j+1),(i+1)+','+(j+1)];
+    if(key.some(q=>big.has(q))) continue;
+    key.forEach(q=>big.add(q));
+    big.add('c'+i+','+j);
+  }
+  for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){
+    const x=i*cs, y=j*cs, idx=j*cols+i;
+    const bgI=field(x+cs/2,y+cs/2,W,H,idx), fgI=(bgI+1+Math.floor(R(seed,100+idx)*(used.length-2)))%used.length;
+    c.fillStyle=used[bgI]; c.fillRect(x,y,cs+1,cs+1);
+    c.fillStyle=used[fgI===bgI?(bgI+1)%used.length:fgI];
+    c.beginPath();
+    if(big.has(i+','+j)) continue;
+    const kind=R(seed,200+idx), rot=Math.floor(R(seed,300+idx)*4)*Math.PI/2;
+    c.save(); c.translate(x+cs/2,y+cs/2); c.rotate(rot);
+    if(kind<0.30){ c.moveTo(-cs/2,-cs/2); c.arc(-cs/2,-cs/2,cs,0,Math.PI/2); c.closePath(); }
+    else if(kind<0.50){ c.moveTo(-cs/2,cs/2); c.arc(0,cs/2,cs/2,Math.PI,0); c.closePath(); }
+    else if(kind<0.62){ c.arc(0,0,cs*0.36,0,7); }
+    else if(kind<0.80){ c.moveTo(-cs/2,-cs/2); c.lineTo(cs/2,-cs/2); c.lineTo(-cs/2,cs/2); c.closePath(); }
+    else if(kind<0.88){ c.rect(-cs/2,-cs/2,cs/2,cs); }
+    c.fill(); c.restore();
+  }
+  /* the 2×2 circles, one fill each so no seam crosses them */
+  big.forEach(q=>{ if(q[0]!=='c') return; const [bi,bj]=q.slice(1).split(',').map(Number);
+    const cx=(bi+1)*cs, cy=(bj+1)*cs, k=field(cx,cy,W,H,bj*cols+bi);
+    c.fillStyle=used[(k+2)%used.length]; c.beginPath(); c.arc(cx,cy,cs*0.98,0,7); c.fill(); });
+  noteStrategy(cv,nm+' · '+field.label);
+}
+
+/* Horizon — a mid-century landscape reduced to bands: a large sun, three to
+   five ridges each one value darker, the horizon on the lower third. The sun
+   is optionally cut by paper lines, the way screen-printed travel posters
+   showed heat. */
+function drawHorizon(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,pal]=posterSet(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const hz=H*(0.55+R(seed,2)*0.12);
+  const sx=W*(R(seed,3)<0.5?0.3+R(seed,4)*0.1:0.6+R(seed,4)*0.1), sr=M*(0.24+R(seed,5)*0.12);
+  const sy=hz-sr*(0.35+R(seed,6)*0.5);
+  c.beginPath(); c.arc(sx,sy,sr,0,7); c.fillStyle=pal[1+Math.floor(R(seed,7)*2)]; c.fill();
+  if(R(seed,8)<0.55){
+    const n=4+Math.floor(R(seed,9)*4);
+    c.fillStyle=pal[0];
+    for(let k=0;k<n;k++){ const t=(k+1)/(n+1), y=sy-sr+sr*2*(0.45+t*0.55), h=sr*0.02*(1+k*0.9);
+      c.fillRect(sx-sr-2,y,sr*2+4,h); }
+  }
+  const nr=3+Math.floor(R(seed,10)*3);
+  const tones=pal.slice(1).sort((a,b)=>{ const L=s=>parseInt(s.slice(1,3),16)*0.3+parseInt(s.slice(3,5),16)*0.59+parseInt(s.slice(5,7),16)*0.11; return L(b)-L(a); });
+  for(let k=0;k<nr;k++){
+    const t=k/(nr-1||1), base=hz+t*(H-hz)*0.72, a=H*(0.05+R(seed,20+k)*0.08)*(1-t*0.5);
+    const f1=0.6+R(seed,30+k)*1.4, p1=R(seed,40+k)*6.283, f2=1.5+R(seed,50+k)*2, p2=R(seed,60+k)*6.283;
+    c.beginPath(); c.moveTo(-2,H+2);
+    for(let i=0;i<=100;i++){ const x=-2+i/100*(W+4), u=x/W;
+      c.lineTo(x, base-a*(0.6*Math.sin(u*f1*6.283+p1)+0.4*Math.sin(u*f2*6.283+p2))-a*0.4); }
+    c.lineTo(W+2,H+2); c.closePath();
+    c.fillStyle=tones[Math.min(tones.length-1,Math.floor(t*(tones.length-1)+0.5))]; c.fill();
+  }
+  noteStrategy(cv,nm);
+}
+
+/* Disc rhythm — after Sonia Delaunay's Rythme: two to four large discs, each
+   a set of concentric rings, every ring split along one diameter into two
+   colours. The split angle turns slowly from ring to ring, which is the
+   rhythm. */
+function drawDiscRhythm(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,pal]=posterSet(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  if(R(seed,2)<0.5){ c.fillStyle=pal[1+Math.floor(R(seed,3)*4)]; const sp=W*(0.35+R(seed,4)*0.3); c.fillRect(sp,0,W-sp,H); }
+  const nd=2+Math.floor(R(seed,5)*3), discs=[];
+  discs.push({x:W*(0.35+R(seed,6)*0.3),y:H*(0.35+R(seed,7)*0.3),r:M*(0.38+R(seed,8)*0.14)});
+  for(let k=1;k<nd;k++) discs.push({x:W*R(seed,10+k),y:H*R(seed,20+k),r:M*(0.14+R(seed,30+k)*0.2)});
+  discs.sort((a,b)=>b.r-a.r);
+  discs.forEach((d,di)=>{
+    const n=3+Math.floor(R(seed,40+di)*4), a0=R(seed,50+di)*6.283, da=(R(seed,60+di)-0.5)*1.4;
+    for(let k=0;k<n;k++){
+      const r=d.r*(1-k/n), a=a0+k*da, c1=1+((k+di)%4), c2=1+((k+di+2)%4);
+      c.beginPath(); c.moveTo(d.x,d.y); c.arc(d.x,d.y,r,a,a+Math.PI); c.closePath(); c.fillStyle=pal[c1]; c.fill();
+      c.beginPath(); c.moveTo(d.x,d.y); c.arc(d.x,d.y,r,a+Math.PI,a+2*Math.PI); c.closePath(); c.fillStyle=pal[k===n-1?0:c2]; c.fill();
+    }
+  });
+  noteStrategy(cv,nm);
+}
+
+/* Stacked stones — rounded pebbles balanced on an axis, widest at the
+   bottom, each one resting on the one below. One large disc behind the stack
+   in a contrasting colour, and the ground left plain. */
+function drawStackedStones(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
+  const [nm,pal]=posterSet(seed,1);
+  c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
+  const ax=W*(0.38+R(seed,2)*0.24);
+  c.beginPath(); c.arc(ax+(R(seed,3)-0.5)*W*0.3,H*(0.36+R(seed,4)*0.12),M*(0.26+R(seed,5)*0.1),0,7);
+  c.fillStyle=pal[1+Math.floor(R(seed,6)*4)]; c.fill();
+  const n=3+Math.floor(R(seed,7)*4);
+  let y=H*(0.88+R(seed,8)*0.06), w=M*(0.62+R(seed,9)*0.2);
+  for(let k=0;k<n;k++){
+    const h=w*(0.32+R(seed,10+k)*0.22), x=ax+(R(seed,20+k)-0.5)*w*0.18;
+    const tilt=(R(seed,30+k)-0.5)*0.18, cy=y-h/2;
+    const pts=[];
+    for(let i=0;i<120;i++){ const t=i/120*6.283, sq=0.55+R(seed,40+k)*0.3;
+      const ct=Math.cos(t), st=Math.sin(t);
+      const px=Math.sign(ct)*Math.pow(Math.abs(ct),sq)*w/2, py=Math.sign(st)*Math.pow(Math.abs(st),sq+0.15)*h/2*(st>0?1:0.92);
+      pts.push([x+px*Math.cos(tilt)-py*Math.sin(tilt), cy+px*Math.sin(tilt)+py*Math.cos(tilt)]); }
+    fillPts(c,pts); c.fillStyle=pal[1+((k+Math.floor(R(seed,50)*4))%4)]; c.fill();
+    y-=h*0.97; w*=0.68+R(seed,60+k)*0.18;
+  }
+  noteStrategy(cv,nm);
+}
+
+/* Truchet fields — Smith tiles drawn as filled regions rather than lines:
+   each tile is two quarter discs at opposite corners, and its colours swap
+   with the checkerboard parity, so the regions join across tiles into one
+   continuous two-colour figure. Orientation follows smooth noise, which
+   grows large coherent shapes instead of static. */
+function drawTruchetField(cv,seed){
+  const c=prep(cv),W=cv.width,H=cv.height;
+  const [paper,ink,nm]=posterInk(seed,1);
+  const cols=4+Math.floor(R(seed,2)*5), cs=W/cols, rows=Math.ceil(H/cs)+1;
+  const sc=0.35+R(seed,3)*0.5;
+  /* all ink goes into ONE even-odd path: an ink tile is its square with the
+     two quarter discs as holes, a paper tile is just the two discs. A single
+     fill leaves no hairline seams where tiles meet. */
+  c.fillStyle=paper; c.fillRect(0,0,W,H);
+  c.beginPath();
+  for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){
+    const o=noise2(i*sc,j*sc,seed)+(R(seed,100+j*31+i)-0.5)*0.25>0.5?1:0;
+    const flip=((i+j)&1)^o, x=i*cs, y=j*cs;
+    if(flip) c.rect(x,y,cs,cs);
+    if(o===0){ c.moveTo(x,y); c.arc(x,y,cs/2,0,Math.PI/2); c.closePath(); c.moveTo(x+cs,y+cs); c.arc(x+cs,y+cs,cs/2,Math.PI,Math.PI*1.5); c.closePath(); }
+    else { c.moveTo(x+cs,y); c.arc(x+cs,y,cs/2,Math.PI/2,Math.PI); c.closePath(); c.moveTo(x,y+cs); c.arc(x,y+cs,cs/2,Math.PI*1.5,Math.PI*2); c.closePath(); }
+  }
+  c.fillStyle=ink; c.fill('evenodd');
+  noteStrategy(cv,nm);
+}
+
 /* ============================================================
    3 · registry
    ============================================================ */
@@ -3313,6 +3513,21 @@ SYSTEMS.push(
  meta:'<b>Lineage:</b> Bridget Riley, Victor Vasarely; the Bauhaus-wave prints on your board.'},
 {cat:'K',id:'waves',bleed:true,name:'Wave Bands',kind:'js',draw:drawWaveBands,
  blurb:'Stacked bands whose edges are all the same wave at a shifted phase. Either a few wide bands in a four- or five-tone palette, or many thin two-colour bands bulging through a single swell.'},
+{cat:'K',id:'arches',bleed:true,name:'Arches',kind:'js',draw:drawArches,
+ blurb:'Nested rainbow arches standing on a common ground. One group dominates, the others are cropped or tucked behind it, and a single disc gives the eye somewhere to rest. Every band in a group has the same width, so each stack reads as one object.'},
+{cat:'K',id:'tiles',bleed:true,name:'Bauhaus Tiles',kind:'js',draw:drawBauhausTiles,
+ blurb:'A square grid, each cell one primitive — quarter disc, half disc, disc, triangle, half block — in a four- or five-colour set placed by a colour field rather than at random. A few 2&times;2 blocks share one large circle, which is what turns a tile sheet into a composition.',
+ meta:'<b>Lineage:</b> Bauhaus tile studies, and the modular posters of Josef M&uuml;ller-Brockmann.'},
+{cat:'K',id:'horizon',bleed:true,name:'Horizon',kind:'js',draw:drawHorizon,
+ blurb:'A landscape reduced to bands: a large sun, three to five ridges each one value darker, the horizon on the lower third. The sun is sometimes cut by paper lines, the way screen-printed travel posters showed heat.'},
+{cat:'K',id:'rhythm',bleed:true,name:'Disc Rhythm',kind:'js',draw:drawDiscRhythm,
+ blurb:'Two to four large discs, each a set of concentric rings, every ring split along one diameter into two colours. The split angle turns from ring to ring, and that turning is the rhythm.',
+ meta:'<b>Lineage:</b> Sonia Delaunay, <i>Rythme</i> (1938).'},
+{cat:'K',id:'stones',bleed:true,name:'Stacked Stones',kind:'js',draw:drawStackedStones,
+ blurb:'Rounded pebbles balanced on one axis, widest at the bottom, each resting on the one below, with one large disc behind the stack in a contrasting colour.',
+ meta:'<b>Lineage:</b> Jean Arp, Barbara Hepworth.'},
+{cat:'K',id:'truchet',bleed:true,name:'Truchet Fields',kind:'js',draw:drawTruchetField,
+ blurb:'Smith tiles drawn as filled regions, not lines: two quarter discs per tile, colours swapped with the checkerboard parity, so the regions join across tiles into one continuous two-colour figure. Orientation follows smooth noise, which grows large coherent shapes instead of static.'},
 {cat:'K',id:'k_bands',bleed:true,name:'Interference Bands &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='bands')),
  blurb:'The Geometric tab&rsquo;s Interference Bands, mapped onto one ink. Already the closest existing system to the references: full-bleed, two values, no stray marks.'},
 {cat:'K',id:'k_stepped',bleed:true,name:'Stepped Bands &middot; recut',kind:'js',draw:posterize({kind:'js',draw:(cv,sd)=>drawSteppedBands(cv,sd,true)}),
@@ -3335,7 +3550,7 @@ const TABS=[
 ];
 const INTROS={
  K:{cls:'A',title:'Posters &mdash; the selection',
-    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Six systems built for this register, plus three existing systems recut to a single ink. Everything outside this tab is research. Click any plate to see it full screen.'},
+    desc:'What would actually hang in a living room. Cream stock and one ink, big flat masses, and the whole sheet used: nothing here is a few marks stranded at the edge of an empty page. Twelve systems built for this register, plus three existing systems recut to a single ink. Everything outside this tab is research. Click any plate to see it full screen.'},
  A:{cls:'A',title:'1 — Algorithmic',
     desc:'Code-driven and input-driven. Type into the field below and plate 01 of each system regenerates from it. This is the personalized-gift model: the customizer is an asset here, because the input already means something to the buyer.'},
  G:{cls:'G',title:'2 — Geometric',
