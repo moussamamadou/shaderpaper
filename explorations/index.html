@@ -2033,14 +2033,24 @@ function drawPixelSort(cv,seed){
 }
 
 /* Stepped bands — nested rotated squares filled with a tonal ramp. */
-function drawSteppedBands(cv,seed){
+function drawSteppedBands(cv,seed,contained){
   const c=darkGround(cv),W=cv.width,H=cv.height;
   const ramp=EMIT[Math.floor(R(seed,1)*EMIT.length)];
   const N=6+Math.floor(R(seed,2)*8);
   const rot=Math.PI/4+(R(seed,3)-0.5)*0.9;
-  const cx=W*(0.40+R(seed,4)*0.20), cy=H*(0.40+R(seed,5)*0.20);
-  const S=Math.max(W,H)*(0.70+R(seed,6)*0.42);
+  let cx=W*(0.40+R(seed,4)*0.20), cy=H*(0.40+R(seed,5)*0.20);
+  let S=Math.max(W,H)*(0.70+R(seed,6)*0.42);
   const drift=(R(seed,7)-0.5)*0.10;
+  if(contained){
+    /* poster cut: the outer square sits wholly inside the sheet with a margin,
+       sized by its rotated bounding box, and is only nudged off centre as far
+       as that margin allows */
+    const k=Math.abs(Math.cos(rot))+Math.abs(Math.sin(rot)), m=Math.min(W,H)*0.07;
+    S=(Math.min(W,H)-2*m)/k*(0.86+R(seed,6)*0.14);
+    const ext=S*k/2;
+    cx=W/2+(R(seed,4)-0.5)*Math.max(0,W-2*m-2*ext);
+    cy=H/2+(R(seed,5)-0.5)*Math.max(0,H-2*m-2*ext);
+  }
   for(let i=0;i<N;i++){
     const t=i/(N-1);
     const s=S*(1-t*0.92);
@@ -3308,8 +3318,8 @@ SYSTEMS.push(
  blurb:'Stacked bands whose edges are all the same wave at a shifted phase. Either a few wide bands in a four- or five-tone palette, or many thin two-colour bands bulging through a single swell.'},
 {cat:'K',id:'k_bands',bleed:true,name:'Interference Bands &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='bands')),
  blurb:'The Geometric tab&rsquo;s Interference Bands, mapped onto one ink. Already the closest existing system to the references: full-bleed, two values, no stray marks.'},
-{cat:'K',id:'k_stepped',bleed:true,name:'Stepped Bands &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='stepped')),
- blurb:'Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one.'},
+{cat:'K',id:'k_stepped',bleed:true,name:'Stepped Bands &middot; recut',kind:'js',draw:posterize({kind:'js',draw:(cv,sd)=>drawSteppedBands(cv,sd,true)}),
+ blurb:'Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one. In this cut the whole outer square always sits inside the sheet, framed by the ground.'},
 {cat:'K',id:'k_marble',bleed:true,name:'Marbling &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='marble')),
  blurb:'Marbling mapped onto one ink. The posterized bands stay, the multicolour goes.'}
 );
