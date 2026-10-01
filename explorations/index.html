@@ -3073,6 +3073,30 @@ function posterize(base){
   };
 }
 
+/* Same idea as posterize(), but luminance runs through one of the sky
+   gradients instead of paper-to-one-ink, so stepped bands read as a colour
+   ramp. The ramp always runs the same way: light at the outside. */
+function gradientize(base){
+  return (cv,seed)=>{
+    paint(base,cv,seed);
+    const c=cv.getContext('2d'), W=cv.width, H=cv.height, img=c.getImageData(0,0,W,H), d=img.data;
+    const [nm,st]=SKIES[Math.floor(R(seed,993)*SKIES.length)];
+    const stops=st.slice().sort((a,b)=>lumOfHex(b)-lumOfHex(a));
+    let lo=255,hi=0;
+    for(let i=0;i<d.length;i+=16){ const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; if(l<lo)lo=l; if(l>hi)hi=l; }
+    const span=Math.max(1,hi-lo), lut=[];
+    for(let k=0;k<256;k++) lut.push(gradRGB(stops,k/255));
+    /* depth from luminance, scaled by height, so even a two-value plate becomes
+       a ramp: the ink deepens down the sheet while the paper stays light */
+    for(let i=0;i<d.length;i+=4){
+      const y=(i>>2)/W/H, t=Math.max(0,Math.min(1,(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]-lo)/span)), q=lut[Math.round((1-t)*(0.4+0.6*y)*255)];
+      d[i]=q[0]; d[i+1]=q[1]; d[i+2]=q[2];
+    }
+    c.putImageData(img,0,0);
+    noteStrategy(cv,nm);
+  };
+}
+
 /* Full-screen view: click any plate to see it at poster scale. The plate is
    re-rendered at the larger size rather than scaled up. */
 function openViewer(sys,base,label){
@@ -4239,8 +4263,8 @@ SYSTEMS.push(
  blurb:'The Geometric tab\'s quadtree rebuilt at poster scale: always split twice and at most twice more, so even the smallest cell is large. Wide paper gutters, flat colour per cell, and the odd paper cell carrying a full disc.'},
 {cat:'K',id:'k_fidenza',bleed:true,name:'Ribbon Field &middot; recut',kind:'js',draw:withPosterSet(drawFidenza),
  blurb:'The Fidenza-style ribbon field from the Organic tab in a poster set: thick flowing strokes that never cross, filling the sheet.'},
-{cat:'K',id:'k_bands',bleed:true,name:'Interference Bands &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='bands')),
- blurb:'The Geometric tab&rsquo;s Interference Bands, mapped onto one ink. Already the closest existing system to the references: full-bleed, two values, no stray marks.'},
+{cat:'K',id:'k_bands',bleed:true,name:'Interference Bands &middot; recut',kind:'js',draw:gradientize(SYSTEMS.find(s=>s.id==='bands')),
+ blurb:'The Geometric tab&rsquo;s Interference Bands, with the stepped rings run through a colour gradient: light at the outside, deepening toward the centre.'},
 {cat:'K',id:'k_stepped',bleed:true,name:'Stepped Bands &middot; recut',kind:'js',draw:posterize({kind:'js',draw:(cv,sd)=>drawSteppedBands(cv,sd,true)}),
  blurb:'Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one. In this cut the outer square is centred and spans the full width or height of the sheet, with every corner visible.'},
 {cat:'K',id:'k_marble',bleed:true,name:'Marbling &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='marble')),
