@@ -2042,14 +2042,11 @@ function drawSteppedBands(cv,seed,contained){
   let S=Math.max(W,H)*(0.70+R(seed,6)*0.42);
   const drift=(R(seed,7)-0.5)*0.10;
   if(contained){
-    /* poster cut: the outer square sits wholly inside the sheet with a margin,
-       sized by its rotated bounding box, and is only nudged off centre as far
-       as that margin allows */
-    const k=Math.abs(Math.cos(rot))+Math.abs(Math.sin(rot)), m=Math.min(W,H)*0.07;
-    S=(Math.min(W,H)-2*m)/k*(0.86+R(seed,6)*0.14);
-    const ext=S*k/2;
-    cx=W/2+(R(seed,4)-0.5)*Math.max(0,W-2*m-2*ext);
-    cy=H/2+(R(seed,5)-0.5)*Math.max(0,H-2*m-2*ext);
+    /* poster cut: the outer square is centred and sized from its rotated
+       bounding box so it spans the sheet's full width or full height exactly —
+       every corner on or inside the edge, none cut off */
+    const k=Math.abs(Math.cos(rot))+Math.abs(Math.sin(rot));
+    S=Math.min(W,H)/k; cx=W/2; cy=H/2;
   }
   for(let i=0;i<N;i++){
     const t=i/(N-1);
@@ -3319,7 +3316,7 @@ SYSTEMS.push(
 {cat:'K',id:'k_bands',bleed:true,name:'Interference Bands &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='bands')),
  blurb:'The Geometric tab&rsquo;s Interference Bands, mapped onto one ink. Already the closest existing system to the references: full-bleed, two values, no stray marks.'},
 {cat:'K',id:'k_stepped',bleed:true,name:'Stepped Bands &middot; recut',kind:'js',draw:posterize({kind:'js',draw:(cv,sd)=>drawSteppedBands(cv,sd,true)}),
- blurb:'Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one. In this cut the whole outer square always sits inside the sheet, framed by the ground.'},
+ blurb:'Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one. In this cut the outer square is centred and spans the full width or height of the sheet, with every corner visible.'},
 {cat:'K',id:'k_marble',bleed:true,name:'Marbling &middot; recut',kind:'js',draw:posterize(SYSTEMS.find(s=>s.id==='marble')),
  blurb:'Marbling mapped onto one ink. The posterized bands stay, the multicolour goes.'}
 );
