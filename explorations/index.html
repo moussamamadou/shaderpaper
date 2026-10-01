@@ -3784,9 +3784,9 @@ function drawCellNet2(cv,seed){
 }
 
 /* Coral panels — the sheet cut into polygonal panels by four to six straight
-   paper gutters. The ground is plain paper; the branching glyphs that fill it
-   carry the colour, each panel painted with its own gradient from one sky
-   family running at its own angle, so the panels read through the glyphs. */
+   paper gutters. Each panel is filled with a gradient and the branching glyphs
+   are cut out in paper; each panel is a gradient from one sky family, all
+   running top to bottom with a slightly different tilt. */
 function drawCoralPanels(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const paper=['#f2ece1','#efe8dc','#f4efe6'][Math.floor(R(seed,1)*3)];
@@ -3822,9 +3822,9 @@ function drawCoralPanels(cv,seed){
   const img=c.createImageData(W,H), D=img.data;
   for(let y=0;y<H;y++) for(let x=0;x<W;x++){
     const n=(y*W+x)*4, al=md[n+3]/255;
-    let q=pr;
-    if(al>0){ const [stp,dx,dy]=P(region(x+0.5,y+0.5)), t=0.5+((x/W-0.5)*dx+(y/H-0.5)*dy)*0.95;
-      const g=gradRGB(stp,t); q=[pr[0]+(g[0]-pr[0])*al,pr[1]+(g[1]-pr[1])*al,pr[2]+(g[2]-pr[2])*al]; }
+    /* the panels carry the gradient; the glyphs are cut out of it in paper */
+    const [stp,dx,dy]=P(region(x+0.5,y+0.5)), t=0.5+((x/W-0.5)*dx+(y/H-0.5)*dy)*0.95, g=gradRGB(stp,t);
+    const q=[g[0]+(pr[0]-g[0])*al,g[1]+(pr[1]-g[1])*al,g[2]+(pr[2]-g[2])*al];
     D[n]=q[0]; D[n+1]=q[1]; D[n+2]=q[2]; D[n+3]=255;
   }
   c.putImageData(img,0,0);
@@ -4282,7 +4282,7 @@ SYSTEMS.push(
 {cat:'K',id:'cellnet2',bleed:true,name:'Cell Net',kind:'js',draw:drawCellNet2,
  blurb:'A dense warped Voronoi field: ink cells separated by a paper net, edge to edge.'},
 {cat:'K',id:'coral',bleed:true,name:'Coral Panels',kind:'js',draw:drawCoralPanels,
- blurb:'Branching glyphs on plain paper, the sheet cut into panels by straight paper gutters. The glyphs carry the colour: each panel paints them with the same top-to-bottom gradient at a slightly different tilt, never reversed.'},
+ blurb:'Panels cut by straight paper gutters, each filled with one top-to-bottom gradient at a slightly different tilt, with branching glyphs cut out of it in paper.'},
 {cat:'K',id:'sky',bleed:true,name:'Gradients',kind:'js',draw:drawSkyGradient,
  blurb:'Colour fields with no form: a vertical sky gradient with a faint drift, one hue stepped into vertical columns, or one gradient framed inside another.'},
 {cat:'K',id:'k_cpack',bleed:true,name:'Circle Packing &middot; recut',kind:'js',draw:withPosterSet(drawCirclePack),
