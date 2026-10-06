@@ -3884,6 +3884,128 @@ void main(){
   outColor=vec4(acc*0.25,1.0);
 }`;
 
+/* ---- fifth batch: after the shaders.com component set ------------------- */
+
+/* Liquid chrome — a warped height field read as polished metal. Each pixel's
+   normal reflects a studio environment: bright sky above a hard horizon,
+   dark floor below, all run through the seed's ramp so the chrome is tinted
+   gold, steel, rose or teal. */
+const F_K_CHROME=GL_FREE+`
+float vn3(vec2 p){ return vnoise(p)*0.62+vnoise(p*2.03+7.1)*0.28+vnoise(p*4.1+3.3)*0.1; }
+float hC(vec2 p){ vec2 o=vec2(vn3(p*0.5+rnd(2.)*9.0),vn3(p*0.5+rnd(3.)*9.0+5.2));
+  return vn3(p*(0.55+rnd(4.)*0.3)+o*(1.6+rnd(5.)*1.0)); }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 p=uvCentered()*1.3;
+  float e=0.004, h=hC(p), hx=hC(p+vec2(e,0.0))-h, hy=hC(p+vec2(0.0,e))-h;
+  float k=5.0+rnd(6.)*3.0;
+  vec3 n=normalize(vec3(-hx/e*k*0.1,-hy/e*k*0.1,1.0));
+  vec3 r=reflect(vec3(0.0,0.0,-1.0),n);
+  float y=r.y+0.15*sin(r.x*3.0);
+  float t=y>0.0?0.62+0.38*pow(clamp(y*1.6,0.0,1.0),0.7):0.08+0.38*smoothstep(-0.9,0.0,y)*smoothstep(-0.9,-0.02,y);
+  t-=0.35*smoothstep(0.0,0.02,y)*(1.0-smoothstep(0.02,0.08,y));
+  vec3 col=ramp(g,a,b,c,t);
+  float spec=pow(clamp(dot(n,normalize(vec3(-0.4,0.5,1.0))),0.0,1.0),60.0);
+  col+=vec3(spec*0.6);
+  outColor=vec4(col,1.0);
+}`;
+
+/* Isometric cubes — the tumbling-blocks tiling: pointy-top hexagons split
+   into a light top and a mid and dark side. The three tones come off the
+   ramp at a position that drifts down the sheet, so the whole field runs
+   through the gradient while every cube keeps reading as a solid. */
+const F_K_ISO=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  float n=4.0+floor(rnd(1.)*5.0);
+  vec2 p=uv*n*0.5;
+  vec2 s=vec2(1.0,1.7320508), aa=mod(p,s)-s*0.5, bb=mod(p-s*0.5,s)-s*0.5;
+  vec2 gv=dot(aa,aa)<dot(bb,bb)?aa:bb, id=p-gv;
+  float ang=atan(gv.y,gv.x)*57.29578; if(ang<0.0) ang+=360.0;
+  float face=ang>=30.0&&ang<150.0?0.0:ang>=150.0&&ang<270.0?1.0:2.0;
+  float mode=floor(rnd(2.)*3.0);
+  float base=mode<1.0?0.5+0.35*(id.y/(n*0.65)):mode<2.0?0.5+0.3*sin(length(id)/n*4.0+rnd(3.)*6.0):0.25+0.6*hash21(id+u_seed);
+  float tone=face<0.5?base+0.32:face<1.5?base-0.05:base-0.4;
+  vec3 col=ramp(g,a,b,c,clamp(tone,0.02,0.98));
+  /* hairline between faces */
+  float hx=max(dot(abs(gv),normalize(vec2(1.0,1.7320508))),abs(gv.x));
+  col*=0.9+0.1*smoothstep(0.46,0.5,0.5-abs(hx-0.5)+0.46);
+  outColor=vec4(col,1.0);
+}`;
+
+/* Holographic foil — a soft warped surface with thin-film colour: the hue
+   comes from the film's thickness and the angle the surface turns away, so
+   it shifts through pastel spectra across the folds, with a pale sheen. */
+const F_K_HOLO=GL_FREE+`
+float vh3(vec2 p){ return vnoise(p)*0.62+vnoise(p*2.03+7.1)*0.28+vnoise(p*4.1+3.3)*0.1; }
+float hH(vec2 p){ vec2 o=vec2(vh3(p*0.5+rnd(2.)*9.0),vh3(p*0.5+rnd(3.)*9.0+5.2)); return vh3(p*0.6+o*1.7); }
+void main(){
+  vec2 p=uvCentered()*1.2;
+  float e=0.004, h=hH(p), hx=hH(p+vec2(e,0.0))-h, hy=hH(p+vec2(0.0,e))-h;
+  vec3 n=normalize(vec3(-hx/e*0.5,-hy/e*0.5,1.0));
+  float cosv=n.z, th=h*1.4+(1.0-cosv)*2.2+rnd(4.)*3.0;
+  vec3 film=0.5+0.5*cos(6.2832*(th+vec3(0.0,0.33,0.67)));
+  float pale=0.28+rnd(5.)*0.17;
+  vec3 col=mix(vec3(0.96,0.95,0.97),film,pale);
+  float dif=clamp(dot(n,normalize(vec3(-0.4,0.6,0.8))),0.0,1.0);
+  col*=0.78+0.28*dif;
+  col+=vec3(pow(clamp(dot(n,normalize(vec3(-0.2,0.3,1.0))),0.0,1.0),50.0)*0.35);
+  outColor=vec4(clamp(col,0.0,1.0),1.0);
+}`;
+
+/* Sunburst — rays from a point on the centre axis, alternating two tones that
+   both run through the ramp with distance, so the burst reads as a gradient
+   striped by light. A soft glow sits on the origin. */
+const F_K_SUN=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  float oy=rnd(1.)<0.5?0.0:-1.25;
+  vec2 q=uv-vec2(0.0,oy);
+  float rays=floor(14.0+rnd(2.)*20.0), tw=(rnd(3.)-0.5)*0.8*step(0.5,rnd(4.));
+  float r=length(q), an=atan(q.x,q.y)+tw*r;
+  float f=fract(an/6.2832*rays), w=fwidth(an/6.2832*rays);
+  float m=smoothstep(0.5-w,0.5+w,f)*(1.0-smoothstep(1.0-w,1.0,f))+ (1.0-smoothstep(0.0,w,f))*0.0;
+  m=smoothstep(0.5-w,0.5+w,f)-smoothstep(1.0-w,1.0,f);
+  float t=1.0-smoothstep(0.0,oy<-0.5?2.6:1.7,r);
+  vec3 c1=ramp(g,a,b,c,0.15+0.8*t), c2=ramp(g,a,b,c,0.05+0.62*t);
+  vec3 col=mix(c1,c2,m);
+  col+=mix(c,vec3(1.0),0.4)*exp(-r*r*14.0)*0.6;
+  outColor=vec4(col,1.0);
+}`;
+
+/* Engraving — a lit sphere at the centre and the field behind it, drawn only
+   in parallel ink lines whose width follows the shading, like a banknote
+   engraving. Behind the sphere the lines run straight and darken with a
+   gradient; on it they bow with the surface. */
+const F_K_ENGRAVE=GL_FREE+`
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  float R=0.62+rnd(1.)*0.18, lines=70.0+floor(rnd(2.)*40.0);
+  vec2 cc=vec2(0.0,0.05);
+  vec2 d=(uv-cc)/R; float rr=dot(d,d);
+  float v, dark;
+  if(rr<1.0){ vec3 n=vec3(d,sqrt(1.0-rr));
+    vec3 L=normalize(vec3(-0.5,0.6,0.65));
+    float dif=clamp(dot(n,L),0.0,1.0);
+    dark=1.0-(0.08+0.92*dif);
+    v=(uv.y+n.z*0.22*sign(d.y+1e-4)*0.0+ (n.y*0.25))*lines*0.5;
+    v=(asin(clamp(n.y,-1.0,1.0))/1.5708*R+cc.y)*lines*0.5;
+  } else {
+    float sh=exp(-pow(length((uv-cc-vec2(0.18,-0.12))/vec2(R*1.05,R*0.9))-1.0,2.0)*6.0)*step(1.0,rr);
+    dark=0.18+0.45*smoothstep(-1.3,1.3,-uv.y)+0.35*sh;
+    v=uv.y*lines*0.5;
+  }
+  float f=abs(fract(v)-0.5)*2.0, w=fwidth(v)*2.0;
+  float ink=1.0-smoothstep(dark-w,dark+w,f);
+  float edge=smoothstep(0.0,0.02,abs(sqrt(rr)-1.0)*R);
+  ink=max(ink,1.0-edge);
+  vec3 paper=mix(c,vec3(0.97,0.95,0.9),0.55), inkc=mix(g,a,0.35);
+  outColor=vec4(mix(paper,inkc,ink),1.0);
+}`;
+
 /* ---- fourth poster batch: after the second reference board -------------- */
 
 /* Maze stripes — the sheet split into three to six rectangles; each holds
@@ -4407,6 +4529,16 @@ SYSTEMS.push(
  blurb:'A few dozen large Voronoi cells under a gentle warp, separated by leading in the ground colour. Each cell is filled from its own border inward: a lit pillow bevel, contour rings that follow the outline, or a glow from edge to centre.'},
 {cat:'K',id:'julia',bleed:true,name:'Julia Set',kind:'gl',frag:F_K_JULIA,
  blurb:'A Julia set at the centre of the sheet, its point symmetry giving the balance. The escape count runs through the colour gradient, dark far away and bright at the boundary; some seeds step it into flat bands.'},
+{cat:'K',id:'chrome',bleed:true,name:'Liquid Chrome',kind:'gl',frag:F_K_CHROME,
+ blurb:'A warped surface read as polished metal: every fold reflects a studio sky over a hard horizon and a dark floor, tinted gold, steel, rose or teal.'},
+{cat:'K',id:'cubes',bleed:true,name:'Isometric Cubes',kind:'gl',frag:F_K_ISO,
+ blurb:'The tumbling-blocks tiling: hexagons split into a light top and a mid and dark side. The tones drift through the colour gradient down the sheet, in rings, or cube by cube, and every cube still reads as solid.'},
+{cat:'K',id:'holo',bleed:true,name:'Holographic Foil',kind:'gl',frag:F_K_HOLO,
+ blurb:'A soft folded surface with thin-film colour: the hue follows the film&rsquo;s thickness and the angle of each fold, shifting through pale spectra with a pearly sheen.'},
+{cat:'K',id:'sunburst',bleed:true,name:'Sunburst',kind:'gl',frag:F_K_SUN,
+ blurb:'Rays from a point on the centre axis, at the middle of the sheet or rising from the bottom edge, alternating two tones that both run through the colour gradient with distance. Some seeds twist the rays into a pinwheel.'},
+{cat:'K',id:'engrave',bleed:true,name:'Engraving',kind:'gl',frag:F_K_ENGRAVE,
+ blurb:'A lit sphere drawn only in parallel ink lines that thicken in shadow, like a banknote engraving. On the sphere the lines bow with the surface; behind it they run straight, darkening down the sheet, with a cast shadow.'},
 {cat:'K',id:'maze',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
  blurb:'The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.'},
 {cat:'K',id:'fprint',bleed:true,name:'Fingerprint',kind:'js',draw:drawFingerprint,
