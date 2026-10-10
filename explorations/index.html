@@ -82,6 +82,36 @@
   footer{color:var(--dim);font-size:13px;border-top:1px solid var(--line);padding-top:26px;margin-top:50px;max-width:78ch}
   code{background:#1c1c1f;padding:1px 5px;border-radius:4px;font-size:12.5px}
   .load{color:var(--dim);font-size:13.5px;padding:40px 0;text-align:center}
+
+  /* customiser */
+  .cz{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+  .czstage{position:sticky;top:76px}
+  .czstage .plate{max-width:560px;margin:0 auto}
+  .czstage .cap{text-align:center}
+  .czpanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:18px}
+  .czpanel h3{margin:0}
+  .czpanel .blurb{margin:4px 0 0;font-size:13.5px;color:var(--dim)}
+  .czf{display:grid;gap:8px}
+  .czf>span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim)}
+  .czpanel select{background:#0d0d0f;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit;font-size:14px;width:100%}
+  .czk{display:grid;gap:4px}
+  .czkh{display:flex;justify-content:space-between;align-items:baseline;font-size:14px}
+  .czkh b{font-weight:600}
+  .czkh span{color:var(--accent);font-size:12.5px;font-variant-numeric:tabular-nums}
+  .czk input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0}
+  .czke{display:flex;justify-content:space-between;color:var(--dim);font-size:11.5px}
+  .czsw{display:flex;flex-wrap:wrap;gap:8px}
+  .czsw button{all:unset;cursor:pointer;display:flex;border-radius:7px;overflow:hidden;border:2px solid transparent;outline:1px solid var(--line);height:28px}
+  .czsw button i{display:block;width:12px;height:100%}
+  .czsw button[aria-pressed="true"]{border-color:var(--accent)}
+  .czsw button:focus-visible{outline:2px solid var(--accent)}
+  .czseg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .czseg button{flex:1;background:transparent;color:var(--dim);border:0;padding:8px 6px;font:inherit;font-size:13px;cursor:pointer}
+  .czseg button[aria-pressed="true"]{background:#26262b;color:var(--fg)}
+  .czrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .czrow .num{min-width:2.5em;text-align:center;font-variant-numeric:tabular-nums;color:var(--fg)}
+  .cznote{color:var(--dim);font-size:13px}
+  @media(max-width:900px){.cz{grid-template-columns:1fr}.czstage{position:static}}
 </style>
 </head>
 <body>
@@ -124,6 +154,26 @@ const ACCENTS=['#b8752a','#a83c2c','#2c4877','#2f5d4a','#6b3a5e','#8a6d1f'];
 
 function R(seed,i){ const x=Math.sin(seed*7.13+i*19.77)*43758.5453; return x-Math.floor(x); }
 function pick(seed,i,arr){ return arr[Math.floor(R(seed,i)*arr.length)]; }
+
+/* ---- client knobs ----------------------------------------------------------
+   Every poster exposes four knobs the buyer sets in the customiser, each a
+   value in 0..1. A knob left at null hands its parameter back to the seed, so
+   the catalogue renders exactly as before; a set knob replaces that one
+   seeded draw. KV() is the JS side, kv() in PRELUDE the shader side (u_k).
+   KNOBDEF[id] is four {n:name, lo, hi, d:default, steps} for the panel;
+   steps>0 marks a knob that picks between that many options.
+   PAL does the same for the palette: null lets the seed choose, a number
+   picks that entry of whichever palette family the poster draws from, and
+   PAL_FAM records which family that was so the panel can show its swatches. */
+let KNOB=[null,null,null,null], PAL=null, PAL_FAM=null, PAL_IDX=null;
+function KV(i,r){ const v=KNOB[i]; return v==null?r:Math.max(0,Math.min(0.9999,v)); }
+const KNOBDEF={};
+function knobs(id,defs){ KNOBDEF[id]=defs; }
+function famPick(fam,name,r){ PAL_FAM=name; const n=fam.length;
+  PAL_IDX=PAL==null?Math.min(n-1,Math.floor(r*n)):((Math.round(PAL)%n)+n)%n; return fam[PAL_IDX]; }
+/* the shaders' rnd(), in float32 like the GPU, to know which palette freePal() took */
+function glRnd(seed,i){ const f=Math.fround, fr=x=>f(x-Math.floor(x));
+  let p=f(f(f(seed)*f(7.13))+f(f(i)*f(19.77))); p=fr(f(p*f(0.1031))); p=f(p*f(p+f(33.33))); p=f(p*f(p+p)); return fr(p); }
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)/4294967296; }
 function seedFrom(s){ return strHash(s)*997; }
 function prep(cv){
@@ -154,10 +204,12 @@ const PRELUDE=`#version 300 es
 precision highp float;
 out vec4 outColor;
 uniform vec2 u_res; uniform float u_seed; uniform float u_vivid;
+uniform vec4 u_k; uniform float u_pal;
 const vec3 PAPER=vec3(0.949,0.941,0.919);
 const vec3 INK  =vec3(0.078,0.078,0.102);
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
 float rnd(float i){ return hash11(u_seed*7.13+i*19.77); }
+float kv(int i,float r){ float v=u_k[i]; return v<0.0?r:min(v,0.9999); }
 float hash21(vec2 p){ vec3 q=fract(vec3(p.xyx)*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }
 float vnoise(vec2 p){ vec2 i=floor(p),f=fract(p); vec2 u=f*f*(3.0-2.0*f);
   return mix(mix(hash21(i),hash21(i+vec2(1,0)),u.x),mix(hash21(i+vec2(0,1)),hash21(i+vec2(1,1)),u.x),u.y); }
@@ -201,6 +253,8 @@ function renderGL(body,seed,extra){
   gl.uniform2f(gl.getUniformLocation(p,'u_res'),glc.width,glc.height);
   gl.uniform1f(gl.getUniformLocation(p,'u_seed'),seed);
   gl.uniform1f(gl.getUniformLocation(p,'u_vivid'),1+0.4*POSTER_LEVEL);
+  gl.uniform4f(gl.getUniformLocation(p,'u_k'),...KNOB.map(v=>v==null?-1:v));
+  gl.uniform1f(gl.getUniformLocation(p,'u_pal'),PAL==null?-1:PAL);
   if(extra) extra(p);
   gl.drawArrays(gl.TRIANGLES,0,3);
 }
@@ -1242,7 +1296,7 @@ const PALETTES=[
  ['#03071e','#9d0208','#dc2f02','#f48c06','#ffba08'],
  ['#004e64','#00a5cf','#25a18e','#7ae582','#e9f7ef']
 ];
-const palOf=(seed,i)=>PALETTES[Math.floor(R(seed,i)*PALETTES.length)];
+const palOf=(seed,i)=>famPick(PALETTES,'base',R(seed,i));
 
 /* ---------------------------------------------------------------------------
    COLOUR ARRANGEMENT  (after Tyler Hobbs, "Color Arrangement in Generative Art")
@@ -2755,7 +2809,7 @@ const POSTER_TONES=[
   ['indigo',['#ece6da','#9fb2cf','#4b6aa3','#22396e','#141f3d']]
 ];
 vividReg(POSTER_TONES,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
-function posterInk(seed,i){ return POSTER_INKS[Math.floor(R(seed,i)*POSTER_INKS.length)]; }
+function posterInk(seed,i){ return famPick(POSTER_INKS,'inks',R(seed,i)); }
 
 /* -- convex polygon kit: clip, split, inset, round, warp ------------------- */
 function polyClip(poly,nx,ny,c){              /* keep n·p <= c */
@@ -3063,15 +3117,15 @@ function drawWarpStripes(cv,seed){
    op-art version. */
 function drawWaveBands(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
-  const op=R(seed,2)<0.5;
+  const op=KV(0,R(seed,2))<0.5;
   const vertical=R(seed,3)<0.35;
   const L=vertical?W:H, S=vertical?H:W;           /* L: across bands, S: along */
   let cols, label;
   if(op){ const [p,i,nm]=posterInk(seed,4); cols=[p,i]; label='op · '+nm; }
-  else { const [nm,t]=POSTER_TONES[Math.floor(R(seed,4)*POSTER_TONES.length)]; cols=t; label='tones · '+nm; }
-  const nb=op?24+Math.floor(R(seed,5)*20):6+Math.floor(R(seed,5)*6);
-  const amp=L*(op?0.03+R(seed,6)*0.03:0.04+R(seed,6)*0.05), f=(op?1.5:1)+R(seed,7)*1.6, ph=R(seed,8)*6.283, dph=R(seed,9)*0.5;
-  const bx=S*(0.3+R(seed,10)*0.4), bs=S*(0.14+R(seed,11)*0.16), bA=op?L*(0.10+R(seed,12)*0.12):0;
+  else { const [nm,t]=famPick(POSTER_TONES,'tones',R(seed,4)); cols=t; label='tones · '+nm; }
+  const nb=op?24+Math.floor(KV(1,R(seed,5))*20):6+Math.floor(KV(1,R(seed,5))*6);
+  const amp=L*(KNOB[2]==null?(op?0.03+R(seed,6)*0.03:0.04+R(seed,6)*0.05):(op?0.005+KV(2,0)*0.07:0.005+KV(2,0)*0.11)), f=(op?1.5:1)+R(seed,7)*1.6, ph=R(seed,8)*6.283, dph=R(seed,9)*0.5;
+  const bx=S*(0.3+R(seed,10)*0.4), bs=S*(0.14+R(seed,11)*0.16), bA=L*(KNOB[3]==null?(op?0.10+R(seed,12)*0.12:0):KV(3,0)*0.24);
   const bk=nb*(0.35+R(seed,13)*0.3), bw=nb*(0.25+R(seed,14)*0.2);
   const bound=(k,s)=>{
     const base=-L*0.08+(k/nb)*L*1.16;
@@ -3089,6 +3143,12 @@ function drawWaveBands(cv,seed){
   }
   noteStrategy(cv,label);
 }
+
+knobs('waves',[
+  {n:'Style',opts:['Op-art','Tones'],steps:2,d:0},
+  {n:'Bands',lo:'fewer',hi:'more',d:0.5},
+  {n:'Waves',lo:'calm',hi:'rough',d:0.6},
+  {n:'Swell',lo:'flat',hi:'bulging',d:0.5}]);
 
 /* Existing systems recut for the poster tab: render the original, then map
    its luminance onto paper→ink of one poster colour, stretched to full range. */
@@ -3119,7 +3179,7 @@ function gradientize(base){
   return (cv,seed)=>{
     paint(base,cv,seed);
     const c=cv.getContext('2d'), W=cv.width, H=cv.height, img=c.getImageData(0,0,W,H), d=img.data;
-    const [nm,st]=SKIES[Math.floor(R(seed,993)*SKIES.length)];
+    const [nm,st]=famPick(SKIES,'skies',R(seed,993));
     const stops=st.slice().sort((a,b)=>lumOfHex(b)-lumOfHex(a));
     let lo=255,hi=0;
     for(let i=0;i<d.length;i+=16){ const l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; if(l<lo)lo=l; if(l>hi)hi=l; }
@@ -3166,7 +3226,7 @@ const POSTER_SETS=[
   ['rose',['#f2e8dc','#e7b9a8','#c46a5a','#7a2f3a','#2d2a32']]
 ];
 vividReg(POSTER_SETS,a=>a.forEach(e=>{ e[1]=e[1].map((h,i)=>i?vivid(h,VIVID):h); }));
-function posterSet(seed,i){ return POSTER_SETS[Math.floor(R(seed,i)*POSTER_SETS.length)]; }
+function posterSet(seed,i){ return famPick(POSTER_SETS,'sets',R(seed,i)); }
 
 /* Recolour an existing system with a poster set. palOf() picks from
    PALETTES by seed, so swapping the array's contents for the duration of one
@@ -3174,7 +3234,7 @@ function posterSet(seed,i){ return POSTER_SETS[Math.floor(R(seed,i)*POSTER_SETS.
 function withPosterSet(draw){
   return (cv,seed)=>{
     const [nm,pal]=posterSet(seed,77), save=PALETTES.splice(0,PALETTES.length,pal);
-    try{ draw(cv,seed); } finally { PALETTES.splice(0,PALETTES.length,...save); }
+    try{ draw(cv,seed); } finally { PALETTES.splice(0,PALETTES.length,...save); PAL_FAM='sets'; }
     noteStrategy(cv,nm);
   };
 }
@@ -3353,7 +3413,7 @@ function drawFlowPoster(cv,seed){
 const GL_FREE=`
 vec3 hx(float r,float g,float b){ return vec3(r,g,b)/255.0; }
 void freePal(out vec3 g,out vec3 a,out vec3 b,out vec3 c){
-  float k=floor(rnd(90.)*5.0);
+  float k=u_pal>=0.0?mod(floor(u_pal+0.5),5.0):floor(rnd(90.)*5.0);
   if(k<1.0){ g=hx(17.,13.,11.); a=hx(156.,43.,43.); b=hx(224.,112.,58.); c=hx(246.,207.,138.); }
   else if(k<2.0){ g=hx(8.,16.,30.); a=hx(31.,95.,139.); b=hx(83.,179.,201.); c=hx(232.,214.,168.); }
   else if(k<3.0){ g=hx(19.,12.,28.); a=hx(75.,63.,176.); b=hx(180.,106.,214.); c=hx(246.,182.,207.); }
@@ -3873,26 +3933,37 @@ void main(){
 const F_K_JULIA=GL_FREE+`
 void main(){
   vec3 g,a,b,c; freePal(g,a,b,c);
-  float k=floor(rnd(1.)*6.0);
+  float k=floor(kv(0,rnd(1.))*6.0);
   vec2 C=k<1.?vec2(-0.8,0.156):k<2.?vec2(-0.7269,0.1889):k<3.?vec2(0.285,0.01):k<4.?vec2(-0.4,0.6):k<5.?vec2(-0.835,-0.2321):vec2(-0.70176,-0.3842);
   /* per-set rotation that stands its long axis upright, and the zoom that
      fits it inside the sheet with a margin (measured offline) */
   float ang=k<1.?1.690:k<2.?1.724:k<3.?3.128:k<4.?2.128:k<5.?1.398:1.269;
   float zm=k<1.?1.32:k<2.?1.29:k<3.?0.94:k<4.?1.20:k<5.?1.34:1.29;
+  /* knobs: shape (which C), morph (nudges C along its own direction, so the
+     set keeps its character and its fit), bands, glow */
+  C+=normalize(C)*(kv(1,0.5)-0.5)*0.05;
   float steps=rnd(4.)<0.4?7.0+floor(rnd(5.)*5.0):0.0;
+  if(u_k.z>=0.0) steps=u_k.z<0.1?0.0:3.0+floor(u_k.z*12.0);
+  float ex=u_k.w<0.0?0.55:mix(1.0,0.3,u_k.w);
   vec3 acc=vec3(0.0);
   for(int sy=0;sy<2;sy++) for(int sx=0;sx<2;sx++){
     vec2 q=(gl_FragCoord.xy+vec2(sx,sy)*0.5-0.25-0.5*u_res)/min(u_res.x,u_res.y)*2.0;
     vec2 z=rot2(ang)*q*zm; float it=0.0; bool esc=false;
     for(int i=0;i<320;i++){ z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+C; if(dot(z,z)>256.0){ esc=true; break; } it+=1.0; }
     vec3 col=g;
-    if(esc){ float sm=it-log2(log2(dot(z,z)))+4.0, t=clamp(pow(sm/70.0,0.55),0.0,1.0);
+    if(esc){ float sm=it-log2(log2(dot(z,z)))+4.0, t=clamp(pow(sm/70.0,ex),0.0,1.0);
       if(steps>0.0) t=floor(t*steps)/(steps-1.0);
       col=ramp(g,a,b,c,t); }
     acc+=col;
   }
   outColor=vec4(acc*0.25,1.0);
 }`;
+
+knobs('julia',[
+  {n:'Shape',opts:['Spirals','Seahorse','Coral','Dragon','Lace','Whirl'],steps:6,d:0},
+  {n:'Morph',lo:'blooming',hi:'solid',d:0.5},
+  {n:'Bands',lo:'smooth',hi:'many steps',d:0},
+  {n:'Glow',lo:'thin edge',hi:'broad glow',d:0.64}]);
 
 /* ---- fifth batch: after the shaders.com component set ------------------- */
 
@@ -4100,12 +4171,12 @@ function gradRGB(stops,t){ t=Math.max(0,Math.min(0.99999,t))*(stops.length-1); c
   const g=f*f*(3-2*f); return [a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g,a[2]+(b[2]-a[2])*g]; }
 function drawSkyGradient(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
-  const mode=Math.floor(R(seed,1)*3), [nm,st]=SKIES[Math.floor(R(seed,2)*SKIES.length)];
+  const mode=Math.floor(R(seed,1)*3), [nm,st]=famPick(SKIES,'skies',R(seed,2)), i1=SKIES.findIndex(e=>e[1]===st);
   if(mode===0){ const tilt=(R(seed,3)-0.5)*0.15;
     paintPixels(c,W,H,(x,y)=>gradRGB(st,y/H+tilt*(x/W-0.5)+(noise2(x/W*1.5,y/H*1.5,seed)-0.5)*0.08)); }
   else if(mode===1){ const n=11+Math.floor(R(seed,4)*5), s2=[st[0],st[st.length-1]], dirn=R(seed,5)<0.5;
     for(let i=0;i<n;i++){ const q=gradRGB(s2,dirn?i/(n-1):1-i/(n-1)); c.fillStyle=`rgb(${q[0]|0},${q[1]|0},${q[2]|0})`; c.fillRect(Math.floor(i*W/n),0,Math.ceil(W/n)+1,H); } }
-  else { const [,st2]=SKIES[(Math.floor(R(seed,2)*SKIES.length)+1+Math.floor(R(seed,6)*(SKIES.length-1)))%SKIES.length];
+  else { const [,st2]=SKIES[(i1+1+Math.floor(R(seed,6)*(SKIES.length-1)))%SKIES.length];
     const mx=W*0.12, my=H*0.1, inv=R(seed,7)<0.5;
     paintPixels(c,W,H,(x,y)=>{ const inside=x>mx&&x<W-mx&&y>my&&y<H-my;
       if(inside) return gradRGB(st,(y-my)/(H-2*my));
@@ -4163,7 +4234,7 @@ function drawHorizon(cv,seed){
   /* gradient version: ridges take successive points on one sky ramp, light at
      the top of the sheet to deep at the bottom, and each ridge is itself
      shaded from its crest down toward the next tone */
-  const [nm,st]=SKIES[Math.floor(R(seed,1)*SKIES.length)];
+  const [nm,st]=famPick(SKIES,'skies',R(seed,1));
   const stops=st.slice().sort((a,b)=>lumOfHex(b)-lumOfHex(a));
   const css=q=>`rgb(${q[0]|0},${q[1]|0},${q[2]|0})`;
   const sky=c.createLinearGradient(0,0,0,H*0.3);
@@ -4574,6 +4645,7 @@ SYSTEMS.push(
 const TABS=[
  {key:'P',label:'Principles'},
  {key:'K',label:'Posters'},
+ {key:'C',label:'Customise'},
  {key:'A',label:'Algorithmic'},
  {key:'G',label:'Geometric'},
  {key:'O',label:'Organic'},
@@ -4644,7 +4716,9 @@ function measure(cv,dark){
 }
 
 function paint(sys,cv,seed){
-  if(sys.kind==='gl'){ renderGL(sys.frag,seed); blit(cv); }
+  PAL_FAM=null;
+  if(sys.kind==='gl'){ if(sys.frag.includes('freePal(')){ PAL_FAM='free'; PAL_IDX=PAL==null?Math.floor(glRnd(seed,90)*5):((Math.round(PAL)%5)+5)%5; }
+    renderGL(sys.frag,seed); blit(cv); }
   else if(sys.kind==='rd'){
     if(!FLOAT_OK){ const c=prep(cv); c.fillStyle='#777'; c.font='13px sans-serif'; c.textAlign='center';
       c.fillText('float textures unavailable',cv.width/2,cv.height/2); return; }
@@ -4742,6 +4816,109 @@ function buildSystemCard(sys){
   return sec;
 }
 
+/* ---- customiser ------------------------------------------------------------
+   What a buyer sees: one poster at a time, its four knobs, the palette, the
+   colour strength and a variation number. The knobs, palette and strength
+   are applied for this one render and handed back, so the catalogue tabs
+   keep drawing from their seeds. */
+const NORENDER=/norender/.test(location.search+location.hash);
+const FREE_PALS=[
+  ['ember',['#110d0b','#9c2b2b','#e0703a','#f6cf8a']],
+  ['ocean',['#08101e','#1f5f8b','#53b3c9','#e8d6a8']],
+  ['violet',['#130c1c','#4b3fb0','#b46ad6','#f6b6cf']],
+  ['gold',['#0c0b09','#7a5a2c','#c99a4e','#f5e3b8']],
+  ['forest',['#0e1614','#203a30','#5f8b6c','#e8c896']]
+];
+function famList(name){
+  if(name==='free') return FREE_PALS.map(([n,c])=>({n,c}));
+  if(name==='inks') return POSTER_INKS.map(e=>({n:e[2],c:[e[0],e[1]]}));
+  if(name==='sets') return POSTER_SETS.map(e=>({n:e[0],c:e[1]}));
+  if(name==='tones') return POSTER_TONES.map(e=>({n:e[0],c:e[1]}));
+  if(name==='skies') return SKIES.map(e=>({n:e[0],c:e[1]}));
+  if(name==='base') return PALETTES.map((c,i)=>({n:'palette '+(i+1),c}));
+  return [];
+}
+const cz={sys:null,st:{},fam:null,slow:false,root:null};
+const czq=q=>cz.root.querySelector(q);
+function czDefs(sys){ return KNOBDEF[sys.id]||[]; }
+function czState(sys){
+  if(!cz.st[sys.id]) cz.st[sys.id]={k:czDefs(sys).map(d=>d.steps?(Math.round((d.d??0.5)*(d.steps-1))+0.5)/d.steps:(d.d??0.5)),pal:null,lev:0.5,v:1};
+  return cz.st[sys.id];
+}
+function czSeed(sys,v){ return sys.id.length*53+(v-1)*37.7+3.0; }
+function buildCustomiser(pane){
+  const K=SYSTEMS.filter(s=>s.cat==='K');
+  pane.innerHTML=`<div class="intro A"><h2>Customise</h2><p>What the buyer sees: pick a poster, then set its four knobs, the palette and the colour strength. Every change redraws the poster. Variation changes everything the knobs leave open.</p></div>
+  <div class="cz"><div class="czstage"><div class="plate"><canvas id="czcv"></canvas></div><div class="cap" id="czcap"></div></div>
+  <div class="czpanel">
+    <label class="czf"><span>Poster</span><select id="czsys">${K.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></label>
+    <div><h3 id="czname"></h3><p class="blurb" id="czblurb"></p></div>
+    <div id="czknobs" class="czf"></div>
+    <div class="czf"><span>Palette</span><div class="czsw" id="czpal"></div></div>
+    <div class="czf"><span>Colour strength</span><div class="czseg" id="czlev"><button data-l="0">Natural</button><button data-l="0.5">Balanced</button><button data-l="1">Vivid</button></div></div>
+    <div class="czf"><span>Variation</span><div class="czrow"><button class="act" id="czprev" aria-label="Previous variation">&lsaquo;</button><span class="num" id="czv"></span><button class="act" id="cznext" aria-label="Next variation">&rsaquo;</button><button class="act" id="czsur">Surprise me</button><button class="act" id="czreset">Reset</button></div></div>
+  </div></div>`;
+  cz.root=pane; const $=czq;
+  cz.sys=K[0];
+  $('#czsys').addEventListener('change',e=>{ cz.sys=SYSTEMS.find(s=>s.id===e.target.value); czPanel(); czRender(); });
+  $('#czlev').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; czState(cz.sys).lev=+b.dataset.l; czPanel(); czRender(); });
+  $('#czprev').addEventListener('click',()=>{ const st=czState(cz.sys); st.v=Math.max(1,st.v-1); czPanel(); czRender(); });
+  $('#cznext').addEventListener('click',()=>{ const st=czState(cz.sys); st.v++; czPanel(); czRender(); });
+  $('#czreset').addEventListener('click',()=>{ delete cz.st[cz.sys.id]; czPanel(); czRender(); });
+  $('#czsur').addEventListener('click',()=>{ const st=czState(cz.sys);
+    st.k=czDefs(cz.sys).map(d=>d.steps?(Math.floor(Math.random()*d.steps)+0.5)/d.steps:Math.random());
+    st.v=1+Math.floor(Math.random()*99); st.pal=cz.fam?Math.floor(Math.random()*famList(cz.fam).length):null; czPanel(); czRender(); });
+  $('#czpal').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; czState(cz.sys).pal=+b.dataset.i; czSwatches(); czRender(); });
+  let tq=0;
+  $('#czknobs').addEventListener('input',e=>{ const r=e.target; if(r.type!=='range') return;
+    const i=+r.dataset.i, d=czDefs(cz.sys)[i], st=czState(cz.sys);
+    st.k[i]=d.steps?(+r.value+0.5)/d.steps:+r.value; czKnobLabel(i);
+    if(!cz.slow){ cancelAnimationFrame(tq); tq=requestAnimationFrame(czRender); } });
+  $('#czknobs').addEventListener('change',()=>{ if(cz.slow) czRender(); });
+  addEventListener('resize',()=>{ if(!panes.C.el.classList.contains('hidden')){ clearTimeout(cz.rt); cz.rt=setTimeout(czRender,250); } });
+  czPanel();
+}
+function czKnobLabel(i){
+  const d=czDefs(cz.sys)[i], v=czState(cz.sys).k[i], out=czq('#czk'+i);
+  if(!out) return;
+  out.textContent=d.opts?d.opts[Math.min(d.opts.length-1,Math.floor(v*d.steps))]:d.steps?`${Math.floor(v*d.steps)+1} / ${d.steps}`:Math.round(v*100);
+}
+function czPanel(){
+  const sys=cz.sys, st=czState(sys), defs=czDefs(sys);
+  czq('#czsys').value=sys.id;
+  czq('#czname').innerHTML=sys.name;
+  czq('#czblurb').innerHTML=sys.blurb||'';
+  czq('#czknobs').innerHTML=defs.length?defs.map((d,i)=>{
+    const val=d.steps?Math.floor(st.k[i]*d.steps):st.k[i];
+    return `<div class="czk"><div class="czkh"><b>${d.n}</b><span id="czk${i}"></span></div>
+      <input type="range" data-i="${i}" min="0" max="${d.steps?d.steps-1:1}" step="${d.steps?1:0.001}" value="${val}" aria-label="${d.n}">
+      <div class="czke"><span>${d.lo||''}</span><span>${d.hi||''}</span></div></div>`; }).join('')
+    :'<p class="cznote">This poster has no knobs yet: palette, colour strength and variation still apply.</p>';
+  defs.forEach((d,i)=>czKnobLabel(i));
+  cz.root.querySelectorAll('#czlev button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.l===st.lev)));
+  czq('#czv').textContent=st.v;
+}
+function czSwatches(){
+  const box=czq('#czpal'), st=czState(cz.sys), L=famList(cz.fam);
+  if(!L.length){ box.innerHTML='<span class="cznote">Fixed colours</span>'; return; }
+  const cur=st.pal==null?-1:((st.pal%L.length)+L.length)%L.length;
+  box.innerHTML=L.map((p,i)=>`<button data-i="${i}" aria-pressed="${i===cur}" title="${p.n}" aria-label="${p.n}">${p.c.map(c=>`<i style="background:${c}"></i>`).join('')}</button>`).join('');
+}
+function czRender(){
+  const sys=cz.sys; if(!sys) return;
+  const st=czState(sys), cv=czq('#czcv');
+  const sk=KNOB, sp=PAL, sl=POSTER_LEVEL, t0=performance.now();
+  KNOB=czDefs(sys).length?st.k.slice():[null,null,null,null]; PAL=st.pal; setPosterVivid(st.lev);
+  let fam=null, idx=null;
+  try{ cv.dataset.strategy=''; paintGated(sys,cv,czSeed(sys,st.v)); fam=PAL_FAM; idx=PAL_IDX; }
+  catch(err){ fail('X customiser '+sys.id+': '+err.message); }
+  finally{ KNOB=sk; PAL=sp; setPosterVivid(sl); }
+  cz.slow=performance.now()-t0>160;
+  if(st.pal==null&&fam&&idx!=null) st.pal=idx;   /* adopt the seed's palette, so the swatch shows it */
+  cz.fam=fam; czSwatches();
+  czq('#czcap').textContent=`${sys.id.toUpperCase()} · variation ${st.v}`+(cv.dataset.strategy?' · '+cv.dataset.strategy:'');
+}
+
 TABS.forEach(tab=>{
   const pane=document.createElement('div');
   pane.className='hidden'; pane.dataset.key=tab.key;
@@ -4765,6 +4942,8 @@ TABS.forEach(tab=>{
         <div class="good"><h4>Same maths, directed</h4><div class="plate"><canvas id="cv-good"></canvas></div>
           <p>Origin off-sheet, clustered hairlines against voids, solid bands carrying value, partial arcs breaking symmetry, one accent.</p></div>
       </div>`;
+  } else if(tab.key==='C'){
+    buildCustomiser(pane);
   } else if(tab.key==='X'){
     const cov=[
      ['1 · Geometric Flow',[
@@ -4901,7 +5080,8 @@ function show(key){
     p.btn.classList.toggle('on',k===key);
   });
   const p=panes[key];
-  if(p.rendered) return;
+  if(key==='C'){ requestAnimationFrame(czRender); return; }
+  if(p.rendered||NORENDER) return;
   p.rendered=true;
   requestAnimationFrame(()=>{
     if(key==='P'){
