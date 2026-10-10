@@ -3254,20 +3254,26 @@ function drawPenroseStar(cv,seed){
     if(i%2===0){ const t=b; b=cc; cc=t; }
     tris.push([0,{x:0,y:0},b,cc]);
   }
-  const depth=5+Math.floor(R(seed,2)*2);
+  /* knobs: tiles (tile size: subdivision depth, the zoom taking up the
+     rest), rings, centre (ring spacing: a power of the radius, which
+     shrinks or swells the central medallion), gutter */
+  const z0=Math.hypot(W,H)*0.56, ts=KNOB[0]==null?0:z0/Math.pow(PHI,4.5+KV(0,0)*2);
+  let depth=5+Math.floor(R(seed,2)*2), zoom=z0;
+  if(ts){ depth=4; while(ts*Math.pow(PHI,depth)<z0) depth++; zoom=ts*Math.pow(PHI,depth); }
   for(let d=0;d<depth;d++){ const out=[];
     for(const [col,A,B,C] of tris){
       if(col===0){ const P=sub(A,B); out.push([0,C,P,B],[1,P,C,A]); }
       else{ const Q=sub(B,A),Rr=sub(B,C); out.push([1,Rr,C,A],[1,Q,Rr,B],[0,Rr,Q,A]); } }
     tris=out; }
-  const zoom=Math.hypot(W,H)*0.56, rot=-Math.PI/2, cx=W/2, cy=H/2;
+  const rot=-Math.PI/2, cx=W/2, cy=H/2;
   const px=p=>[cx+(p.x*Math.cos(rot)-p.y*Math.sin(rot))*zoom, cy+(p.x*Math.sin(rot)+p.y*Math.cos(rot))*zoom];
-  const rings=3+Math.floor(R(seed,3)*3), o=Math.floor(R(seed,4)*4), ink=pal.slice(1);
+  const rings=KNOB[1]==null?3+Math.floor(R(seed,3)*3):2+Math.floor(KV(1,0)*7), o=Math.floor(R(seed,4)*4), ink=pal.slice(1);
+  const pg=KV(2,0), gv=KV(3,0), gw=KNOB[3]==null?Math.max(1,W*0.003):Math.max(1,(ts||z0/Math.pow(PHI,depth))*(0.006+gv*0.125));
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
-  c.lineJoin='round'; c.lineWidth=Math.max(1,W*0.003); c.strokeStyle=pal[0];
+  c.lineJoin='round'; c.lineWidth=gw; c.strokeStyle=pal[0];
   for(const [col,A,B,C] of tris){
     const a=px(A),b=px(B),q=px(C), mx=(a[0]+b[0]+q[0])/3-cx, my=(a[1]+b[1]+q[1])/3-cy;
-    const ring=Math.floor(Math.hypot(mx,my)/zoom*rings*1.4);
+    const ring=KNOB[2]==null?Math.floor(Math.hypot(mx,my)/z0*rings*1.4):Math.floor(Math.pow(Math.hypot(mx,my)/z0*1.4,Math.pow(2.6,pg-0.5))*rings);
     const fill=col===0?(ring%2?ink[(o+1)%4]:ink[o]):(ring%2?pal[0]:ink[(o+2)%4]);
     c.beginPath(); c.moveTo(a[0],a[1]); c.lineTo(b[0],b[1]); c.lineTo(q[0],q[1]); c.closePath();
     c.fillStyle=fill; c.fill();
@@ -3277,6 +3283,12 @@ function drawPenroseStar(cv,seed){
     c.beginPath(); c.moveTo(b[0],b[1]); c.lineTo(a[0],a[1]); c.lineTo(q[0],q[1]); c.stroke(); }
   noteStrategy(cv,rings+' rings · '+nm);
 }
+
+knobs('pstar',[
+  {n:'Tiles',lo:'large',hi:'small',d:0.25},
+  {n:'Rings',lo:'few',hi:'many',d:0.4},
+  {n:'Centre',lo:'small',hi:'large',d:0.5},
+  {n:'Gutter',lo:'fine',hi:'wide',d:0.25}]);
 
 /* Quadtree blocks — the Geometric tab's quadtree rebuilt at poster scale:
    always split twice, then at most twice more, so the smallest cell is still
@@ -3313,20 +3325,29 @@ function drawQuadBlocks(cv,seed){
 function drawDistanceField(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,pal]=posterSet(seed,1), ink=pal.slice(1);
-  const layout=Math.floor(R(seed,2)*3);
+  /* knobs: layout, shape (circle, square, diamond), size (the whole figure
+     scaled about the centre, held inside the sheet), bands */
+  const layout=Math.floor(KV(0,R(seed,2))*3), st=Math.floor(KV(1,0)*3);
   let sh;
   if(layout===0) sh=[[W/2,H/2,M*(0.16+R(seed,3)*0.08)]];
   else if(layout===1){ const r=M*(0.10+R(seed,3)*0.05), dx=M*(0.17+R(seed,4)*0.05);
     sh=R(seed,5)<0.5?[[W/2-dx,H/2,r],[W/2+dx,H/2,r]]:[[W/2,H/2-dx,r],[W/2,H/2+dx,r]]; }
   else { const r=M*(0.08+R(seed,3)*0.04), rc=r*(1.2+R(seed,4)*0.4), dy=rc+r*(1.1+R(seed,5)*0.6);
     sh=[[W/2,H/2-dy,r],[W/2,H/2,rc],[W/2,H/2+dy,r]]; }
-  const k=M*(0.06+R(seed,6)*0.08), bw=M*(0.028+R(seed,7)*0.03);
+  if(KNOB[1]!=null||KNOB[2]!=null){ const e=st===2?1.27:1;
+    const f=Math.min(0.65+KV(2,0.47)*0.75,...sh.map(([x,y,r])=>Math.min(0.42*W/(Math.abs(x-W/2)+r*e),0.42*H/(Math.abs(y-H/2)+r*e))));
+    sh=sh.map(([x,y,r])=>[W/2+(x-W/2)*f,H/2+(y-H/2)*f,r*f]); }
+  const k=M*(0.06+R(seed,6)*0.08), bw=KNOB[3]==null?M*(0.028+R(seed,7)*0.03):M*(0.075-KV(3,0)*0.053);
   const core=Math.floor(R(seed,8)*4), o=Math.floor(R(seed,9)*4), two=R(seed,10)<0.4;
   const rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
   const P=rgb(pal[0]), I=ink.map(rgb), C=I[core];
+  /* rounded square of half-size 0.9r, turned 45° for the diamond */
+  const boxD=(dx,dy,r)=>{ if(st===2){ const u=(dx+dy)*Math.SQRT1_2; dy=(dx-dy)*Math.SQRT1_2; dx=u; }
+    const rr=r*0.14, qx=Math.abs(dx)-r*0.9+rr, qy=Math.abs(dy)-r*0.9+rr;
+    return Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-rr; };
   const colAt=(x,y)=>{
     let d=1e9;
-    for(const [sx,sy,r] of sh){ const e=Math.hypot(x-sx,y-sy)-r;
+    for(const [sx,sy,r] of sh){ const e=st===0?Math.hypot(x-sx,y-sy)-r:boxD(x-sx,y-sy,r);
       const h=Math.max(k-Math.abs(d-e),0)/k; d=Math.min(d,e)-h*h*k*0.25; }
     if(d<0) return C;
     const i=Math.floor(d/bw);
@@ -3343,6 +3364,12 @@ function drawDistanceField(cv,seed){
   c.putImageData(img,0,0);
   noteStrategy(cv,['single','pair','stack'][layout]+' · '+nm);
 }
+
+knobs('dfield',[
+  {n:'Layout',opts:['Single','Pair','Stack'],steps:3,d:0.5},
+  {n:'Shape',opts:['Circle','Square','Diamond'],steps:3,d:0},
+  {n:'Size',lo:'small',hi:'large',d:0.47},
+  {n:'Bands',lo:'few',hi:'many',d:0.45}]);
 
 /* ---- free-palette posters ----------------------------------------------
    The second poster batch is not bound to cream and one ink: dark grounds,
@@ -3374,15 +3401,18 @@ function drawFlowPoster(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,P]=freeSet(seed,1), cols=P.slice(1);
   c.fillStyle=P[0]; c.fillRect(0,0,W,H);
-  const vortex=R(seed,2)<0.6, fs=0.9+R(seed,3)*1.4, sw=R(seed,4)<0.5?1:-1, inward=0.12+R(seed,5)*0.3;
+  /* knobs: form (vortex or open field), lines (spacing), turbulence (noise
+     scale and how far it turns the flow), weight (stroke as a share of the
+     spacing) */
+  const vortex=KV(0,R(seed,2))<0.6, fs=KNOB[2]==null?0.9+R(seed,3)*1.4:0.5+KV(2,0)*2.8, curl=KNOB[2]==null?2.4:1.6+KV(2,0)*2.4, sw=R(seed,4)<0.5?1:-1, inward=0.12+R(seed,5)*0.3;
   const cx=W/2, cy=H/2;
   const dir=(x,y)=>{
-    const n=fbm(x/W*fs,y/H*fs,seed)*Math.PI*2.4; let vx=Math.cos(n), vy=Math.sin(n);
+    const n=fbm(x/W*fs,y/H*fs,seed)*Math.PI*curl; let vx=Math.cos(n), vy=Math.sin(n);
     if(vortex){ const dx=x-cx, dy=y-cy, r=Math.hypot(dx,dy)/M, ph=Math.atan2(dy,dx)+sw*(Math.PI/2+inward), w=Math.exp(-r*r*2.2);
       vx=vx*(1-w)+Math.cos(ph)*w; vy=vy*(1-w)+Math.sin(ph)*w; }
     const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l];
   };
-  const sep=M*(0.009+R(seed,6)*0.006), stepL=sep*0.5, test=sep*0.85;
+  const sep=KNOB[1]==null?M*(0.009+R(seed,6)*0.006):M*(0.026-KV(1,0)*0.017), stepL=sep*0.5, test=sep*0.85;
   const gw=Math.ceil(W/sep), gh=Math.ceil(H/sep), grid=new Array(gw*gh);
   const free=(x,y)=>{ const gi=Math.floor(x/sep), gj=Math.floor(y/sep);
     for(let j=gj-1;j<=gj+1;j++) for(let i=gi-1;i<=gi+1;i++){ if(i<0||j<0||i>=gw||j>=gh) continue;
@@ -3392,7 +3422,7 @@ function drawFlowPoster(cv,seed){
   const seeds=[]; for(let j=0;j<gh;j++) for(let i=0;i<gw;i++) seeds.push([(i+R(seed,i*7+j*13))*sep,(j+R(seed,i*11+j*5+3))*sep,R(seed,i*3+j*17+9)]);
   seeds.sort((a,b)=>a[2]-b[2]);
   c.lineCap='round'; c.lineJoin='round';
-  const wBase=sep*(0.38+R(seed,7)*0.22);
+  const wBase=sep*(KNOB[3]==null?0.38+R(seed,7)*0.22:0.3+KV(3,0)*0.52);
   for(const [sx,sy] of seeds){
     if(!free(sx,sy)) continue;
     const line=[[sx,sy]];
@@ -3408,6 +3438,12 @@ function drawFlowPoster(cv,seed){
   }
   noteStrategy(cv,(vortex?'centred vortex':'open field')+' · '+nm);
 }
+
+knobs('flowp',[
+  {n:'Form',opts:['Vortex','Open'],steps:2,d:0},
+  {n:'Lines',lo:'few',hi:'many',d:0.6},
+  {n:'Turbulence',lo:'calm',hi:'wild',d:0.3},
+  {n:'Weight',lo:'fine',hi:'heavy',d:0.4}]);
 
 /* GL posters share one palette chooser so a seed picks a coherent set. */
 const GL_FREE=`
@@ -3528,8 +3564,10 @@ function drawVega(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,P]=R(seed,1)<0.5?freeSet(seed,2):posterSet(seed,2);
   const A=P[0], B=P[P.length-1]===P[0]?P[1]:(P.length>4?P[4]:P[1]), T=P[2];
-  const n=10+Math.floor(R(seed,3)*8), cs=W/n, rows=Math.ceil(H/cs)+1, oy=(H-rows*cs)/2;
-  const cx=W/2, cy=H/2, Rb=M*(0.36+R(seed,4)*0.1), amp=1.6+R(seed,5)*1.0;
+  /* knobs: grid (columns), lens (radius), bulge (warp strength, kept below
+     3 so the warp never folds), dots (disc size in its cell) */
+  const n=KNOB[0]==null?10+Math.floor(R(seed,3)*8):7+Math.floor(KV(0,0)*14), cs=W/n, rows=Math.ceil(H/cs)+1, oy=(H-rows*cs)/2;
+  const cx=W/2, cy=H/2, Rb=M*(KNOB[1]==null?0.36+R(seed,4)*0.1:0.24+KV(1,0)*0.23), amp=KNOB[2]==null?1.6+R(seed,5)*1.0:0.4+KV(2,0)*2.5;
   const warp=(x,y)=>{ const dx=x-cx, dy=y-cy, d=Math.hypot(dx,dy), r=d/Rb;
     if(r>=1||d===0) return [x,y]; const k=(r+amp*r*(1-r)*(1-r))/r; return [cx+dx*k, cy+dy*k]; };
   const inLens=(x,y)=>Math.hypot(x-cx,y-cy)<Rb;
@@ -3546,12 +3584,18 @@ function drawVega(cv,seed){
     const lens=inLens(mx,my);
     const bg=odd?A:(lens&&R(seed,9)<0.6?T:B), fg=odd?(lens?T:B):A;
     poly(pts); c.fillStyle=bg; c.fill();
-    const cr=cs*(0.30+0.08*Math.cos(Math.hypot(mx-cx,my-cy)/M*6)), cp=[];
+    const cr=cs*((KNOB[3]==null?0.30:0.2+KV(3,0)*0.22)+0.08*Math.cos(Math.hypot(mx-cx,my-cy)/M*6)), cp=[];
     for(let k=0;k<24;k++){ const a=k/24*Math.PI*2; cp.push([mx+Math.cos(a)*cr,my+Math.sin(a)*cr]); }
     poly(cp); c.fillStyle=fg; c.fill();
   }
   noteStrategy(cv,n+' columns · '+nm);
 }
+
+knobs('vega',[
+  {n:'Grid',lo:'coarse',hi:'fine',d:0.4},
+  {n:'Lens',lo:'small',hi:'large',d:0.7},
+  {n:'Bulge',lo:'gentle',hi:'strong',d:0.6},
+  {n:'Dots',lo:'small',hi:'large',d:0.45}]);
 
 /* Ringers — after Dmitri Cherniak: pegs on a grid centred on the sheet and
    one string wound around a subset of them in a set order, each peg passed
@@ -3563,12 +3607,16 @@ function drawRingers(cv,seed){
   const [nm,P]=R(seed,1)<0.5?freeSet(seed,2):posterSet(seed,2);
   const bg=P[0], fill=P[2], str=P[P.length-1]===bg?P[1]:P[P.length-1], peg=P[1];
   c.fillStyle=bg; c.fillRect(0,0,W,H);
-  const g=3+Math.floor(R(seed,3)*3), span=M*0.74, cell=span/(g-1), r=cell*(0.16+R(seed,4)*0.08);
+  /* knobs: grid, wound (how many pegs the string takes), crossings (share
+     of pegs passed on the far side), weight (peg radius, string with it) */
+  const g=KNOB[0]==null?3+Math.floor(R(seed,3)*3):3+Math.floor(KV(0,0)*4), span=M*0.74, cell=span/(g-1);
+  const r=KNOB[3]==null?cell*(0.16+R(seed,4)*0.08):(cell*0.6+M*0.1)*(0.13+KV(3,0)*0.14);
   const ox=W/2-span/2, oy=H/2-span/2;
   const all=[]; for(let j=0;j<g;j++) for(let i=0;i<g;i++) all.push([ox+i*cell,oy+j*cell]);
   const order=all.map((q,k)=>[q,R(seed,10+k)]).sort((a,b)=>a[1]-b[1]).map(q=>q[0]);
-  const np=Math.min(all.length,6+Math.floor(R(seed,5)*Math.min(5,all.length-5)));
-  const pegs=order.slice(0,np).map((q,k)=>({x:q[0],y:q[1],s:R(seed,40+k)<0.7?1:-1}));
+  const np=KNOB[1]==null?Math.min(all.length,6+Math.floor(R(seed,5)*Math.min(5,all.length-5))):Math.min(all.length,5+Math.floor(KV(1,0)*9));
+  const sf=KNOB[2]==null?0.7:1-KV(2,0)*0.5;
+  const pegs=order.slice(0,np).map((q,k)=>({x:q[0],y:q[1],s:R(seed,40+k)<sf?1:-1}));
   /* tangent from peg a to peg b: unit normal n with n·d = ra - rb */
   const tan=(a,b)=>{ const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
     const ra=a.s*r, rb=b.s*r, k=(ra-rb)/L, h=Math.sqrt(Math.max(0,1-k*k));
@@ -3578,7 +3626,10 @@ function drawRingers(cv,seed){
      loop's bounding box sits in the middle */
   const bx0=Math.min(...pegs.map(p=>p.x)), bx1=Math.max(...pegs.map(p=>p.x)),
         by0=Math.min(...pegs.map(p=>p.y)), by1=Math.max(...pegs.map(p=>p.y));
-  const sx=W/2-(bx0+bx1)/2, sy=H/2-(by0+by1)/2;
+  let sx=W/2-(bx0+bx1)/2, sy=H/2-(by0+by1)/2;
+  /* with knobs set, the shift never pushes the peg grid off the sheet */
+  if(KNOB.some(v=>v!=null)){ const lx=Math.max(0,(W-span)/2-r*1.6), ly=Math.max(0,(H-span)/2-r*1.6);
+    sx=Math.max(-lx,Math.min(lx,sx)); sy=Math.max(-ly,Math.min(ly,sy)); }
   pegs.forEach(p=>{ p.x+=sx; p.y+=sy; }); all.forEach(q=>{ q[0]+=sx; q[1]+=sy; });
   const N=pegs.length, T=pegs.map((p,i)=>tan(p,pegs[(i+1)%N]));
   c.beginPath();
@@ -3597,6 +3648,12 @@ function drawRingers(cv,seed){
   noteStrategy(cv,g+'×'+g+' pegs · '+N+' wound · '+nm);
 }
 
+knobs('ringers',[
+  {n:'Grid',opts:['3×3','4×4','5×5','6×6'],steps:4,d:1/3},
+  {n:'Wound',lo:'few pegs',hi:'many pegs',d:0.4},
+  {n:'Crossings',lo:'few',hi:'many',d:0.6},
+  {n:'Weight',lo:'light',hi:'heavy',d:0.5}]);
+
 /* Seigaiha — the Japanese wave-scale pattern: rows of concentric
    half-discs, each row offset by half a scale and laid over the row above,
    so only the arcs show. Colour drifts across the sheet with a slow noise
@@ -3605,7 +3662,10 @@ function drawSeigaiha(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const [nm,P]=R(seed,1)<0.5?freeSet(seed,2):posterSet(seed,2);
   const cols=P.slice(1), paper=P[0];
-  const n=3+Math.floor(R(seed,3)*3), Rs=W/n/2*1.0, rings=3+Math.floor(R(seed,4)*3), dy=Rs*0.5;
+  /* knobs: scales (across the sheet), rings (per scale), rise (row step:
+     flat overlapping arcs up to tall fans), weight (colour ring vs paper gap) */
+  const n=KNOB[0]==null?3+Math.floor(R(seed,3)*3):2+Math.floor(KV(0,0)*5), Rs=W/n/2*1.0, rings=KNOB[1]==null?3+Math.floor(R(seed,4)*3):2+Math.floor(KV(1,0)*5);
+  const dy=Rs*(KNOB[2]==null?0.5:0.32+KV(2,0)*0.4), wt=KNOB[3]==null?0.5:0.25+KV(3,0)*0.55;
   const rowsN=Math.ceil(H/dy)+3;
   for(let j=0;j<rowsN;j++){
     const y=j*dy-Rs, off=(j%2)*Rs;
@@ -3613,7 +3673,7 @@ function drawSeigaiha(cv,seed){
       const x=i*2*Rs+off, f=fbm(x/W*1.4,y/H*1.4,seed);
       const ci=Math.floor(Math.max(0,Math.min(0.999,f*1.25-0.1))*cols.length);
       for(let k=0;k<rings*2;k++){
-        const rr=Rs*(1-k/(rings*2));
+        const rr=KNOB[3]==null?Rs*(1-k/(rings*2)):Rs*(1-(Math.floor(k/2)+(k%2?wt:0))/rings);
         c.beginPath(); c.arc(x,y,rr,0,7);
         c.fillStyle=k%2?paper:cols[(ci+Math.floor(k/2))%cols.length]; c.fill();
       }
@@ -3621,6 +3681,12 @@ function drawSeigaiha(cv,seed){
   }
   noteStrategy(cv,n+' scales across · '+nm);
 }
+
+knobs('seigaiha',[
+  {n:'Scales',lo:'large',hi:'small',d:0.3},
+  {n:'Rings',lo:'few',hi:'many',d:0.4},
+  {n:'Rise',lo:'flat',hi:'tall',d:0.45},
+  {n:'Weight',lo:'light',hi:'bold',d:0.45}]);
 
 /* Halftone orb — one lit sphere at the centre of the sheet, set entirely in
    halftone: dots on a rotated screen, each dot's area proportional to the
@@ -3631,22 +3697,33 @@ function drawHalftoneOrb(cv,seed){
   const [nm,P]=R(seed,1)<0.5?freeSet(seed,2):posterSet(seed,2);
   const dark=lumOfHex(P[0])<100, paper=P[0], ink=dark?P[P.length-1]:P[P.length-2]||P[1], ink2=P[2];
   c.fillStyle=paper; c.fillRect(0,0,W,H);
-  const cx=W/2, cy=H*0.46, Rr=M*(0.30+R(seed,2)*0.06), sy=cy+Rr*1.12;
-  const lx=-0.5, ly=-0.6, lz=0.62;
-  const step=M*(0.016+R(seed,3)*0.008), ang=(15+R(seed,4)*30)*Math.PI/180, ca=Math.cos(ang), sa=Math.sin(ang);
+  /* knobs: size (sphere radius), dots (screen pitch), light (shading
+     curve, soft to dramatic), ground (density of the floor gradient) */
+  const cx=W/2, cy=H*0.46, Rr=M*(KNOB[0]==null?0.30+R(seed,2)*0.06:0.2+KV(0,0)*0.2), sy=cy+Rr*1.12;
+  const lx=-0.5, ly=-0.6, lz=0.62, gam=0.45+KV(2,0.25)*2.2, gnd=KV(3,0.5)*2;
+  const step=KNOB[1]==null?M*(0.016+R(seed,3)*0.008):M*(0.042-KV(1,0)*0.028), ang=(15+R(seed,4)*30)*Math.PI/180, ca=Math.cos(ang), sa=Math.sin(ang);
   const D=Math.hypot(W,H);
   for(let v=-D;v<D;v+=step) for(let u=-D;u<D;u+=step){
     const x=W/2+u*ca-v*sa, y=H/2+u*sa+v*ca; if(x<-step||y<-step||x>W+step||y>H+step) continue;
     let t=dark?0.04+0.12*(1-y/H):0.08+0.22*(y/H), col=ink2;                      /* ground gradient */
+    if(KNOB[3]!=null) t*=gnd;
     const sh=Math.hypot((x-cx)/(Rr*1.1),(y-sy)/(Rr*0.22)); if(sh<1) t=Math.max(t,0.75*(1-sh*sh));
     const dx=(x-cx)/Rr, dy=(y-cy)/Rr, d2=dx*dx+dy*dy;
-    if(d2<1){ const nz=Math.sqrt(1-d2), lam=Math.max(0,dx*lx+dy*ly+nz*lz); t=dark?0.06+0.94*lam:1-(0.08+0.92*lam); col=ink; }
+    if(d2<1){ const nz=Math.sqrt(1-d2); let lam=Math.max(0,dx*lx+dy*ly+nz*lz); if(KNOB[2]!=null) lam=Math.pow(lam,gam);
+      t=dark?0.06+0.94*lam:1-(0.08+0.92*lam); col=ink; }
     const rad=step*0.5*Math.sqrt(Math.min(1,Math.max(0,t)))*1.18;
     if(rad<0.3) continue;
     c.beginPath(); c.arc(x,y,rad,0,7); c.fillStyle=col; c.fill();
   }
   noteStrategy(cv,nm);
 }
+
+knobs('halftone',[
+  {n:'Size',lo:'small',hi:'large',d:0.6},
+  {n:'Dots',lo:'coarse',hi:'fine',d:0.7},
+  {n:'Light',lo:'soft',hi:'dramatic',d:0.25},
+  {n:'Ground',lo:'bare',hi:'dense',d:0.5}]);
+
 function lumOfHex(h){ return parseInt(h.slice(1,3),16)*0.3+parseInt(h.slice(3,5),16)*0.59+parseInt(h.slice(5,7),16)*0.11; }
 
 /* ---- third poster batch: after the user's decor reference board ---------- */
@@ -3697,8 +3774,10 @@ function streamlines(W,H,seed,sep,dir,inside,maxSteps){
 function drawGroovyBloom(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [nm,P]=GROOVY_SETS[Math.floor(R(seed,1)*GROOVY_SETS.length)], cols=P.slice(1).map(hexRGB);
-  const fx=W/2, fy=H*(0.6+R(seed,2)*0.12), K=6+Math.floor(R(seed,3)*5);
-  const A=(0.25+R(seed,4)*0.35)*Math.PI/K*1.6, f=(3+R(seed,5)*4), tw=(R(seed,6)-0.5)*1.4, m=2+Math.floor(R(seed,7)*2), ph=R(seed,8)*6.283;
+  /* knobs: focus (height on the centre axis), bands, waves (amplitude),
+     twist (spiral wind, its direction left to the seed) */
+  const fx=W/2, fy=H*(KNOB[0]==null?0.6+R(seed,2)*0.12:0.38+KV(0,0)*0.4), K=KNOB[1]==null?6+Math.floor(R(seed,3)*5):4+Math.floor(KV(1,0)*11);
+  const A=(KNOB[2]==null?0.25+R(seed,4)*0.35:0.04+KV(2,0)*0.76)*Math.PI/K*1.6, f=(3+R(seed,5)*4), tw=KNOB[3]==null?(R(seed,6)-0.5)*1.4:(R(seed,6)<0.5?-1:1)*KV(3,0)*2.2, m=2+Math.floor(R(seed,7)*2), ph=R(seed,8)*6.283;
   const o=Math.floor(R(seed,9)*cols.length);
   paintPixels(c,W,H,(x,y)=>{
     const dx=x-fx, dy=y-fy, r=Math.hypot(dx,dy)/M, th=Math.atan2(dy,dx);
@@ -3708,6 +3787,12 @@ function drawGroovyBloom(cv,seed){
   });
   noteStrategy(cv,K+' bands · '+nm);
 }
+
+knobs('groovy',[
+  {n:'Focus',lo:'high',hi:'low',d:0.6},
+  {n:'Bands',lo:'few',hi:'many',d:0.3},
+  {n:'Waves',lo:'gentle',hi:'wild',d:0.45},
+  {n:'Twist',lo:'straight',hi:'spiral',d:0.25}]);
 
 /* Contour disc — one centred circle filled with the iso-bands of a
    domain-warped noise field, ink and paper alternating, on a plain sheet.
@@ -4318,16 +4403,36 @@ function drawStackedStones(cv,seed){
 function drawTruchetField(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const [paper,ink,nm]=posterInk(seed,1);
-  const cols=4+Math.floor(R(seed,2)*5), cs=W/cols, rows=Math.ceil(H/cs)+1;
+  /* knobs: tiles, pattern, shape (corners from diamond through disc to
+     squircle), stripes (concentric bands per shape) */
+  const cols=KNOB[0]==null?4+Math.floor(R(seed,2)*5):3+Math.floor(KV(0,0)*8), cs=W/cols, rows=Math.ceil(H/cs)+1;
   const sc=0.35+R(seed,3)*0.5;
+  /* pattern knob: 0 every tile one way, the seed's noise patches growing in
+     core first up to 0.5 (as the catalogue draws them), then random */
+  let ori=null;
+  if(KNOB[1]!=null){ const mv=KV(1,0), v0=[];
+    for(let j=0;j<rows;j++) for(let i=0;i<cols;i++) v0.push(noise2(i*sc,j*sc,seed)-0.5+(R(seed,100+j*31+i)-0.5)*0.25+(R(seed,9000+j*31+i)-0.5)*Math.max(0,mv*2-1)*1.6);
+    const maj=v0.filter(v=>v>0).length*2>=v0.length?1:0, mino=v0.filter(v=>(v>0?1:0)!==maj).sort((a,b)=>maj?a-b:b-a);
+    const k=Math.round(mino.length*Math.min(1,mv*2)), cut=mino[k-1];
+    ori=v0.map(v=>(v>0?1:0)===maj||!k?maj:(maj?v<=cut:v>=cut)?1-maj:maj); }
+  const plain=KNOB[2]==null&&KNOB[3]==null, rv=KV(2,0.5), pw=rv<0.5?1+2*rv:2+(rv-0.5)*6, nb=1+Math.floor(KV(3,0)*4);
+  /* one corner's region of Lp radius rho, clipped to its half of the tile, so
+     the bands of both corners meet on the tile diagonal */
+  const corner=(x0,y0,sx,sy,rho)=>{ const pts=[[0,0]];
+    for(let k=0;k<=40;k++){ const t=k/40*Math.PI/2; pts.push([rho*Math.pow(Math.cos(t),2/pw),rho*Math.pow(Math.sin(t),2/pw)]); }
+    polyClip(pts,1,1,cs).forEach((q,k)=>{ const X=x0+sx*q[0], Y=y0+sy*q[1]; k?c.lineTo(X,Y):c.moveTo(X,Y); }); c.closePath(); };
   /* all ink goes into ONE even-odd path: an ink tile is its square with the
      two quarter discs as holes, a paper tile is just the two discs. A single
      fill leaves no hairline seams where tiles meet. */
   c.fillStyle=paper; c.fillRect(0,0,W,H);
   c.beginPath();
   for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){
-    const o=noise2(i*sc,j*sc,seed)+(R(seed,100+j*31+i)-0.5)*0.25>0.5?1:0;
+    const o=ori?ori[j*cols+i]:noise2(i*sc,j*sc,seed)+(R(seed,100+j*31+i)-0.5)*0.25>0.5?1:0;
     const flip=((i+j)&1)^o, x=i*cs, y=j*cs;
+    if(!plain){ if(flip^((nb-1)&1)) c.rect(x,y,cs,cs);
+      for(let k=1-nb;k<nb;k++){ const rho=cs/2+k*cs/(2*nb);
+        if(o===0){ corner(x,y,1,1,rho); corner(x+cs,y+cs,-1,-1,rho); } else { corner(x+cs,y,-1,1,rho); corner(x,y+cs,1,-1,rho); } }
+      continue; }
     if(flip) c.rect(x,y,cs,cs);
     if(o===0){ c.moveTo(x,y); c.arc(x,y,cs/2,0,Math.PI/2); c.closePath(); c.moveTo(x+cs,y+cs); c.arc(x+cs,y+cs,cs/2,Math.PI,Math.PI*1.5); c.closePath(); }
     else { c.moveTo(x+cs,y); c.arc(x+cs,y,cs/2,Math.PI/2,Math.PI); c.closePath(); c.moveTo(x,y+cs); c.arc(x,y+cs,cs/2,Math.PI*1.5,Math.PI*2); c.closePath(); }
@@ -4335,6 +4440,12 @@ function drawTruchetField(cv,seed){
   c.fillStyle=ink; c.fill('evenodd');
   noteStrategy(cv,nm);
 }
+
+knobs('truchet',[
+  {n:'Tiles',lo:'few',hi:'many',d:0.3},
+  {n:'Pattern',lo:'regular',hi:'random',d:0.5},
+  {n:'Shape',lo:'pointed',hi:'boxy',d:0.5},
+  {n:'Stripes',opts:['Solid','Two','Three','Four'],steps:4,d:0}]);
 
 /* ============================================================
    3 · registry
