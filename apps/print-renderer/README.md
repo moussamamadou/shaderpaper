@@ -13,7 +13,7 @@ Medusa (order.placed) ──POST /render──▶ print renderer ──▶ Chrom
 
 ## Render page contract (the storefront must implement it)
 
-The storefront's `/render` page does not exist yet in this repository: `apps/storefront` builds it. Until it does, every render ends in a timeout (504) or a 404 page that never sets the flags below.
+`apps/storefront/app/pages/render.vue` implements it. Checked on 2026-10-10: `pnpm render --link` wrote a 3543 × 4723 print of a 30 × 40 design, and a test order placed through the storefront got its 5400 × 7198 print file for 45 × 60 through `POST /render` (backend → this service → the storefront's production build).
 
 **URL.** `GET {STOREFRONT_URL}{RENDER_PATH}?d=<design>&size=<size id>&mm=<width>x<height>`, by default `http://localhost:3000/render?…`. Outside the `/{countryCode}` routes; `noindex`.
 

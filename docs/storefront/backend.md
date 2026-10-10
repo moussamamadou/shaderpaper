@@ -2,7 +2,7 @@
 
 Written 2026-10-10. Covers `apps/backend` (Medusa) and `apps/print-renderer`. Both were copied from MapAndSky (Méridien, `moussamamadou/mapandsky` at `cdb03d5`) and adapted; the first commit on this branch is the verbatim copy, so `git diff` against it shows every change.
 
-**Status:** runs locally against Postgres 16 and answers the store and admin APIs (verified below). Nothing is deployed. No order has been placed, so the print-file workflow and the Prodigi submission have only run in unit tests. The Prodigi client has never talked to Prodigi: there is no API key, and this machine cannot reach prodigi.com.
+**Status:** runs locally against Postgres 16 and answers the store and admin APIs (verified below). Nothing is deployed. Test orders (manual provider, no payment) have been placed through the storefront and their print files rendered (§8); the Prodigi submission has only run in unit tests. The Prodigi client has never talked to Prodigi: there is no API key, and this machine cannot reach prodigi.com.
 
 ## 1. What MapAndSky actually has (audit)
 
@@ -136,4 +136,6 @@ Tests: `pnpm --filter @shaderpaper/backend test:unit`, `pnpm --filter @shaderpap
 - Admin: `GET /admin/prodigi/status` → `configured: false`, `env: sandbox`, 12 SKUs missing; `POST /admin/orders/:id/prodigi` → 409 "Prodigi is off: PRODIGI_API_KEY is empty"; a bad `shipping_method` → 400; without a token → 401. The admin UI loads and logs in with no console errors (the order widget itself was not seen: there is no order).
 - With a dummy `STRIPE_API_KEY`, Medusa registered the Stripe providers (`pp_stripe_stripe`, …); the region still offers only `pp_system_default`.
 
-Not verified: the print-file workflow on a real order, the print renderer against a real `/render` page (it doesn't exist yet), anything against Prodigi's servers.
+Later the same day, with the storefront built: a test order placed through the storefront (order 3, manual provider, no payment) ran the `order.placed` subscriber and workflow, the print renderer opened the storefront's `/render` page and the line item got `metadata.poster.print_file` (`45x60`, 5400 × 7198 PNG, stored by the local file provider under `apps/backend/static/`, gitignored). Backend log: "Poster print files for order …: 1 rendered, 0 failed".
+
+Still not verified: anything against Prodigi's servers (no API key, and prodigi.com is unreachable from this machine), and a print file at a public URL (the local file provider serves `localhost`).
