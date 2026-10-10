@@ -112,6 +112,9 @@
   .czrow .num{min-width:2.5em;text-align:center;font-variant-numeric:tabular-nums;color:var(--fg)}
   .cznote{color:var(--dim);font-size:13px}
   @media(max-width:900px){.cz{grid-template-columns:1fr}.czstage{position:static}}
+  /* #customise opens the customiser on its own, without the research catalogue around it */
+  body.czonly header,body.czonly nav,body.czonly footer{display:none}
+  body.czonly .wrap{padding-top:28px}
 </style>
 </head>
 <body>
@@ -4341,6 +4344,412 @@ function drawTruchetField(cv,seed){
    ============================================================ */
 let typeWord='SHADERPAPER';
 
+/* ---- sixth batch: 3D ideas found online ---------------------------------
+   Glass refraction, inflated "puffy" shapes, 3D Bauhaus stacks, pin art and
+   voxel fields, folded paper, TPMS lattices and knots. */
+/* Glass lens — a glass ball at the centre of the sheet over a full-bleed field
+   of stripes, rings or checks. Each channel is refracted through the ball at
+   its own index, so the flipped, magnified field splits into a rainbow at the
+   edges; the ball shadows the field behind it around a bright caustic. */
+const F_K_GLASS=GL_FREE+`
+float G_mode,G_f,G_R,G_Zb; vec3 G_g,G_a,G_b,G_c,G_L;
+float sqw(float x,float w){ float tr=abs(fract(x)-0.5), m=smoothstep(0.25-min(w,0.24),0.25+min(w,0.24),tr); return mix(m,0.5,smoothstep(0.18,0.45,w)); }
+vec2 patc(vec2 q){
+  if(G_mode<1.0) return vec2(q.x*G_f*0.5,0.0);
+  if(G_mode<2.0) return vec2((q.x+q.y)*0.70711*G_f*0.5,0.0);
+  if(G_mode<3.0) return vec2(length(q)*G_f*0.5,0.0);
+  return q*G_f*0.25;
+}
+float patv(vec2 s,vec2 w){
+  if(G_mode<3.0) return sqw(s.x,w.x);
+  float u=sqw(s.x,w.x), v=sqw(s.y,w.y); return u+v-2.0*u*v;
+}
+vec3 bgCol(vec2 q,float m){
+  float gy=clamp(0.5+q.y*0.3,0.0,1.0);
+  vec3 col=mix(ramp(G_g,G_a,G_b,G_c,0.1+0.3*gy),ramp(G_g,G_a,G_b,G_c,0.62+0.34*gy),m);
+  vec3 X=vec3(q,G_Zb); float tc=max(-dot(X,G_L),0.0), dl=length(X+G_L*tc);
+  float sh=smoothstep(G_R*0.75,G_R*1.25,dl), ca=exp(-pow(dl/(G_R*0.3),2.0));
+  return col*(0.5+0.5*sh)+mix(G_c,vec3(1.0),0.5)*ca*0.45;
+}
+void main(){
+  freePal(G_g,G_a,G_b,G_c);
+  vec2 uv=uvCentered();
+  G_mode=floor(kv(0,rnd(1.))*4.0);
+  G_R=0.5+kv(1,0.4+rnd(3.)*0.4)*0.36;
+  G_f=4.0+floor(kv(2,rnd(2.))*12.0);
+  float disp=kv(3,0.1+rnd(6.)*0.35)*0.06;
+  G_Zb=G_R*(1.3+rnd(4.)*1.6);
+  G_L=normalize(vec3(-0.45,0.55,-0.7));
+  float ior=1.45+rnd(5.)*0.1;
+  float r2=dot(uv,uv), R2=G_R*G_R, rr2=min(r2,R2*0.998);
+  vec3 P1=vec3(uv*sqrt(rr2/max(r2,1e-8)),-sqrt(R2-rr2)), n1=P1/G_R;
+  vec2 qs[3];
+  for(int k=0;k<3;k++){
+    float e=ior+(float(k)-1.0)*disp;
+    vec3 d1=refract(vec3(0.0,0.0,1.0),n1,1.0/e);
+    vec3 P2=P1-2.0*dot(d1,P1)*d1, n2=P2/G_R;
+    vec3 d2=refract(d1,-n2,e); if(dot(d2,d2)<1e-4) d2=reflect(d1,-n2);
+    qs[k]=P2.xy+d2.xy*(G_Zb-P2.z)/max(d2.z,0.08);
+  }
+  vec2 s0=patc(qs[0]),s1=patc(qs[1]),s2=patc(qs[2]),so=patc(uv);
+  vec2 w0=fwidth(s0),w1=fwidth(s1),w2=fwidth(s2),wo=fwidth(so);
+  vec3 cin=vec3(bgCol(qs[0],patv(s0,w0)).r,bgCol(qs[1],patv(s1,w1)).g,bgCol(qs[2],patv(s2,w2)).b);
+  vec3 cout=bgCol(uv,patv(so,wo));
+  float fre=0.04+0.96*pow(1.0-abs(n1.z),5.0);
+  vec3 rf=reflect(vec3(0.0,0.0,1.0),n1);
+  float env=0.25+smoothstep(0.1,0.9,rf.y)*0.35, spec=pow(max(dot(rf,G_L),0.0),90.0);
+  cin=cin*mix(vec3(1.0),mix(G_c,vec3(1.0),0.5),0.3)*(1.0-fre*0.7)+mix(G_c,vec3(1.0),0.6)*env*fre+vec3(spec)*1.1;
+  cin+=vec3(pow(max(dot(rf,normalize(vec3(0.5,-0.6,-0.6))),0.0),20.0))*0.15;
+  float px=2.0/min(u_res.x,u_res.y), r=sqrt(r2);
+  vec3 col=mix(cout,cin,smoothstep(G_R+px,G_R-px,r));
+  col*=1.0-0.35*exp(-pow((r-G_R)/(px*1.5),2.0));
+  outColor=vec4(col,1.0);
+}`;
+knobs('glass',[{n:'Pattern',opts:['Stripes','Diagonal','Rings','Checks'],steps:4,d:0},{n:'Lens',lo:'small',hi:'large',d:0.6},{n:'Scale',lo:'bold',hi:'fine',d:0.35},{n:'Prism',lo:'clear',hi:'rainbow',d:0.25}]);
+
+/* Puffy shapes — Bauhaus shapes inflated like soft vinyl. The height of each
+   shape rises from its outline as a quarter circle, so a disc becomes a dome
+   and a square a pillow; one shape centred or a grid of six or twelve, each
+   with a soft drop shadow and one glossy highlight. */
+const F_K_PUFFY=GL_FREE+`
+float P_box(vec2 p,vec2 b){ vec2 d=abs(p)-b; return length(max(d,0.0))+min(max(d.x,d.y),0.0); }
+float P_sdf(vec2 p,float ty,float s){
+  float rr=s*0.22;
+  if(ty<1.0) return length(p)-s;
+  if(ty<2.0) return abs(length(p)-s*0.66)-s*0.34;
+  if(ty<3.0){ float w=s*0.38; return min(P_box(p,vec2(s,w)-rr),P_box(p,vec2(w,s)-rr))-rr; }
+  if(ty<4.0){ float d=1e9; for(int i=0;i<4;i++){ float a=float(i)*1.5708; d=min(d,length(p-vec2(cos(a),sin(a))*s*0.5)-s*0.5); } return d; }
+  if(ty<5.0){ vec2 q=vec2(p.x,p.y-clamp(p.y,-s*0.42,s*0.42)); return length(q)-s*0.58; }
+  if(ty<6.0) return P_box(p,vec2(s*0.84)-rr)-rr;
+  if(ty<7.0){ vec2 q=vec2(p.x+p.y,p.y-p.x)*0.70711; return P_box(q,vec2(s*0.74)-rr)-rr; }
+  if(ty<8.0){ vec2 q=p+vec2(0.0,s*0.4); return max(length(q)-(s*1.1-rr),rr-q.y)-rr; }
+  vec2 c0=vec2(-0.8*s); return max(max(length(p-c0)-(1.6*s-rr),(c0.x+rr)-p.x),(c0.y+rr)-p.y)-rr;
+}
+float PF_ty,PF_rot,PF_s;
+float cellD(vec2 p){
+  vec2 q=PF_rot<1.0?p:PF_rot<2.0?vec2(p.y,-p.x):PF_rot<3.0?-p:vec2(-p.y,p.x);
+  return P_sdf(q,PF_ty,PF_s);
+}
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  float lay=floor(kv(0,rnd(1.))*3.0);
+  float sk=u_k.y<0.0?(rnd(2.)<0.5?0.0:1.0+floor(rnd(3.)*5.0)):floor(u_k.y*6.0);
+  float wk=kv(2,0.55+rnd(4.)*0.45), gk=kv(3,0.35+rnd(5.)*0.5);
+  bool dark=rnd(6.)<0.5;
+  float cols=lay<1.0?1.0:lay<2.0?2.0:3.0, rows=lay<1.0?1.0:cols+1.0;
+  vec2 cell=vec2(2.0/cols,2.5/rows), q=uv+vec2(1.0,1.25);
+  vec2 id=clamp(floor(q/cell),vec2(0.0),vec2(cols-1.0,rows-1.0)), lp=q-(id+0.5)*cell;
+  PF_s=min(cell.x,cell.y)*(lay<1.0?0.40:0.37);
+  float h1=hash21(id*1.37+u_seed*0.731), h2=hash21(id*2.71+u_seed*0.377+5.0), h3=hash21(id*0.91+u_seed*1.13+9.0);
+  PF_ty=sk<1.0?floor(h1*9.0):sk-1.0;
+  PF_rot=floor(h2*4.0);
+  float t0=dark?0.42+0.5*h3:0.22+0.55*h3;
+  if(lay<1.0) t0=dark?0.62:0.45;
+  float px=2.0/min(u_res.x,u_res.y), s=PF_s;
+  float d=cellD(lp);
+  vec2 e=vec2(0.0015,0.0);
+  vec2 gd=vec2(cellD(lp+e.xy)-cellD(lp-e.xy),cellD(lp+e.yx)-cellD(lp-e.yx));
+  gd/=max(length(gd),1e-6);
+  float wInf=s*mix(0.22,1.05,wk), x=min(max(-d,0.0)/wInf,1.0);
+  float dh=(1.0-x)/sqrt(max(x*(2.0-x),2e-3));
+  vec3 n=normalize(vec3(gd*dh,1.0));
+  vec3 L=normalize(vec3(-0.5,0.62,0.6)), H=normalize(L+vec3(0.0,0.0,1.0));
+  float wrap=dot(n,L)*0.5+0.5;
+  vec3 col=ramp(g,a,b,c,t0+0.45*(wrap-0.62));
+  col+=ramp(g,a,b,c,t0)*max(dot(n,normalize(vec3(0.35,-0.7,0.6))),0.0)*0.10;
+  float sp=pow(max(dot(n,H),0.0),mix(4.0,90.0,gk))*mix(0.0,0.9,gk);
+  col+=mix(vec3(1.0),c,0.2)*sp;
+  float gy=clamp(0.5+uv.y*0.3,0.0,1.0);
+  vec3 gr=dark?ramp(g,a,b,c,0.04+0.1*gy):mix(ramp(g,a,b,c,0.86+0.1*gy),vec3(0.97,0.95,0.92),0.35);
+  float sd=cellD(lp-vec2(0.07,-0.1)*s);
+  gr*=1.0-(dark?0.5:0.3)*smoothstep(0.3*s,-0.05*s,sd);
+  gr*=1.0-0.25*exp(-max(d,0.0)/(0.05*s));
+  outColor=vec4(mix(gr,col,smoothstep(px,-px,d)),1.0);
+}`;
+knobs('puffy',[{n:'Layout',opts:['Single','Six','Twelve'],steps:3,d:0.5},{n:'Shape',opts:['Mixed','Disc','Ring','Plus','Flower','Pill'],steps:6,d:0},{n:'Puff',lo:'flat',hi:'inflated',d:0.75},{n:'Gloss',lo:'matte',hi:'glossy',d:0.6}]);
+
+/* Sculpture stack — two to five primitives (sphere, dome, flat ring,
+   cylinder, block, cone) stacked on the centre axis in a studio cove, matte
+   like painted clay: one key light with soft shadows, ambient occlusion.
+   Blocks turn only to 0° or 45°. */
+const F_K_TOTEM=GL_FREE+`
+float T_ty[5], T_rot[5]; vec3 T_e[5]; vec3 T_col[5]; int T_n; float T_y0, T_back;
+float sdCylT(vec3 p,float r,float h){ vec2 d=abs(vec2(length(p.xz),p.y))-vec2(r,h); return min(max(d.x,d.y),0.0)+length(max(d,0.0)); }
+float sdBoxT(vec3 p,vec3 b){ vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0); }
+float sdConeT(vec3 p,float h,float r1,float r2){
+  vec2 q=vec2(length(p.xz),p.y), k1=vec2(r2,h), k2=vec2(r2-r1,2.0*h);
+  vec2 ca=vec2(q.x-min(q.x,(q.y<0.0)?r1:r2),abs(q.y)-h);
+  vec2 cb=q-k1+k2*clamp(dot(k1-q,k2)/dot(k2,k2),0.0,1.0);
+  float s=(cb.x<0.0&&ca.y<0.0)?-1.0:1.0; return s*sqrt(min(dot(ca,ca),dot(cb,cb))); }
+float elemT(vec3 p,int i){
+  float ty=T_ty[i]; vec3 e=T_e[i]; vec3 q=p-vec3(0.0,e.x,0.0); float r=e.y,h=e.z;
+  if(ty<1.0) return length(q)-r;
+  if(ty<2.0) return max(length(q+vec3(0.0,h,0.0))-r,-(q.y+h));
+  if(ty<3.0) return length(vec2(length(q.xz)-(r-h),q.y))-h;
+  if(ty<4.0) return sdCylT(q,r-0.03,h-0.03)-0.03;
+  if(ty<5.0){ q.xz=rot2(T_rot[i])*q.xz; return sdBoxT(q,vec3(r*0.72-0.03,h-0.03,r*0.72-0.03))-0.03; }
+  return sdConeT(q,h,r,r*0.2);
+}
+vec2 mapT(vec3 p){
+  float d=1e9, id=-1.0;
+  for(int i=0;i<5;i++){ if(i>=T_n) break; float di=elemT(p,i); if(di<d){ d=di; id=float(i); } }
+  float fl=p.y-T_y0, wa=T_back-p.z, k=1.2, h=clamp(0.5+0.5*(wa-fl)/k,0.0,1.0), bg=mix(wa,fl,h)-k*h*(1.0-h);
+  if(bg<d){ d=bg; id=9.0; }
+  return vec2(d,id);
+}
+vec3 nrmT(vec3 p){ vec2 e=vec2(0.001,-0.001);
+  return normalize(e.xyy*mapT(p+e.xyy).x+e.yyx*mapT(p+e.yyx).x+e.yxy*mapT(p+e.yxy).x+e.xxx*mapT(p+e.xxx).x); }
+float softT(vec3 ro,vec3 rd){ float res=1.0,t=0.02;
+  for(int i=0;i<60;i++){ float h=mapT(ro+rd*t).x; res=min(res,7.0*h/t); t+=clamp(h,0.015,0.3); if(res<0.002||t>8.0) break; }
+  return clamp(res,0.0,1.0); }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  T_n=2+int(floor(kv(0,rnd(1.))*4.0));
+  float pa=kv(1,rnd(2.)), wk=mix(0.62,1.25,kv(2,0.35+rnd(3.)*0.4));
+  bool dark=kv(3,rnd(4.))>=0.5;
+  float tot=0.0, mr=0.0;
+  for(int i=0;i<5;i++){ if(i>=T_n) break; float fi=float(i);
+    float h1=rnd(10.+fi), h2=rnd(20.+fi), h3=rnd(30.+fi);
+    float ty=h1<pa?3.0+floor(h2*3.0):floor(h2*3.0);
+    float r=mix(0.5,0.9,h3)*(1.0-0.1*fi), hh;
+    if(ty<1.0) hh=r; else if(ty<2.0) hh=r*0.5; else if(ty<3.0) hh=r*0.26;
+    else if(ty<4.0) hh=r*mix(0.25,0.8,rnd(40.+fi)); else if(ty<5.0) hh=r*0.72; else hh=r*mix(0.55,1.0,rnd(40.+fi));
+    /* width scales the footprint only; spheres and blocks keep their proportions */
+    if(ty<1.0){ r*=sqrt(wk); hh=r; } else if(ty<2.0){ r*=wk; hh=r*0.5; } else if(ty<4.0||ty>=5.0) r*=wk; else { r*=sqrt(wk); hh=r*0.72; }
+    T_ty[i]=ty; T_e[i]=vec3(0.0,r,hh); T_rot[i]=rnd(50.+fi)<0.5?0.0:0.7854;
+    tot+=2.0*hh; mr=max(mr,r);
+  }
+  float s=min(2.1/tot,0.98/mr), yb=-tot*s*0.5-0.08;
+  T_y0=yb; T_back=1.8;
+  float off=floor(rnd(5.)*4.0);
+  for(int i=0;i<5;i++){ if(i>=T_n) break; vec3 e=T_e[i]*s; T_e[i]=vec3(yb+e.z,e.y,e.z); yb+=2.0*e.z;
+    float j=mod(float(i)+off,4.0); T_col[i]=ramp(g,a,b,c,j<1.0?0.3:j<2.0?0.52:j<3.0?0.72:0.9); }
+  vec3 bgc=dark?ramp(g,a,b,c,0.1):mix(ramp(g,a,b,c,0.93),vec3(0.97,0.95,0.92),0.3);
+  vec3 ro=vec3(0.0,1.25,-7.5), fw=normalize(vec3(0.0,0.05,0.0)-ro), rt=normalize(cross(vec3(0.0,1.0,0.0),fw)), up=cross(fw,rt);
+  vec3 rd=normalize(fw+(uv.x*rt+uv.y*up)*0.165);
+  float t=0.0; vec2 hit=vec2(-1.0);
+  for(int i=0;i<180;i++){ vec2 m=mapT(ro+rd*t); if(m.x<0.0007*t){ hit=vec2(t,m.y); break; } t+=m.x; if(t>16.0) break; }
+  vec3 col=bgc;
+  if(hit.x>0.0){
+    vec3 p=ro+rd*hit.x, n=nrmT(p), L=normalize(vec3(-0.55,0.75,-0.45));
+    float sh=softT(p+n*0.003,L);
+    float ao=0.0; for(int k=1;k<=5;k++){ float hk=0.05*float(k); ao+=(hk-mapT(p+n*hk).x)/hk; } ao=clamp(1.0-ao*0.22,0.0,1.0);
+    vec3 base=hit.y<8.5?T_col[int(hit.y)]:bgc;
+    float dif=max(dot(n,L),0.0)*sh, amb=0.6+0.4*n.y;
+    col=base*(0.45*amb*ao+0.72*dif);
+    if(hit.y<8.5) col+=vec3(pow(max(dot(reflect(rd,n),L),0.0),24.0))*0.18*sh;
+    else col=mix(col,bgc*0.9,0.25);
+  }
+  outColor=vec4(col,1.0);
+}`;
+knobs('totem',[{n:'Pieces',opts:['Two','Three','Four','Five'],steps:4,d:0.67},{n:'Forms',lo:'rounded',hi:'angular',d:0.5},{n:'Width',lo:'slender',hi:'wide',d:0.5},{n:'Backdrop',opts:['Light','Dark'],steps:2,d:0}]);
+
+/* Pin field — an isometric field of square columns, traced cell by cell
+   through the grid. Heights follow ripples, terrain, a stepped pyramid, a
+   dome or waves; tops run through the ramp with height and the two visible
+   sides take the shade. 2×2 supersampled for clean edges. */
+const F_K_PINS=GL_FREE+`
+float PN_mode,PN_A,PN_q,PN_S,PN_k; vec2 PN_o;
+float pinH(vec2 c){
+  vec2 q=(c+0.5)/PN_S; float r=length(q), h;
+  if(PN_mode<1.0) h=0.5+0.5*cos(r*PN_k*6.2832);
+  else if(PN_mode<2.0) h=smoothstep(0.2,0.8,fbmG(q*1.4+PN_o));
+  else if(PN_mode<3.0) h=1.0-max(abs(q.x),abs(q.y))*0.8;
+  else if(PN_mode<4.0) h=sqrt(max(0.0,1.0-r*r*0.9));
+  else h=0.5+0.25*(sin(q.x*PN_k*6.2832)+sin(q.y*PN_k*6.2832));
+  h=clamp(h,0.0,1.0);
+  if(PN_q>0.0) h=floor(h*PN_q+0.5)/PN_q;
+  return h*PN_A+0.02;
+}
+vec3 shadePin(vec3 ro,vec3 d,vec3 g,vec3 a,vec3 b,vec3 c){
+  float t0=(ro.y-(PN_A+0.05))/(-d.y); vec3 p0=ro+d*t0;
+  vec2 cell=floor(p0.xz), st=sign(d.xz), tD=abs(1.0/d.xz);
+  vec2 tM=(cell+step(0.0,d.xz)-p0.xz)/d.xz;
+  float t=0.0, side=-1.0, h=0.0;
+  for(int i=0;i<140;i++){
+    h=pinH(cell);
+    if(p0.y+d.y*t<=h) break;
+    float tn=min(tM.x,tM.y);
+    if(p0.y+d.y*tn<=h){ t=(h-p0.y)/d.y; side=2.0; break; }
+    if(tM.x<tM.y){ t=tM.x; tM.x+=tD.x; cell.x+=st.x; side=0.0; } else { t=tM.y; tM.y+=tD.y; cell.y+=st.y; side=1.0; }
+  }
+  vec3 p=p0+d*t; float tn=0.12+0.8*clamp((h-0.02)/PN_A,0.0,1.0);
+  if(side>1.5){ vec2 f=abs(fract(p.xz)-0.5); float ed=smoothstep(0.5,0.44,max(f.x,f.y));
+    return ramp(g,a,b,c,tn+0.06)*(0.86+0.14*ed); }
+  float down=clamp((h-p.y)/max(PN_A*0.5,0.5),0.0,1.0);
+  vec3 sc=side<0.5?ramp(g,a,b,c,tn-0.16):ramp(g,a,b,c,tn-0.36)*0.92;
+  return sc*(1.0-0.3*down);
+}
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  PN_mode=floor(kv(0,rnd(1.))*5.0);
+  PN_S=mix(5.0,17.0,kv(1,0.3+rnd(2.)*0.5));
+  PN_A=PN_S*mix(0.12,0.75,kv(2,0.3+rnd(3.)*0.4));
+  float qk=kv(3,rnd(4.)<0.5?0.0:rnd(5.));
+  PN_q=qk<0.08?0.0:floor(mix(14.0,3.0,qk));
+  PN_k=1.4+rnd(6.)*1.2; PN_o=vec2(rnd(7.),rnd(8.))*30.0;
+  float el=0.6155;
+  vec3 fw=normalize(vec3(0.70711*cos(el),-sin(el),0.70711*cos(el)));
+  vec3 rt=normalize(cross(vec3(0.0,1.0,0.0),fw)), up=cross(fw,rt);
+  vec3 ctr=vec3(0.0,PN_A*0.4,0.0);
+  vec3 acc=vec3(0.0);
+  float sc=PN_S*1.15;
+  for(int sy=0;sy<2;sy++) for(int sx=0;sx<2;sx++){
+    vec2 o=(vec2(sx,sy)-0.5)*0.5*2.0/min(u_res.x,u_res.y);
+    vec3 ro=ctr+((uv.x+o.x)*rt+(uv.y+o.y)*up)*sc-fw*200.0;
+    acc+=shadePin(ro,fw,g,a,b,c);
+  }
+  outColor=vec4(acc*0.25,1.0);
+}`;
+knobs('pins',[{n:'Relief',opts:['Ripple','Terrain','Pyramid','Dome','Waves'],steps:5,d:0},{n:'Columns',lo:'chunky',hi:'fine',d:0.5},{n:'Height',lo:'low',hi:'tall',d:0.45},{n:'Terraces',lo:'smooth',hi:'stepped',d:0}]);
+
+/* Paper folds — a sheet folded edge to edge as a height field of flat
+   facets: accordion pleats, chevrons on the centre axis, a fan from the
+   bottom edge, nested squares or diamonds. A low light grazes the folds, so
+   ridges cast shadows into the valleys. */
+const F_K_FOLDS=GL_FREE+`
+float tri1(float x){ return abs(fract(x)-0.5)*2.0; }
+float F_mode,F_f,F_amp,F_n;
+float foldH(vec2 p){
+  if(F_mode<1.0) return tri1(p.y*F_f)*F_amp;
+  if(F_mode<2.0) return tri1((p.y+abs(p.x))*F_f*0.70711)*F_amp;
+  if(F_mode<3.0){ float th=atan(p.x,p.y+1.25)/3.14159; return tri1(th*F_n)*length(p+vec2(0.0,1.25))*F_amp*F_f*0.25; }
+  if(F_mode<4.0) return tri1(max(abs(p.x),abs(p.y))*F_f)*F_amp;
+  return tri1((abs(p.x)+abs(p.y))*F_f*0.70711)*F_amp;
+}
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  F_mode=floor(kv(0,rnd(1.))*5.0);
+  float fk=kv(1,0.3+rnd(2.)*0.5);
+  F_f=mix(2.0,9.0,fk); F_n=floor(mix(6.0,26.0,fk));
+  float slope=mix(0.2,2.6,kv(2,0.4+rnd(3.)*0.4));
+  F_amp=slope/(2.0*F_f);
+  float sw=kv(3,rnd(4.));
+  vec3 L=normalize(vec3(-0.1,0.86,0.5));
+  vec2 l2=normalize(L.xy); float rise=L.z/length(L.xy), per=1.0/F_f;
+  float px=2.0/min(u_res.x,u_res.y), e=px*0.5;
+  vec3 acc=vec3(0.0);
+  for(int sy=0;sy<2;sy++) for(int sx=0;sx<2;sx++){
+    vec2 p=uv+(vec2(sx,sy)-0.5)*px*0.5;
+    float h=foldH(p);
+    vec2 gr=vec2(foldH(p+vec2(e,0.0))-foldH(p-vec2(e,0.0)),foldH(p+vec2(0.0,e))-foldH(p-vec2(0.0,e)))/(2.0*e);
+    vec3 n=normalize(vec3(-gr,1.0));
+    float base=0.55+sw*0.3*(F_mode==2.0?(0.4-length(p+vec2(0.0,1.25))*0.45):p.y/1.25);
+    float hn=clamp(h/max(F_amp,1e-4),0.0,1.0);
+    if(F_mode==2.0) hn=clamp(h/max(F_amp*F_f*0.25*length(p+vec2(0.0,1.25)),1e-4),0.0,1.0);
+    float sh=1.0;
+    for(int k=1;k<=12;k++){ float sd=float(k)*per*0.09; sh=min(sh,clamp(1.0-(foldH(p+l2*sd)-h-sd*rise)/(F_amp*0.12),0.0,1.0)); }
+    vec3 col=ramp(g,a,b,c,base+0.5*(max(dot(n,L),0.0)*mix(0.35,1.0,sh)-0.6));
+    col*=(0.78+0.22*hn)*(1.0-0.22*smoothstep(0.4,1.8,length(p-vec2(-0.3,0.6))));
+    col+=mix(c,vec3(1.0),0.5)*smoothstep(0.93,1.0,hn)*0.12;
+    acc+=col;
+  }
+  outColor=vec4(acc*0.25,1.0);
+}`;
+knobs('folds',[{n:'Fold',opts:['Accordion','Chevron','Fan','Squares','Diamonds'],steps:5,d:0.25},{n:'Pleats',lo:'few',hi:'many',d:0.4},{n:'Depth',lo:'shallow',hi:'deep',d:0.55},{n:'Sweep',lo:'even',hi:'gradient',d:0.5}]);
+
+/* Gyroid — a sphere or cube carved from a triply periodic minimal surface
+   (gyroid, Schwarz P or diamond), raymarched like a 3D-printed sculpture:
+   the outer form leaves flat cut faces in the light tone, the tunnels inside
+   are shaded with ambient occlusion. */
+const F_K_GYROID=GL_FREE+`
+float GY_k,GY_th,GY_form,GY_lat;
+float tpms(vec3 q){
+  if(GY_lat<1.0) return dot(sin(q),cos(q.yzx));
+  if(GY_lat<2.0) return (cos(q.x)+cos(q.y)+cos(q.z))*0.8;
+  return sin(q.x)*sin(q.y)*sin(q.z)+sin(q.x)*cos(q.y)*cos(q.z)+cos(q.x)*sin(q.y)*cos(q.z)+cos(q.x)*cos(q.y)*sin(q.z);
+}
+float sdOuter(vec3 p){
+  if(GY_form<1.0) return length(p)-1.0;
+  vec3 q=p; if(GY_form>=2.0) q.xz=rot2(0.7854)*q.xz;
+  vec3 bx=abs(q)-vec3(0.74); return length(max(bx,0.0))+min(max(bx.x,max(bx.y,bx.z)),0.0);
+}
+vec2 mapG(vec3 p){
+  float s=sdOuter(p), g=(abs(tpms(p*GY_k))-GY_th)/GY_k*0.55;
+  return vec2(max(s,g),s>g?1.0:0.0);
+}
+vec3 nrmG(vec3 p){ vec2 e=vec2(0.0008,-0.0008);
+  return normalize(e.xyy*mapG(p+e.xyy).x+e.yyx*mapG(p+e.yyx).x+e.yxy*mapG(p+e.yxy).x+e.xxx*mapG(p+e.xxx).x); }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  GY_form=floor(kv(0,rnd(1.))*3.0);
+  GY_k=mix(3.0,9.0,kv(1,0.25+rnd(2.)*0.5));
+  GY_th=mix(0.12,0.9,kv(2,0.25+rnd(3.)*0.5));
+  GY_lat=floor(kv(3,rnd(4.))*3.0);
+  vec3 ro=vec3(0.0,1.5,-4.6), fw=normalize(-ro), rt=normalize(cross(vec3(0.0,1.0,0.0),fw)), up=cross(fw,rt);
+  vec3 rd=normalize(fw+(uv.x*rt+uv.y*up)*0.26);
+  float t=2.5; vec2 hit=vec2(-1.0);
+  for(int i=0;i<220;i++){ vec2 m=mapG(ro+rd*t); if(m.x<0.0005){ hit=vec2(t,m.y); break; } t+=m.x; if(t>8.0) break; }
+  float rr=length(uv);
+  vec3 col=mix(mix(a,g,0.6),g,smoothstep(0.0,1.6,rr));
+  col=vivid3(col);
+  if(hit.x>0.0){
+    vec3 p=ro+rd*hit.x, n=nrmG(p), L=normalize(vec3(-0.55,0.7,-0.45)), H=normalize(L-rd);
+    float ao=0.0; for(int k=1;k<=6;k++){ float hk=0.035*float(k); ao+=(hk-mapG(p+n*hk).x)/hk; } ao=clamp(1.0-ao*0.18,0.0,1.0);
+    float dif=clamp(dot(n,L),0.0,1.0), amb=0.55+0.45*n.y, spe=pow(clamp(dot(n,H),0.0,1.0),40.0);
+    if(hit.y>0.5) col=ramp(g,a,b,c,0.78+0.18*dif)*(0.75+0.25*ao);
+    else col=ramp(g,a,b,c,0.22+0.62*dif)*(0.6+0.4*amb)*(0.4+0.6*ao)+vec3(spe*0.35*ao);
+  }
+  outColor=vec4(col,1.0);
+}`;
+knobs('gyroid',[{n:'Form',opts:['Sphere','Cube','Cube 45°'],steps:3,d:0},{n:'Cells',lo:'large',hi:'small',d:0.4},{n:'Walls',lo:'thin',hi:'thick',d:0.45},{n:'Lattice',opts:['Gyroid','Schwarz','Diamond'],steps:3,d:0}]);
+
+/* Torus knot — a (p,q) knot swept as a glossy tube, a lobe pointing up so it
+   sits balanced on the centre axis. A coarse pass along the curve finds the
+   stretches near each pixel and a fine pass resolves the nearest surface;
+   strands passing over shade the one underneath. */
+const F_K_KNOT=GL_FREE+`
+float KP,KQ,KS; mat2 KSP,KTL;
+vec3 kpos(float t){ float r=cos(KQ*t)+2.0; vec3 p=vec3(r*cos(KP*t),r*sin(KP*t),-sin(KQ*t))*KS;
+  p.xy=KSP*p.xy; p.yz=KTL*p.yz; return p; }
+void main(){
+  vec3 g,a,b,c; freePal(g,a,b,c);
+  vec2 uv=uvCentered();
+  float kk=floor(kv(0,rnd(1.))*5.0);
+  KP=kk<2.0?2.0:kk<4.0?3.0:2.0; KQ=kk<1.0?3.0:kk<2.0?5.0:kk<3.0?4.0:kk<4.0?5.0:7.0;
+  float R=0.04+kv(1,0.25+rnd(2.)*0.5)*0.08;
+  float tilt=kv(2,rnd(3.))*0.85;
+  float cyc=1.0+floor(kv(3,rnd(4.))*4.0);
+  KS=(0.93-R)/3.0; KSP=rot2(-1.5708); KTL=rot2(tilt);
+  vec2 sho=vec2(0.06,-0.085);
+  const float N0=320.0; float dt=6.2832/N0, win=R+0.075;
+  float zb=1e9, tb=0.0, zc=0.0, dmin=1e9, ds=1e9; vec3 nb=vec3(0.0,0.0,-1.0);
+  for(int j=0;j<320;j++){
+    float t=float(j)*dt; vec3 pos=kpos(t);
+    vec2 dq=uv-sho-pos.xy; ds=min(ds,dot(dq,dq));
+    if(length(uv-pos.xy)>win) continue;
+    for(int k=-5;k<=5;k++){ float tt=t+float(k)*dt*0.1; vec3 q=kpos(tt);
+      vec2 dv=uv-q.xy; float d2=dot(dv,dv); dmin=min(dmin,d2);
+      if(d2<R*R){ float zf=q.z-sqrt(R*R-d2); if(zf<zb){ zb=zf; tb=tt; zc=q.z; nb=vec3(dv,-sqrt(R*R-d2))/R; } } }
+  }
+  float occ=0.0;
+  if(zb<1e8){ float w2=R*2.1+0.075;
+    for(int j=0;j<320;j++){
+      float t=float(j)*dt; vec3 pos=kpos(t);
+      if(pos.z>zc-R*1.2||length(uv-pos.xy)>w2) continue;
+      for(int k=-2;k<=2;k++){ vec3 q=kpos(t+float(k)*dt*0.25);
+        if(q.z<zc-R*1.2) occ=max(occ,smoothstep(R*2.1,R*1.0,length(uv-q.xy))); }
+    }
+  }
+  vec3 bg=mix(ramp(g,a,b,c,0.2),g,smoothstep(0.0,1.7,length(uv)));
+  bg*=1.0-0.45*smoothstep(R*2.8,R*0.3,sqrt(ds));
+  vec3 L=normalize(vec3(-0.5,0.6,-0.62)), H=normalize(L+vec3(0.0,0.0,-1.0));
+  float dif=max(dot(nb,L),0.0), spe=pow(max(dot(nb,H),0.0),50.0), fre=pow(1.0-max(-nb.z,0.0),3.0);
+  float u=0.5-0.5*cos(tb*cyc);
+  vec3 col=ramp(g,a,b,c,0.32+0.6*u-0.28*(1.0-dif));
+  col*=(1.0-0.55*occ)*mix(0.55,1.0,smoothstep(0.0,0.35,-nb.z));
+  col+=vec3(spe)*0.6+mix(c,vec3(1.0),0.5)*fre*0.2;
+  float px=2.0/min(u_res.x,u_res.y);
+  outColor=vec4(mix(bg,col,smoothstep(R+px,R-px,sqrt(dmin))),1.0);
+}`;
+knobs('knot',[{n:'Knot',opts:['Trefoil','Cinquefoil','3 · 4','3 · 5','2 · 7'],steps:5,d:0},{n:'Tube',lo:'thin',hi:'thick',d:0.5},{n:'Tilt',lo:'face on',hi:'tilted',d:0.3},{n:'Gradient',opts:['One sweep','Two','Three','Four'],steps:4,d:0}]);
+
+
 const SYSTEMS=[
 /* -- algorithmic (input driven) -- */
 {cat:'A',id:'bloom',name:'Data Bloom',kind:'gl',frag:F_BLOOM,personal:true,
@@ -4620,6 +5029,20 @@ SYSTEMS.push(
  blurb:'Rays from a point on the centre axis, at the middle of the sheet or rising from the bottom edge, alternating two tones that both run through the colour gradient with distance. Some seeds twist the rays into a pinwheel.'},
 {cat:'K',id:'engrave',bleed:true,name:'Engraving',kind:'gl',frag:F_K_ENGRAVE,
  blurb:'A lit sphere drawn only in parallel ink lines that thicken in shadow, like a banknote engraving. On the sphere the lines bow with the surface; behind it they run straight, darkening down the sheet, with a cast shadow.'},
+{cat:'K',id:'glass',bleed:true,name:'Glass Lens',kind:'gl',frag:F_K_GLASS,
+ blurb:'A glass ball at the centre of the sheet over a full-bleed field of stripes, rings or checks. The field is refracted through the ball, flipped and magnified, with a rainbow edge where the colours split, a soft shadow and a caustic on the ground behind it.'},
+{cat:'K',id:'puffy',bleed:true,name:'Puffy Shapes',kind:'gl',frag:F_K_PUFFY,
+ blurb:'Bauhaus shapes inflated like soft vinyl: discs, rings, crosses, flowers, pills, quarter-rounds. One shape centred, or a grid of six or twelve, each casting a soft shadow and catching one glossy highlight. After the puffy 3D trend.'},
+{cat:'K',id:'totem',bleed:true,name:'Sculpture Stack',kind:'gl',frag:F_K_TOTEM,
+ blurb:'Two to five primitives (sphere, dome, ring, cylinder, block, cone) stacked on the centre axis and lit in a studio cove: matte clay, one key light, soft shadows. After the 3D Bauhaus renders.'},
+{cat:'K',id:'pins',bleed:true,name:'Pin Field',kind:'gl',frag:F_K_PINS,
+ blurb:'An isometric field of square columns whose heights follow ripples, terrain, a stepped pyramid, a dome or waves. The tops run through the colour gradient with height and the two sides take the shade, like pin art or a voxel landscape.'},
+{cat:'K',id:'folds',bleed:true,name:'Paper Folds',kind:'gl',frag:F_K_FOLDS,
+ blurb:'A sheet of paper folded edge to edge: accordion pleats, chevrons on the centre axis, a fan from the bottom edge, or nested squares and diamonds. A low light grazes the folds, so the ridges cast shadows into the valleys.'},
+{cat:'K',id:'gyroid',bleed:true,name:'Gyroid',kind:'gl',frag:F_K_GYROID,
+ blurb:'A sphere or cube carved from a triply periodic surface (gyroid, Schwarz or diamond lattice), like a 3D-printed sculpture: flat cut faces where the lattice meets the outer form, shaded tunnels inside.'},
+{cat:'K',id:'knot',bleed:true,name:'Torus Knot',kind:'gl',frag:F_K_KNOT,
+ blurb:'A torus knot drawn as a glossy tube at the centre of the sheet, its colour sweeping along its length. Crossings shade the strand underneath and the knot casts a soft shadow on the ground.'},
 {cat:'K',id:'maze',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
  blurb:'The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.'},
 {cat:'K',id:'fprint',bleed:true,name:'Fingerprint',kind:'js',draw:drawFingerprint,
@@ -5090,7 +5513,7 @@ function show(key){
     } else p.systems.forEach(renderSystem);
   });
 }
-show('K');
+if(location.hash==='#customise'){ document.body.classList.add('czonly'); show('C'); } else show('K');
 addEventListener('resize',()=>{ clearTimeout(window.__rt);
   window.__rt=setTimeout(()=>{
     Object.entries(panes).forEach(([k,p])=>{
