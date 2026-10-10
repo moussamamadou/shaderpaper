@@ -187,8 +187,8 @@ script refuses a file without the embed mode. There is one source of truth for t
   `window.__POSTER_READY__ = true`. It sets `__POSTER_ERROR__` on an engine error or an
   invalid design.
 
-This matches the contract of `apps/print-renderer` as read on 2026-10-10. The renderer
-itself was not run against this page in this work.
+This matches the contract of `apps/print-renderer`. The renderer ran against this page for test
+order #3 and wrote its 45 × 60 cm print file (see [backend.md § 8](backend.md#8-verified-on-2026-10-10-local)).
 
 **Aspect.** `shared/utils/aspect.ts` holds the one constant, `POSTER_ASPECT = 3:4`, the aspect of
 the print sizes and of the engine's sheet (`SHEET_AR` in `explorations/index.html`, 3:4 since
@@ -263,7 +263,7 @@ rendered by the engine itself: `pnpm --filter @shaderpaper/storefront images` (r
   - promotions UI (the BFF route exists, with no field in the cart);
   - order transfer UI (the BFF routes exist).
 - **Not exercised:**
-  - the account's detail page for the customer's *own* order, because the one test order was
+  - the account's detail page for the customer's *own* order, because the test orders were
     placed as a guest;
   - email verification, because the local backend did not require it.
 - **Copy.** Hero and section copy is descriptive (what the product is and how customising
