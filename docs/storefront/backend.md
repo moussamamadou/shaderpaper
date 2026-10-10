@@ -76,7 +76,7 @@ None of these is a ShaderPaper decision; each is marked in the code.
 | Taxes | Tax regions with no rates (0 %). Méridien's EUR prices are meant to include VAT, but nothing marks them tax-inclusive: adding rates later would add VAT on top unless tax-inclusive pricing is turned on for the region or currency | seed |
 | Prodigi SKUs | All 12 `null` (which paper, which frame range) | `PRODIGI_SKUS` in `catalog.ts` |
 | Prodigi item attributes | Empty (framed SKUs usually need a `color`; valid values come from `GET products/{sku}`) | `PRODIGI_ITEM_ATTRIBUTES` in `catalog.ts` |
-| Print format | Sizes are 3:4 (Méridien's) while the catalogue composes posters at 4:5; see the open question in the print-renderer README | `POSTER_SIZES` |
+| Print format | Sizes are 3:4 (Méridien's); since 2026-10-10 the engine composes the posters at 3:4 too (`SHEET_AR`), so the art fills the print | `POSTER_SIZES` |
 | Stripe | No keys; the manual provider takes no payment, so the storefront must say "Test mode" | `.env` |
 | Store name, stock location | "Default Store" (or Medusa's "Medusa Store" when the app started before the seed), "European Warehouse" (starter's) | seed, admin |
 

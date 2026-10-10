@@ -181,7 +181,7 @@ script refuses a file without the embed mode. There is one source of truth for t
   whole `metadata.poster` object as `d`.
 - **Page size.** The page is 1000 logical px on the short side, with the `mm` ratio (portrait,
   or landscape when the viewport is landscape). It sets `window.__POSTER_SIZE__`.
-- **Art.** The art is drawn at 4:5, centred on the sheet (contain), in an engine iframe at
+- **Art.** The art is drawn at 3:4, the sheet's own aspect, so it fills the sheet, in an engine iframe at
   `dpr = clamp(devicePixelRatio, 1, 4)`.
 - **Ready signal.** After `sp:rendered` and two animation frames it sets
   `window.__POSTER_READY__ = true`. It sets `__POSTER_ERROR__` on an engine error or an
@@ -190,9 +190,16 @@ script refuses a file without the embed mode. There is one source of truth for t
 This matches the contract of `apps/print-renderer` as read on 2026-10-10. The renderer
 itself was not run against this page in this work.
 
-**Aspect.** `shared/utils/aspect.ts` holds the one constant, `POSTER_ASPECT = 4:5` (the art's
-native ratio). The PDP mockup, the thumbnails (`aspect-poster` in Tailwind) and `/render` all
-read it, so switching to 3:4 is a one-line change plus the recomposed art.
+**Aspect.** `shared/utils/aspect.ts` holds the one constant, `POSTER_ASPECT = 3:4`, the aspect of
+the print sizes and of the engine's sheet (`SHEET_AR` in `explorations/index.html`, 3:4 since
+2026-10-10). The PDP mockup, the thumbnails (`aspect-poster` and `aspect-thumb` in Tailwind) and
+`/render` all read it. The engine still draws the earlier 4:5 sheet with `ar=4:5`, pixel-identical
+to before the recompose.
+
+**Thumbnails.** `public/posters/<id>.webp` and `<id>-2.webp` (600 × 800) are variations 1 and 2
+of each poster with every knob left to the seed, at the strength in `public/posters/levels.json`,
+rendered by the engine itself: `pnpm --filter @shaderpaper/storefront images` (runs
+`scripts/render-poster-images.mjs`; set `CHROMIUM_PATH` if playwright-core cannot find Chromium).
 
 ## Environment variables
 
@@ -239,15 +246,14 @@ read it, so switching to 3:4 is a one-line change plus the recomposed art.
 - **Prices** are the backend's catalogue (EUR 39/59/79 unframed, 119 to 189 framed). These
   are Méridien's numbers, carried over as a placeholder (SPEC §4). Taxes show €0.00 because
   the local region has no tax rates.
-- **4:5 art against 3:4 print sizes.** Sizes are 30 × 40, 45 × 60 and 60 × 80 cm (3:4), but
-  the art is composed at 4:5. The preview shows 4:5 inside the frame mockup. `/render` centres
-  the 4:5 art on the 3:4 sheet, which leaves bands top and bottom. The recompose to 3:4 is the
-  coordinator's to do; the switch is `POSTER_ASPECT`.
+- **Art aspect.** The art is composed at 3:4 to match the print sizes (default picked on
+  2026-10-10 while the decision card was unanswered; the 4:5 sheet remains available, see
+  **Aspect** above).
 - **The print resolution is capped.** The engine caps the embed at `dpr` 4 and at 4096 px for
   the canvas (also capped by the GPU's maximum viewport size).
-  - On the 1000 × 1333 logical page, the 4:5 art is 1000 × 1250, so its canvas is at most
-    about 3277 × 4096 px, whatever scale factor the renderer asks for.
-  - That is about 140 dpi over the art at 60 × 80 cm and about 275 dpi at 30 × 40 cm.
+  - On the 1000 × 1333 logical page, the 3:4 art fills the page, so its canvas is at most
+    3072 × 4096 px, whatever scale factor the renderer asks for.
+  - That is about 130 dpi at 60 × 80 cm and about 260 dpi at 30 × 40 cm.
   - A 300 dpi print needs tiling or a larger cap.
   - Not solved here.
 - **Search** is Medusa's store product search (`q`) through the BFF. No ranking or

@@ -41,7 +41,7 @@ The storefront's `/render` page does not exist yet in this repository: `apps/sto
 
 Everything the page loads should come from the storefront's origin: a failed request to another origin fails the render (`network`, 502), as Méridien's map tiles did.
 
-**Open question (product, not code).** The catalogue composes every poster at **4:5** (`.plate { aspect-ratio: 4/5 }`, GL buffer 1040 × 1300), but the print sizes copied from Méridien are **3:4**. The render page has to either recompose the poster at 3:4 (the shaders use `u_res` and most JS systems read the canvas size, so many will reflow), crop, or add margins, or ShaderPaper picks 4:5 print sizes (e.g. 16 × 20 in, the format of the example SKU `GLOBAL-CFPM-16X20` in Prodigi's docs; not checked against Prodigi's catalogue from here). Until that is decided, a 3:4 print is not what the customer saw in a 4:5 preview.
+**Aspect (settled by default on 2026-10-10).** The engine composes every poster on a **3:4** sheet (`SHEET_AR` in `explorations/index.html`; GL buffer 1008 × 1344), the aspect of the print sizes, so the render page's art fills the 1000 × 1333 page with nothing cropped and no margins: the print is what the customer saw in the preview. The earlier 4:5 sheet is still available with `ar=4:5` if 4:5 print sizes are chosen instead.
 
 ## Run
 

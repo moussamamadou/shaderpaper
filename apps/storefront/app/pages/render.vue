@@ -15,9 +15,9 @@ import type { ShaderDesign } from '#shared/utils/design'
  * `window.__POSTER_READY__ === true` (set after the engine's first paint) or
  * `window.__POSTER_ERROR__` (a message), then captures the page.
  *
- * The art keeps its own aspect (POSTER_ASPECT, 4:5 today) and is centred on
- * the white sheet ("contain"); see shared/utils/aspect.ts for the open
- * 4:5 / 3:4 decision. The engine draws at the device pixel ratio, capped at
+ * The art keeps its own aspect (POSTER_ASPECT, 3:4, the print sizes' aspect)
+ * and is centred on the white sheet ("contain"), so it fills a 3:4 sheet
+ * exactly; see shared/utils/aspect.ts. The engine draws at the device pixel ratio, capped at
  * 4 and at 4096 px a side (WebGL limits), so large sizes are upscaled by the
  * capture: a known limit, documented in docs/storefront/storefront.md.
  */

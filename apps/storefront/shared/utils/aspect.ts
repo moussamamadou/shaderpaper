@@ -1,16 +1,17 @@
 /**
  * The poster art's aspect ratio, in one place.
  *
- * Open decision (business input): the engine composes every poster at 4:5,
- * while the print sizes on sale (30 × 40, 45 × 60, 60 × 80 cm) are 3:4. Until
- * that is settled the storefront shows the art at its native 4:5 (preview,
- * frame mockup, cart thumbnails), and the print render page centres the 4:5
- * art on the 3:4 sheet. Switching to 3:4 is a change of these two numbers
- * (and a rebuild, since the Tailwind `aspect-poster` class reads them too).
+ * The engine composes every poster on a 3:4 sheet (explorations/index.html,
+ * `SHEET_AR`), the aspect of the print sizes on sale (30 × 40, 45 × 60,
+ * 60 × 80 cm), so the art fills the print with nothing cropped. The engine
+ * still renders the earlier 4:5 sheet with `ar=4:5`; going back would mean
+ * changing these two numbers, passing `ar=4:5` to the engine and re-rendering
+ * the thumbnails (scripts/render-poster-images.mjs). Tailwind's
+ * `aspect-poster` and `aspect-thumb` classes read this constant too.
  */
-export const POSTER_ASPECT = { w: 4, h: 5 } as const
+export const POSTER_ASPECT = { w: 3, h: 4 } as const
 
-/** CSS `aspect-ratio` value, e.g. "4 / 5". */
+/** CSS `aspect-ratio` value, e.g. "3 / 4". */
 export const POSTER_ASPECT_CSS = `${POSTER_ASPECT.w} / ${POSTER_ASPECT.h}`
 
 /** Height of the art for a given width. */

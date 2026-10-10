@@ -12,7 +12,7 @@
     "typecheck": "nuxt typecheck",
     "pretest": "node scripts/copy-engine.mjs",
     "test": "vitest run",
-    "images": "python3 -I scripts/build-poster-images.py",
+    "images": "node scripts/render-poster-images.mjs",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {

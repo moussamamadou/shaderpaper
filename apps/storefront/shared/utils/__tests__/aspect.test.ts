@@ -3,22 +3,22 @@ import { POSTER_ASPECT, fitArt, posterHeightFor } from '../aspect'
 import { decodeDesign, defaultDesign, encodeDesign } from '../design'
 
 describe('aspect', () => {
-  it('is the art aspect, 4:5, until the 3:4 decision lands', () => {
-    expect(POSTER_ASPECT).toEqual({ w: 4, h: 5 })
-    expect(posterHeightFor(800)).toBe(1000)
+  it('is the print sizes\' aspect, 3:4', () => {
+    expect(POSTER_ASPECT).toEqual({ w: 3, h: 4 })
+    expect(posterHeightFor(750)).toBe(1000)
   })
 
-  it('centres 4:5 art on a 3:4 print sheet (contain), full width', () => {
+  it('fills a 3:4 print sheet exactly, with no bands', () => {
     // 45 × 60 cm at the render page's logical size: 1000 × 1333.
-    expect(fitArt({ width: 1000, height: 1333 })).toEqual({ x: 0, y: 42, width: 1000, height: 1250 })
+    expect(fitArt({ width: 1000, height: 1333 })).toEqual({ x: 0, y: 0, width: 1000, height: 1333 })
   })
 
-  it('fills a sheet of the same aspect exactly', () => {
-    expect(fitArt({ width: 1000, height: 1250 })).toEqual({ x: 0, y: 0, width: 1000, height: 1250 })
+  it('centres the art on a taller sheet (contain), full width', () => {
+    expect(fitArt({ width: 1000, height: 1500 })).toEqual({ x: 0, y: 84, width: 1000, height: 1333 })
   })
 
   it('fits by height on a wider sheet', () => {
-    expect(fitArt({ width: 1333, height: 1000 })).toEqual({ x: 267, y: 0, width: 800, height: 1000 })
+    expect(fitArt({ width: 1333, height: 1000 })).toEqual({ x: 292, y: 0, width: 750, height: 1000 })
   })
 })
 

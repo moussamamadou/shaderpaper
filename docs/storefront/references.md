@@ -17,7 +17,7 @@ Mobbin was available, so both references below come from it. Méridien's Figma i
 
 **How ShaderPaper adapts it**
 
-- The poster grid gets the same priority: 4:5 art, a name, a category in mono caps and "From €39". The shop grid has a two-step density toggle.
+- The poster grid gets the same priority: 3:4 art (the print aspect), a name, a category in mono caps and "From €39". The shop grid has a two-step density toggle.
 - Add to cart opens the cart drawer with the configured poster's summary (size, frame, palette).
 
 **What ShaderPaper does not take**

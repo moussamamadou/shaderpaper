@@ -118,7 +118,7 @@ export default {
       maxWidth: { content: px(tokens.layout.maxWidth), prose: '68ch', drawer: px(tokens.layout.drawerWidth) },
       width: { drawer: px(tokens.layout.drawerWidth) },
       // poster: the art's aspect (shared/utils/aspect.ts); thumb: catalogue plates.
-      aspectRatio: { poster: POSTER_ASPECT_CSS, thumb: '4 / 5' },
+      aspectRatio: { poster: POSTER_ASPECT_CSS, thumb: POSTER_ASPECT_CSS },
       keyframes: {
         shimmer: { '0%': { backgroundPosition: '-400px 0' }, '100%': { backgroundPosition: '400px 0' } },
         'slide-in-right': { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'translateX(0)' } },
