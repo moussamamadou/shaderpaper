@@ -48,7 +48,7 @@ useSeoMeta({ title: () => (q.value ? t('search.titleFor', { q: q.value }) : t('s
       </template>
       <template v-else-if="results.length">
         <p class="mb-6 type-body-s text-ink-2" data-testid="search-count">{{ $t('search.resultsFor', { n: results.length, q }, results.length) }}</p>
-        <ProductGrid :cards="results" />
+        <ProductGrid :cards="results" heading-level="h2" />
       </template>
       <template v-else>
         <UiEmptyState :title="$t('search.noResultsTitle', { q })" :body="$t('search.noResultsBody')" compact data-testid="search-empty">

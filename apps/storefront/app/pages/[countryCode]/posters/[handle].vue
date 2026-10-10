@@ -127,6 +127,9 @@ const { addToCart } = useCart()
 const drawer = useCartDrawer()
 const { push } = useToast()
 const adding = ref(false)
+// "Black frame", but "No frame" as is (same wording as the cart line).
+const frameText = computed(() => (!frame.value ? null : frameKeyOf(frame.value) === 'none' ? frame.value : t('cart.frameValue', { frame: frame.value })))
+
 const add = async () => {
   if (!variant.value || adding.value) return
   adding.value = true
@@ -139,7 +142,7 @@ const add = async () => {
       ...(thumbnail ? { thumbnail } : {}),
     }
     await addToCart({ variantId: variant.value.id, quantity: 1, countryCode: cc.value, metadata: { poster } })
-    const line = [p.value.title, size.value, frame.value].filter(Boolean).join(' · ')
+    const line = [p.value.title, size.value, frameText.value].filter(Boolean).join(' · ')
     drawer.open({ message: t('product.addedAnnounce', { title: line }), added: line })
   } catch (err) {
     const body = (err as { data?: { message?: string } })?.data?.message ?? (err instanceof Error ? err.message : '')
@@ -241,7 +244,7 @@ const details = computed(() => [
           <h1 class="type-h1" data-testid="product-title">{{ p.title }}</h1>
           <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <UiPriceTag :amount="price?.calculated_amount" :currency="currency" :original="price?.original_amount" size="lg" data-testid="product-price" />
-            <span class="type-caption text-ink-3">{{ [size, frame].filter(Boolean).join(' · ') }}</span>
+            <span class="type-caption text-ink-3">{{ [size, frameText].filter(Boolean).join(' · ') }}</span>
           </div>
           <p v-if="p.description" class="type-body text-ink-2">{{ p.description }}</p>
         </header>
@@ -329,19 +332,19 @@ const details = computed(() => [
         <ul class="grid grid-cols-1 gap-3 border-y border-line py-5 sm:grid-cols-2">
           <li class="flex gap-3">
             <Printer :size="18" class="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
-            <div><p class="type-body-s font-medium">{{ $t('product.factMadeToOrder') }}</p><p class="type-caption text-ink-3">{{ $t('product.factMadeToOrderBody') }}</p></div>
+            <div><p class="type-body-s font-medium">{{ $t('product.factMadeToOrder') }}</p><p class="type-body-s text-ink-3">{{ $t('product.factMadeToOrderBody') }}</p></div>
           </li>
           <li class="flex gap-3">
             <Shapes :size="18" class="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
-            <div><p class="type-body-s font-medium">{{ $t('product.factYours') }}</p><p class="type-caption text-ink-3">{{ $t('product.factYoursBody') }}</p></div>
+            <div><p class="type-body-s font-medium">{{ $t('product.factYours') }}</p><p class="type-body-s text-ink-3">{{ $t('product.factYoursBody') }}</p></div>
           </li>
           <li class="flex gap-3">
             <Truck :size="18" class="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
-            <div><p class="type-body-s font-medium">{{ $t('product.factShipping') }}</p><p class="type-caption text-ink-3">{{ $t('product.factShippingBody') }}</p></div>
+            <div><p class="type-body-s font-medium">{{ $t('product.factShipping') }}</p><p class="type-body-s text-ink-3">{{ $t('product.factShippingBody') }}</p></div>
           </li>
           <li class="flex gap-3">
             <Palette :size="18" class="mt-0.5 shrink-0 text-ink-2" aria-hidden="true" />
-            <div><p class="type-body-s font-medium">{{ $t('product.factPaper') }}</p><p class="type-caption text-ink-3">{{ $t('product.factPaperBody') }}</p></div>
+            <div><p class="type-body-s font-medium">{{ $t('product.factPaper') }}</p><p class="type-body-s text-ink-3">{{ $t('product.factPaperBody') }}</p></div>
           </li>
         </ul>
 
@@ -386,7 +389,7 @@ const details = computed(() => [
       <div class="flex items-center gap-3">
         <div class="min-w-0 flex-1">
           <UiPriceTag :amount="price?.calculated_amount" :currency="currency" size="sm" />
-          <p class="truncate type-caption text-ink-3">{{ [size, frame].filter(Boolean).join(' · ') }}</p>
+          <p class="truncate type-caption text-ink-3">{{ [size, frameText].filter(Boolean).join(' · ') }}</p>
         </div>
         <UiButton size="lg" :loading="adding" :disabled="!variant" data-testid="add-to-cart-mobile" @click="add">{{ $t('product.addToCart') }}</UiButton>
       </div>

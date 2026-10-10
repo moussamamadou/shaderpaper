@@ -21,6 +21,8 @@ const title = computed(() => (is404.value ? t('errors.notFoundTitle') : t('error
 const body = computed(() =>
   is404.value ? props.error?.statusMessage && props.error.statusMessage !== 'Page Not Found' ? props.error.statusMessage : t('errors.notFoundBody') : t('errors.serverBody'),
 )
+// error.vue replaces app.vue, so it sets the title template itself.
+useHead({ titleTemplate: (title?: string) => (title ? `${title} · ShaderPaper` : 'ShaderPaper') })
 useSeoMeta({ title: () => (is404.value ? t('errors.notFoundMeta') : t('errors.serverMeta')), robots: 'noindex' })
 const retry = () => clearError({ redirect: route.fullPath })
 const goHome = () => clearError({ redirect: home.value })

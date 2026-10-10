@@ -75,7 +75,7 @@ const panel = (s: 'shape' | 'colour') =>
     <div :id="`${pid}-shape`" v-bind="panel('shape')" :class="['flex flex-col gap-8', hidden('shape')]">
     <section class="flex flex-col gap-5" :aria-labelledby="`${paletteName}-shape`">
       <div class="flex items-baseline justify-between gap-3">
-        <h2 :id="`${paletteName}-shape`" class="type-label text-ink">{{ $t('customiser.shape') }}</h2>
+        <h2 :id="`${paletteName}-shape`" :class="['type-label text-ink', tabbed && 'max-lg:sr-only']">{{ $t('customiser.shape') }}</h2>
         <button
           v-if="anyKnobSet"
           type="button"
@@ -130,7 +130,7 @@ const panel = (s: 'shape' | 'colour') =>
 
     <!-- Colour: palette and strength -->
     <section :id="`${pid}-colour`" v-bind="panel('colour')" :class="['flex flex-col gap-5', hidden('colour')]">
-      <h2 :id="`${paletteName}-colour`" class="type-label text-ink">{{ $t('customiser.colour') }}</h2>
+      <h2 :id="`${paletteName}-colour`" :class="['type-label text-ink', tabbed && 'max-lg:sr-only']">{{ $t('customiser.colour') }}</h2>
       <fieldset v-if="palettes.length" class="min-w-0">
         <legend class="mb-2 type-body-s font-medium text-ink">
           {{ $t('customiser.palette') }}

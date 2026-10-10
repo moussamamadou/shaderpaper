@@ -18,7 +18,7 @@ useSeoMeta({ title: () => (customer.value ? undefined : t('account.signIn')), ro
     </div>
     <AccountAuth v-else-if="!customer" />
     <div v-else class="grid gap-8 lg:grid-cols-12 lg:gap-6">
-      <aside class="lg:col-span-3">
+      <aside class="min-w-0 lg:col-span-3">
         <p class="eyebrow mb-3 hidden lg:block">{{ $t('account.title') }}</p>
         <AccountNav />
       </aside>

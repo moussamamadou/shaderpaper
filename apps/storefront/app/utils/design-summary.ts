@@ -5,7 +5,7 @@ type T = (key: string, params?: Record<string, unknown>) => string
 
 /**
  * The buyer's choices in words, for cart and order lines:
- * ["Variation 3", "Pattern: Rings · Lens: 60", "Palette 2", "Vivid"].
+ * ["Variation 3", "Pattern: Rings · Lens: 60", "Palette 2", "Colour strength: Vivid"].
  * Knobs left to the variation are not listed; when none is set the line says so.
  */
 export function designSummary(design: ShaderDesign, knobsMeta: unknown, t: T): string[] {
@@ -21,6 +21,6 @@ export function designSummary(design: ShaderDesign, knobsMeta: unknown, t: T): s
     t('customiser.variationN', { n: design.seed }),
     set.length ? set.join(' · ') : t('customiser.shapeFromVariation'),
     design.palette == null ? t('customiser.paletteFromVariation') : t('customiser.paletteN', { n: design.palette + 1 }),
-    t(`customiser.strength.${design.strength}`),
+    `${t('customiser.strengthLabel')}: ${t(`customiser.strength.${design.strength}`)}`,
   ]
 }

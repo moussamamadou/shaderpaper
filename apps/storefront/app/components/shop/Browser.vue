@@ -78,15 +78,15 @@ const filtersOpen = ref(false)
         <p class="type-body-s text-ink-2" role="status" aria-live="polite" data-testid="result-count">
           {{ loading ? $t('shop.loading') : $t('shop.count', { n: filtered.length }, filtered.length) }}
         </p>
-        <div class="flex items-end gap-2">
-          <UiButton variant="secondary" size="sm" class="lg:hidden" data-testid="open-filters" @click="filtersOpen = true">
+        <div class="flex w-full min-w-0 items-end gap-2 sm:w-auto">
+          <UiButton variant="secondary" size="sm" class="shrink-0 lg:hidden" data-testid="open-filters" @click="filtersOpen = true">
             <SlidersHorizontal :size="16" aria-hidden="true" />
             {{ $t('shop.filters') }}<template v-if="active.length"> ({{ active.length }})</template>
           </UiButton>
-          <div class="w-[176px] md:w-[208px]">
+          <div class="min-w-0 flex-1 sm:w-[176px] sm:flex-none md:w-[208px]">
             <UiSelect v-model="sortModel" :label="$t('shop.sortBy')" name="sort" :options="sortOptions" hide-label data-testid="sort" />
           </div>
-          <div role="group" :aria-label="$t('shop.density')" class="flex rounded-xs border border-line bg-surface">
+          <div role="group" :aria-label="$t('shop.density')" class="flex shrink-0 rounded-xs border border-line bg-surface">
             <UiIconButton :label="$t('shop.densityComfortable')" :pressed="state.density === 'comfortable'" data-testid="density-comfortable" @click="update({ density: 'comfortable', page: state.page })">
               <Grid2x2 :size="18" aria-hidden="true" />
             </UiIconButton>
@@ -105,7 +105,7 @@ const filtersOpen = ref(false)
         <button type="button" class="link inline-flex min-h-11 items-center px-2 type-body-s md:min-h-0" @click="clearAll">{{ $t('shop.clearAll') }}</button>
       </div>
 
-      <ProductGrid v-if="loading || paged.items.length" :cards="paged.items" :density="state.density" :loading="loading" />
+      <ProductGrid v-if="loading || paged.items.length" heading-level="h2" :cards="paged.items" :density="state.density" :loading="loading" />
       <UiEmptyState v-else :title="$t('shop.noMatchTitle')" :body="$t('shop.noMatchBody')">
         <template #icon><SlidersHorizontal :size="26" aria-hidden="true" /></template>
         <UiButton variant="secondary" @click="clearAll">{{ $t('shop.clearFilters') }}</UiButton>

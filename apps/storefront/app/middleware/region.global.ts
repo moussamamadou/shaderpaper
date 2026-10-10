@@ -130,7 +130,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   // 307 redirect to the country-prefixed URL, query string preserved.
-  const redirectPath = path === "/" ? "" : path
+  // ShaderPaper: a country we do not ship to (/us/posters/glass) is swapped
+  // for the resolved one rather than nested under it (/fr/us/posters/glass).
+  // No page sits at a two-letter top-level path, so the test is safe.
+  const unservedCountry = !!firstSegment && /^[a-z]{2}$/.test(firstSegment)
+  const rest = unservedCountry ? path.slice(firstSegment.length + 1) : path
+  const redirectPath = rest === "/" ? "" : rest
   return navigateTo(
     { path: `/${country}${redirectPath}`, query: to.query },
     { redirectCode: 307 }

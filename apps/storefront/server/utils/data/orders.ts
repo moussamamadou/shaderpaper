@@ -19,7 +19,7 @@ export async function retrieveOrder(
       method: "GET",
       query: {
         fields:
-          "*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product",
+          "+customer_id,*payment_collections.payments,*items,*items.metadata,*items.variant,*items.product",
       },
       headers,
     })

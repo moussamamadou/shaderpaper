@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import type { PosterCard } from '#shared/utils/catalog'
 
-/** Poster grid. Comfortable: 2 / 3 / 4 columns; compact: 3 / 4 / 6. Shows skeleton cards while loading. */
-withDefaults(defineProps<{ cards: PosterCard[]; density?: 'comfortable' | 'compact'; loading?: boolean; skeletons?: number }>(), {
+/**
+ * Poster grid. Comfortable: 2 / 3 / 4 columns; compact: 3 / 4 / 6. Shows
+ * skeleton cards while loading. headingLevel: h2 when the grid sits right
+ * under the page's h1 (shop, collections, search), h3 under a section h2.
+ */
+withDefaults(defineProps<{ cards: PosterCard[]; density?: 'comfortable' | 'compact'; loading?: boolean; skeletons?: number; headingLevel?: 'h2' | 'h3' }>(), {
   density: 'comfortable',
+  headingLevel: 'h3',
   loading: false,
   skeletons: 8,
 })
@@ -24,7 +29,7 @@ withDefaults(defineProps<{ cards: PosterCard[]; density?: 'comfortable' | 'compa
       <li v-for="i in skeletons" :key="`s${i}`"><UiSkeleton variant="card" /></li>
     </template>
     <li v-for="(card, i) in cards" v-else :key="card.id">
-      <ProductCard :card="card" :compact="density === 'compact'" :eager="i < 4" />
+      <ProductCard :card="card" :compact="density === 'compact'" :eager="i < 4" :heading-level="headingLevel" />
     </li>
   </ul>
 </template>
