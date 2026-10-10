@@ -20,7 +20,7 @@ const id = `c-${useId()}`
         type="checkbox"
         :name="props.name"
         :disabled="disabled"
-        class="peer absolute inset-0 h-5 w-5 cursor-pointer appearance-none rounded-xs border border-line-strong bg-surface transition-colors duration-fast checked:border-ink checked:bg-ink group-hover:border-ink"
+        class="peer absolute inset-0 h-5 w-5 cursor-pointer appearance-none rounded-xs border border-ink-3 bg-surface transition-colors duration-fast checked:border-ink checked:bg-ink group-hover:border-ink"
       />
       <Check :size="14" :stroke-width="3" class="pointer-events-none absolute left-0.5 top-0.5 hidden text-paper peer-checked:block" aria-hidden="true" />
     </span>

@@ -43,8 +43,8 @@ defineExpose({ focus: () => select.value?.focus() })
         :aria-describedby="error ? `${id}-error` : undefined"
         :class="[
           'h-12 w-full cursor-pointer appearance-none rounded-xs border bg-surface pl-4 pr-10 type-body text-ink transition-colors duration-fast',
-          'hover:border-line-strong focus:border-ink disabled:cursor-not-allowed disabled:bg-sunken',
-          error ? 'border-danger' : 'border-line',
+          'hover:border-ink-2 focus:border-ink disabled:cursor-not-allowed disabled:border-line disabled:bg-sunken',
+          error ? 'border-danger' : 'border-ink-3',
           !model ? 'text-ink-3' : '',
         ]"
       >

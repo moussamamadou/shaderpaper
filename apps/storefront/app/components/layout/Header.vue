@@ -96,7 +96,7 @@ watch(() => route.fullPath, () => {
             v-model="q"
             type="search"
             :placeholder="$t('search.placeholder')"
-            class="h-10 w-[240px] rounded-xs border border-line bg-surface px-3 type-body-s"
+            class="h-10 w-[240px] rounded-xs border border-ink-3 bg-surface px-3 type-body-s focus:border-ink"
             @keydown.esc="searchOpen = false"
           />
         </form>

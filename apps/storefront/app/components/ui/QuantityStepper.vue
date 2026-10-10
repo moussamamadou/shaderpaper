@@ -23,7 +23,7 @@ const btn = computed(() =>
   <div
     role="group"
     :aria-label="label || $t('cart.quantity')"
-    :class="['inline-flex items-center rounded-xs border border-line bg-surface', disabled ? 'opacity-60' : '']"
+    :class="['inline-flex items-center rounded-xs border border-ink-3 bg-surface', disabled ? 'opacity-60' : '']"
   >
     <button type="button" :class="btn" :disabled="disabled || modelValue <= min" :aria-label="$t('cart.decrease')" @click="set(modelValue - 1)">
       <Minus :size="16" aria-hidden="true" />

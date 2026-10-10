@@ -48,7 +48,7 @@ useSeoMeta({ title: () => t('campaign.title'), description: () => t('campaign.de
             :class="['block', i === 1 ? 'lg:-translate-y-8' : '']"
           >
             <div class="relative aspect-thumb overflow-hidden shadow-overlay">
-              <img :src="c.thumbnail ?? ''" alt="" width="600" height="750" :fetchpriority="i === 0 ? 'high' : undefined" class="absolute inset-0 h-full w-full object-cover" />
+              <img :src="c.thumbnail ?? ''" alt="" width="600" height="800" :fetchpriority="i === 0 ? 'high' : undefined" class="absolute inset-0 h-full w-full object-cover" />
             </div>
           </NuxtLink>
           <template v-if="!hero.length && status === 'pending'">

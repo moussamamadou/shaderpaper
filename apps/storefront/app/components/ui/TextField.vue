@@ -57,8 +57,8 @@ defineExpose({ focus: () => input.value?.focus() })
         :aria-describedby="describedBy"
         :class="[
           'h-12 w-full rounded-xs border bg-surface px-4 type-body text-ink transition-colors duration-fast placeholder:text-ink-3',
-          'hover:border-line-strong focus:border-ink disabled:cursor-not-allowed disabled:bg-sunken disabled:text-ink-3',
-          error ? 'border-danger' : 'border-line',
+          'hover:border-ink-2 focus:border-ink disabled:cursor-not-allowed disabled:border-line disabled:bg-sunken disabled:text-ink-3',
+          error ? 'border-danger' : 'border-ink-3',
           type === 'password' ? 'pr-12' : '',
         ]"
       />

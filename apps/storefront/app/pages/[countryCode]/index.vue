@@ -56,12 +56,12 @@ const steps = computed(() => [1, 2, 3, 4].map((n) => ({ n, title: t(`home.step${
         <div v-if="featured" class="grid grid-cols-5 items-end gap-3 lg:gap-6">
           <NuxtLink :to="`/${cc}/posters/${featured.handle}`" class="col-span-3" :aria-label="featured.title">
             <PosterMockup frame="oak" :scale="0.92">
-              <img :src="featured.thumbnail ?? ''" alt="" width="600" height="750" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" />
+              <img :src="featured.thumbnail ?? ''" alt="" width="600" height="800" class="absolute inset-0 h-full w-full object-cover" fetchpriority="high" />
             </PosterMockup>
           </NuxtLink>
           <NuxtLink v-if="second" :to="`/${cc}/posters/${second.handle}`" class="col-span-2" :aria-label="second.title">
             <PosterMockup frame="black" :scale="0.86">
-              <img :src="second.thumbnail ?? ''" alt="" width="600" height="750" class="absolute inset-0 h-full w-full object-cover" />
+              <img :src="second.thumbnail ?? ''" alt="" width="600" height="800" class="absolute inset-0 h-full w-full object-cover" />
             </PosterMockup>
           </NuxtLink>
         </div>
@@ -84,7 +84,7 @@ const steps = computed(() => [1, 2, 3, 4].map((n) => ({ n, title: t(`home.step${
         <li v-for="c in collections" :key="c.handle">
           <NuxtLink :to="`/${cc}/collections/${c.handle}`" class="group flex flex-col gap-3" data-testid="collection-tile">
             <div class="relative aspect-[4/3] overflow-hidden bg-sunken">
-              <img v-if="c.image" :src="c.image" alt="" width="600" height="750" loading="lazy" class="absolute inset-0 h-full w-full object-cover transition-transform duration-slow group-hover:scale-[1.03] reduced:transition-none" />
+              <img v-if="c.image" :src="c.image" alt="" width="600" height="800" loading="lazy" class="absolute inset-0 h-full w-full object-cover transition-transform duration-slow group-hover:scale-[1.03] reduced:transition-none" />
             </div>
             <div class="flex items-baseline justify-between gap-2">
               <span class="type-body font-medium group-hover:underline group-hover:underline-offset-4">{{ $t(`categories.${c.handle}`, c.title) }}</span>

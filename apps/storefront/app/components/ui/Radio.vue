@@ -29,7 +29,7 @@ const checked = computed(() => model.value === props.value)
       :name="name"
       :value="value"
       :disabled="disabled"
-      class="h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-pill border border-line-strong bg-surface transition-[border-width,border-color] duration-fast checked:border-[6px] checked:border-ink"
+      class="h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-pill border border-ink-3 bg-surface transition-[border-width,border-color] duration-fast checked:border-[6px] checked:border-ink"
     />
     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="type-body font-medium text-ink">{{ label }}</span>
