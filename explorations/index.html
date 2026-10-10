@@ -115,7 +115,12 @@
   /* #customise opens the customiser on its own, without the research catalogue around it */
   body.czonly header,body.czonly nav,body.czonly footer{display:none}
   body.czonly .wrap{padding-top:28px}
+  /* #embed?id=… paints one poster full-bleed for the storefront (see embedBoot) */
+  html.embed,html.embed body{margin:0;height:100%;overflow:hidden;background:#f2f0ea}
+  html.embed .wrap{display:none}
+  #spembed{position:fixed;inset:0;width:100%;height:100%;display:block}
 </style>
+<script>if(/^#embed\b/.test(location.hash)) document.documentElement.classList.add('embed');</script>
 </head>
 <body>
 <div class="wrap">
@@ -140,10 +145,19 @@
 </div>
 
 <script>
+/* Embed mode (storefront): #embed?id=<poster>&seed=<n>&k=<k0,k1,k2,k3>&pal=<i|>&lvl=<n|b|v>
+   paints only that poster, full-bleed, and talks to the parent page through
+   postMessage. Without the #embed hash nothing below changes. */
+const EMBED=/^#embed\b/.test(location.hash);
+const EMBED_Q=EMBED?new URLSearchParams(location.hash.replace(/^#embed\??/,'')):null;
+const EMBED_DPR=EMBED?Math.max(1,Math.min(4,Number(EMBED_Q.get('dpr'))||2)):2;
+const EMBED_ORIGIN=location.origin&&location.origin!=='null'?location.origin:'*';
+function embedPost(msg){ if(EMBED&&window.parent!==window){ try{ window.parent.postMessage(msg,EMBED_ORIGIN); }catch(e){} } }
 /* ============================================================
    0 · infrastructure
    ============================================================ */
 function fail(m){
+  if(EMBED){ console.error(m); embedPost({type:'sp:error',message:String(m)}); return; }
   let b=document.getElementById('errbar');
   if(!b){ b=document.createElement('pre'); b.id='errbar';
     b.style.cssText='background:#3a1414;border:1px solid #6b2222;color:#ffb4b4;padding:14px 16px;border-radius:10px;margin:0 0 24px;white-space:pre-wrap;font-size:12.5px;overflow-x:auto';
@@ -180,7 +194,7 @@ function glRnd(seed,i){ const f=Math.fround, fr=x=>f(x-Math.floor(x));
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)/4294967296; }
 function seedFrom(s){ return strHash(s)*997; }
 function prep(cv){
-  const dpr=Math.min(devicePixelRatio||1,2);
+  const dpr=Math.min(devicePixelRatio||1,EMBED_DPR);
   const w=cv.clientWidth||200,h=cv.clientHeight||250;
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
   const c=cv.getContext('2d'); c.fillStyle=PAPER; c.fillRect(0,0,cv.width,cv.height); return c;
@@ -5654,7 +5668,7 @@ function buildSystemCard(sys){
    colour strength and a variation number. The knobs, palette and strength
    are applied for this one render and handed back, so the catalogue tabs
    keep drawing from their seeds. */
-const NORENDER=/norender/.test(location.search+location.hash);
+const NORENDER=/norender/.test(location.search+location.hash)||EMBED;
 const FREE_PALS=[
   ['ember',['#110d0b','#9c2b2b','#e0703a','#f6cf8a']],
   ['ocean',['#08101e','#1f5f8b','#53b3c9','#e8d6a8']],
@@ -5923,7 +5937,85 @@ function show(key){
     } else p.systems.forEach(renderSystem);
   });
 }
-if(location.hash==='#customise'){ document.body.classList.add('czonly'); show('C'); } else show('K');
+/* ---- embed mode -------------------------------------------------------------
+   The storefront's product page loads this file in an iframe as
+   engine/index.html#embed?id=…&seed=…&k=…&pal=…&lvl=… . Only that poster is
+   painted, into one canvas filling the viewport; the catalogue above is built
+   but never rendered (NORENDER). The parent drives it with postMessage:
+     → {type:'sp:set', id, seed, k|knobs, pal|palette, lvl|strength}  re-render
+     → {type:'sp:palettes', id}                                        palette list
+     ← {type:'sp:ready'} once listening, {type:'sp:rendered', id, ms, fam, pal, w, h, seq}
+       after every paint, {type:'sp:palettes', id, fam, palettes, current, knobs}
+       and {type:'sp:error', message}.
+   seed is the variation number (1, 2, …), as in the Customise tab, so
+   variation 1 with null knobs and palette is plate 01 of the Posters tab.
+   A knob or palette left empty hands that choice back to the seed. */
+const EM={cv:null,cur:null,pending:null,raf:0,fam:{},asks:[]};
+function embedParse(src){
+  const get=k=>src instanceof URLSearchParams?src.get(k):src[k];
+  const id=String(get('id')||'');
+  let seed=Math.floor(Number(get('seed')));
+  if(!Number.isFinite(seed)||seed<1) seed=1;
+  let k=get('k'); if(k==null) k=get('knobs');
+  const arr=Array.isArray(k)?k:typeof k==='string'?k.split(','):[];
+  const knobs=[0,1,2,3].map(i=>{ const v=arr[i];
+    if(v==null||v===''||v==='n'||v==='null') return null;
+    const x=Number(v); return Number.isFinite(x)?Math.max(0,Math.min(1,x)):null; });
+  let pal=get('pal'); if(pal==null) pal=get('palette');
+  pal=pal==null||pal===''||pal==='null'?null:Number(pal);
+  if(!Number.isInteger(pal)||pal<0) pal=null;
+  let lv=get('lvl'); if(lv==null) lv=get('strength');
+  const lvlKey=lv==='n'||lv==='v'?lv:'b';
+  return {id,seed,knobs,pal,lvlKey,lvl:{n:0,b:0.5,v:1}[lvlKey]};
+}
+function embedSizeGL(){
+  if(!gl) return;
+  const dpr=Math.min(devicePixelRatio||1,EMBED_DPR);
+  let w=Math.round((EM.cv.clientWidth||520)*dpr), h=Math.round((EM.cv.clientHeight||650)*dpr);
+  const lim=Math.min(gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0],gl.getParameter(gl.MAX_VIEWPORT_DIMS)[1],gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),4096);
+  const f=Math.min(1,lim/Math.max(w,h)); w=Math.max(1,Math.floor(w*f)); h=Math.max(1,Math.floor(h*f));
+  if(glc.width!==w||glc.height!==h){ glc.width=w; glc.height=h; }
+}
+function embedPalettes(id){
+  const fam=EM.fam[id]??null;
+  embedPost({type:'sp:palettes',id,fam,palettes:fam?famList(fam):[],
+    current:EM.cur&&EM.cur.id===id&&fam?PAL_IDX:null,knobs:KNOBDEF[id]||[]});
+}
+function embedRender(){
+  EM.raf=0;
+  const d=EM.pending||EM.cur; if(!d) return;
+  EM.pending=null; EM.cur=d;
+  const sys=SYSTEMS.find(s=>s.cat==='K'&&s.id===d.id);
+  if(!sys){ embedPost({type:'sp:error',id:d.id,message:'Unknown poster: '+d.id}); return; }
+  const t0=performance.now();
+  KNOB=d.knobs.slice(); PAL=d.pal; setPosterVivid(d.lvl);
+  try{ embedSizeGL(); EM.cv.dataset.strategy=''; paintGated(sys,EM.cv,czSeed(sys,d.seed)); }
+  catch(err){ console.error(err); embedPost({type:'sp:error',id:d.id,message:String(err&&err.message||err)}); return; }
+  EM.fam[d.id]=PAL_FAM;
+  embedPost({type:'sp:rendered',id:d.id,seed:d.seed,ms:Math.round(performance.now()-t0),
+    fam:PAL_FAM,pal:PAL_FAM?PAL_IDX:null,w:EM.cv.width,h:EM.cv.height,seq:d.seq??null});
+  EM.asks=EM.asks.filter(id=>{ if(id===d.id){ embedPalettes(id); return false; } return true; });
+}
+function embedQueue(d){ EM.pending=d; if(!EM.raf) EM.raf=requestAnimationFrame(embedRender); }
+function embedBoot(){
+  EM.cv=document.createElement('canvas'); EM.cv.id='spembed';
+  EM.cv.setAttribute('role','img'); EM.cv.setAttribute('aria-label','Poster preview');
+  document.body.appendChild(EM.cv);
+  addEventListener('message',e=>{
+    if(e.source!==window.parent) return;
+    const m=e.data; if(!m||typeof m!=='object') return;
+    if(m.type==='sp:set'){ const d=embedParse(m); d.seq=m.seq??null; embedQueue(d); }
+    else if(m.type==='sp:palettes'){ const id=String(m.id||(EM.cur&&EM.cur.id)||'');
+      if(Object.prototype.hasOwnProperty.call(EM.fam,id)) embedPalettes(id); else if(!EM.asks.includes(id)) EM.asks.push(id); }
+  });
+  addEventListener('hashchange',()=>{ if(/^#embed\b/.test(location.hash)) embedQueue(embedParse(new URLSearchParams(location.hash.replace(/^#embed\??/,'')))); });
+  addEventListener('resize',()=>{ clearTimeout(EM.rt); EM.rt=setTimeout(()=>embedQueue(EM.cur),150); });
+  embedPost({type:'sp:ready'});
+  const first=embedParse(EMBED_Q);
+  if(first.id) embedQueue(first);
+}
+if(EMBED) embedBoot();
+else if(location.hash==='#customise'){ document.body.classList.add('czonly'); show('C'); } else show('K');
 addEventListener('resize',()=>{ clearTimeout(window.__rt);
   window.__rt=setTimeout(()=>{
     Object.entries(panes).forEach(([k,p])=>{

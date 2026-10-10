@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ShaderPaper: a quiet gallery. Warm paper ground, ink text, the posters carry
+   the colour. Tokens: docs/storefront/tokens.json (via tailwind.config.ts). */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-padding-top: 80px;
+  }
+  body {
+    @apply bg-paper text-ink font-sans type-body;
+  }
+  ::selection {
+    @apply bg-ink text-paper;
+  }
+  /* One focus treatment everywhere: the token focus ring. */
+  :focus-visible {
+    outline: none;
+    @apply shadow-focus;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+  h1, h2, h3, h4 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: theme('colors.ink');
+    -webkit-box-shadow: 0 0 0 1000px theme('colors.surface') inset;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Page frame: 16 px margins on mobile, 32 on tablet, 48 on desktop; 1344 max content. */
+  .page-x {
+    @apply px-4 md:px-8 lg:px-12;
+  }
+  .page {
+    @apply mx-auto w-full max-w-content px-4 md:px-8 lg:px-12;
+  }
+  /* 12-column grid at desktop, 8 at tablet, 4 on mobile, with the token gutters. */
+  .grid-page {
+    @apply grid grid-cols-4 gap-x-3 md:grid-cols-8 md:gap-x-5 lg:grid-cols-12 lg:gap-x-6;
+  }
+  .link {
+    @apply underline decoration-line-strong underline-offset-4 transition-colors duration-fast hover:decoration-ink;
+  }
+  .eyebrow {
+    @apply type-label text-ink-3;
+  }
+  .skeleton {
+    @apply bg-sunken;
+    background-image: linear-gradient(90deg, transparent 0, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+    background-size: 400px 100%;
+    background-repeat: no-repeat;
+    @apply animate-shimmer reduced:animate-none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .sr-only-focusable:not(:focus) {
+    @apply sr-only;
+  }
+  /* The "to be written" block: content we do not have yet. Never invented. */
+  .tbw {
+    @apply rounded-xs border border-dashed border-warning bg-warning-bg p-5 text-ink;
+  }
+}
