@@ -1,0 +1,28 @@
+{
+  "name": "shaderpaper-commerce",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "backend:seed": "turbo seed --filter=@shaderpaper/backend",
+    "backend:dev": "turbo dev --filter=@shaderpaper/backend",
+    "storefront:dev": "turbo dev --filter=@shaderpaper/storefront",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "pnpm": {
+    "overrides": {
+      "vue": "3.5.40",
+      "vue-i18n": "11.4.7"
+    }
+  },
+  "devDependencies": {
+    "turbo": "^2.0.14"
+  }
+}

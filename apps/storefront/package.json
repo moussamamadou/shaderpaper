@@ -1,0 +1,47 @@
+{
+  "name": "@shaderpaper/storefront",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node scripts/copy-engine.mjs",
+    "dev": "nuxt dev --port 3000",
+    "prebuild": "node scripts/copy-engine.mjs",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "pretest": "node scripts/copy-engine.mjs",
+    "test": "vitest run",
+    "images": "node scripts/render-poster-images.mjs",
+    "postinstall": "nuxt prepare",
+    "e2e:crawl": "node e2e/crawl.mjs",
+    "e2e:flow": "node e2e/flow-desktop.mjs",
+    "e2e:flow:mobile": "node e2e/flow-mobile.mjs",
+    "e2e:account": "node e2e/account.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@medusajs/js-sdk": "2.17.2",
+    "@medusajs/types": "2.17.2",
+    "@nuxtjs/i18n": "10.4.1",
+    "@stripe/stripe-js": "9.10.0",
+    "@vueuse/nuxt": "14.3.0",
+    "lucide-vue-next": "1.0.0",
+    "nuxt": "4.5.0",
+    "reka-ui": "2.10.1",
+    "vue": "3.5.40",
+    "vue-i18n": "11.4.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@nuxtjs/tailwindcss": "6.14.0",
+    "@types/node": "22.15.3",
+    "@vue/compiler-sfc": "3.5.40",
+    "playwright-core": "1.56.1",
+    "tailwindcss": "~3.4.17",
+    "typescript": "5.9.3",
+    "vitest": "5.0.1",
+    "vue-tsc": "2.2.12"
+  }
+}
