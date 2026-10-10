@@ -19,7 +19,8 @@ const index = computed(() => CHECKOUT_STEPS.indexOf(props.current))
 <template>
   <nav :aria-label="$t('checkout.progress')">
     <ol class="flex items-center gap-2 md:gap-3" data-testid="checkout-stepper">
-      <li v-for="(s, i) in steps" :key="s.value" class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+      <!-- On phones only the current step shows its label, so that step takes its own width and the others share the rest. -->
+      <li v-for="(s, i) in steps" :key="s.value" :class="['flex min-w-0 flex-1 items-center gap-2 md:gap-3', s.value === current ? 'max-sm:flex-auto' : '']">
         <component
           :is="i < index && done[s.value] ? NuxtLink : 'span'"
           :to="i < index && done[s.value] ? { path: route.path, query: { step: s.value } } : undefined"

@@ -67,6 +67,12 @@ try {
   await page.locator('[data-testid="checkout-button"]').tap()
   await page.waitForURL(/\/checkout/)
   await hydrated()
+  await page.waitForSelector('[data-testid="checkout-stepper"] [aria-current="step"]', { timeout: 30000 })
+  const label = await page.evaluate(() => {
+    const el = document.querySelector('[data-testid="checkout-stepper"] [aria-current="step"] .truncate')
+    return el ? { text: el.textContent.trim(), cut: el.scrollWidth > el.clientWidth } : null
+  })
+  step('Checkout mobile: the current step label is not cut off', !!label && !label.cut, label)
   await page.click('[data-testid="submit-address"]')
   await page.waitForSelector('[data-testid="address-errors"]')
   step('Checkout mobile: empty submit errors', (await page.locator('[data-testid="address-errors"] li').count()) >= 5)
