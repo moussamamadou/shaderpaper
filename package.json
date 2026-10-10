@@ -1,0 +1,22 @@
+{
+  "name": "shaderpaper-commerce",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "backend:seed": "turbo seed --filter=@shaderpaper/backend",
+    "backend:dev": "turbo dev --filter=@shaderpaper/backend",
+    "storefront:dev": "turbo dev --filter=@shaderpaper/storefront",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.14"
+  }
+}

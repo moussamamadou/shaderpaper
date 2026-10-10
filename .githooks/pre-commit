@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Runs the checks of every app a commit touches, and refuses the commit at the
+# first failure (ported from MapAndSky). Enabled by `pnpm install` (root
+# `prepare` sets core.hooksPath). Never bypass it with --no-verify: fix the code.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+staged="$(git diff --cached --name-only --diff-filter=ACMRD)"
+[ -z "$staged" ] && exit 0
+
+touches() { grep -qE "$1" <<<"$staged"; }
+
+run() {
+  echo "pre-commit: $1"
+  shift
+  if ! "$@"; then
+    echo "pre-commit: failed, commit refused. Fix the cause and commit again." >&2
+    exit 1
+  fi
+}
+
+if touches '^apps/storefront/'; then
+  run "storefront tests" pnpm --filter @shaderpaper/storefront -s test
+  run "storefront types" pnpm --filter @shaderpaper/storefront -s typecheck
+fi
+
+if touches '^apps/print-renderer/'; then
+  run "print-renderer types" pnpm --filter @shaderpaper/print-renderer -s typecheck
+  run "print-renderer tests" pnpm --filter @shaderpaper/print-renderer -s test
+fi
+
+if touches '^apps/backend/'; then
+  run "backend unit tests" pnpm --filter @shaderpaper/backend -s test:unit
+fi
+
+exit 0
