@@ -3715,7 +3715,9 @@ function drawGroovyBloom(cv,seed){
 function drawContourDisc(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
-  const R0=M*0.4, cx=W/2, cy=H/2, n=9+R(seed,2)*5, fs=0.9+R(seed,3)*0.6, wk=1.2+R(seed,4)*1.6, duty=0.42+R(seed,5)*0.12;
+  /* knobs: scale, bands, warp, weight */
+  const R0=M*0.4, cx=W/2, cy=H/2, n=KNOB[1]==null?9+R(seed,2)*5:4+KV(1,0)*14, fs=KNOB[0]==null?0.9+R(seed,3)*0.6:1.85-KV(0,0)*1.35,
+    wk=KNOB[2]==null?1.2+R(seed,4)*1.6:0.2+KV(2,0)*3.0, duty=KNOB[3]==null?0.42+R(seed,5)*0.12:0.28+KV(3,0)*0.48;
   paintPixels(c,W,H,(x,y)=>{
     const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+5.2,v+1.3,seed);
     const g=fbm(u+wk*qx,v+wk*qy,seed+3)*n;
@@ -3723,6 +3725,11 @@ function drawContourDisc(cv,seed){
   });
   noteStrategy(cv,nm);
 }
+knobs('cdisc',[
+  {n:'Scale',lo:'small',hi:'large',d:0.5},
+  {n:'Bands',lo:'few',hi:'many',d:0.45},
+  {n:'Warp',lo:'calm',hi:'swirling',d:0.45},
+  {n:'Weight',lo:'light',hi:'heavy',d:0.45}]);
 
 /* Strand disc — a centred circle filled with evenly spaced strands that
    flow around three to six singular points (sources, sinks and swirls), so
@@ -3731,19 +3738,25 @@ function drawStrandDisc(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1);
   c.fillStyle=paper; c.fillRect(0,0,W,H);
-  const R0=M*0.41, cx=W/2, cy=H/2, n=3+Math.floor(R(seed,2)*4), pts=[];
+  /* knobs: points, swirl (sources → vortices), density, weight */
+  const R0=M*0.41, cx=W/2, cy=H/2, n=KNOB[0]==null?3+Math.floor(R(seed,2)*4):2+Math.floor(KV(0,0)*7), pts=[];
   for(let k=0;k<n;k++){
-    pts.push([W*(0.12+0.76*R(seed,10+k)),H*(0.12+0.76*R(seed,20+k)),(R(seed,30+k)-0.5)*3.0,R(seed,40+k)<0.5?1:-1]); }
+    pts.push([W*(0.12+0.76*R(seed,10+k)),H*(0.12+0.76*R(seed,20+k)),KNOB[1]==null?(R(seed,30+k)-0.5)*3.0:(R(seed,30+k)<0.5?-1:1)*KV(1,0)*1.5708,R(seed,40+k)<0.5?1:-1]); }
   const dir=(x,y)=>{ let vx=0,vy=0;
     for(const [px,py,al,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.002, ca=Math.cos(al), sa=Math.sin(al);
       vx+=sg*(dx*ca-dy*sa)/d2; vy+=sg*(dx*sa+dy*ca)/d2; }
     const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l]; };
   const inside=(x,y)=>x>-2&&y>-2&&x<W+2&&y<H+2;
-  const lines=streamlines(W,H,seed,M*(0.0105+R(seed,3)*0.004),dir,inside,900);
-  c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=M*0.0042;
+  const sep=KNOB[2]==null?M*(0.0105+R(seed,3)*0.004):M*(0.024-KV(2,0)*0.0125), lines=streamlines(W,H,seed,sep,dir,inside,900);
+  c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=KNOB[3]==null?M*0.0042:sep*(0.3+KV(3,0)*0.4);
   for(const L of lines){ c.beginPath(); c.moveTo(L[0][0],L[0][1]); for(const q of L) c.lineTo(q[0],q[1]); c.stroke(); }
   noteStrategy(cv,n+' singular points · '+nm);
 }
+knobs('sdisc',[
+  {n:'Points',lo:'few',hi:'many',d:0.3},
+  {n:'Swirl',lo:'radiating',hi:'whirling',d:0.5},
+  {n:'Density',lo:'open',hi:'dense',d:0.55},
+  {n:'Weight',lo:'fine',hi:'bold',d:0.4}]);
 
 /* Turing tree — a tree drawn only with wobbly ink stripes, the way
    reaction–diffusion labyrinths look: horizontal bands for the ground, a
@@ -3755,7 +3768,9 @@ function drawTuringTree(cv,seed){
   const [paper,ink,nm]=posterInk(seed,1);
   c.fillStyle=paper; c.fillRect(0,0,W,H);
   const mg=M*0.08, x0=mg, x1=W-mg, y0=mg, y1=H-mg, cx=W/2;
-  const ty=y0+(y1-y0)*(0.52+R(seed,2)*0.08), tw=(x1-x0)*(0.035+R(seed,3)*0.02), fy=ty+(y1-ty)*0.25;
+  /* knobs: canopy height, stripes, breaks, weight */
+  const ty=y0+(y1-y0)*(KNOB[0]==null?0.52+R(seed,2)*0.08:0.38+KV(0,0)*0.34), tw=(x1-x0)*(0.035+R(seed,3)*0.02), fy=ty+(y1-ty)*0.25;
+  const Lm=KNOB[2]==null?1:Math.pow(3.5,1-2*KV(2,0)), lw0=KNOB[3]==null?0.42:0.32+KV(3,0)*0.4;
   const dir=(x,y)=>{
     if(y>ty-tw && Math.abs(x-cx)<tw*(1+Math.max(0,(ty-y)/tw)*0.0)) return [0,1];
     if(y>ty){ const w=Math.exp(-Math.pow((x-cx)/(tw*2.2),2)); const vx=1-w, vy=w*0.8; const l=Math.hypot(vx,vy); return [vx/l,vy/l]; }
@@ -3764,21 +3779,26 @@ function drawTuringTree(cv,seed){
     return [dx/l*Math.cos(bend)-dy/l*Math.sin(bend), dx/l*Math.sin(bend)+dy/l*Math.cos(bend)];
   };
   const inside=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;
-  const sep=M*(0.017+R(seed,4)*0.006);
+  const sep=KNOB[1]==null?M*(0.017+R(seed,4)*0.006):M*(0.032-KV(1,0)*0.016);
   const lines=streamlines(W,H,seed,sep,dir,inside,400);
   c.strokeStyle=ink; c.lineCap='round'; c.lineJoin='round';
   lines.forEach((L,li)=>{
     /* break each stripe into wobbly dashes */
-    let seg=[], acc=0, cut=sep*(3+R(seed,500+li)*10);
-    const flush=()=>{ if(seg.length>1){ c.lineWidth=sep*(0.42+0.12*R(seed,700+li)); c.beginPath(); c.moveTo(seg[0][0],seg[0][1]); seg.forEach(q=>c.lineTo(q[0],q[1])); c.stroke(); } seg=[]; };
+    let seg=[], acc=0, cut=sep*(3+R(seed,500+li)*10)*Lm;
+    const flush=()=>{ if(seg.length>1){ c.lineWidth=sep*(lw0+0.12*R(seed,700+li)); c.beginPath(); c.moveTo(seg[0][0],seg[0][1]); seg.forEach(q=>c.lineTo(q[0],q[1])); c.stroke(); } seg=[]; };
     for(let i=0;i<L.length;i++){ const q=L[i], p=L[Math.max(0,i-1)], nx=-(q[1]-p[1]), ny=q[0]-p[0], nl=Math.hypot(nx,ny)||1;
       const wob=Math.sin(i*0.9+li)*sep*0.09;
       seg.push([q[0]+nx/nl*wob,q[1]+ny/nl*wob]); acc+=Math.hypot(q[0]-p[0],q[1]-p[1]);
-      if(acc>cut){ flush(); acc=0; cut=sep*(3+R(seed,900+li*7+i)*10); i+=1; } }
+      if(acc>cut){ flush(); acc=0; cut=sep*(3+R(seed,900+li*7+i)*10)*Lm; i+=1; } }
     flush();
   });
   noteStrategy(cv,nm);
 }
+knobs('ttree',[
+  {n:'Canopy',lo:'short',hi:'tall',d:0.5},
+  {n:'Stripes',lo:'few',hi:'many',d:0.65},
+  {n:'Breaks',lo:'few',hi:'many',d:0.5},
+  {n:'Weight',lo:'thin',hi:'bold',d:0.3}]);
 
 /* Line dunes — four to six ridges from the top of the sheet to the bottom,
    each drawn as a bundle of contour lines that follow its crest and spread
@@ -3787,9 +3807,11 @@ function drawLineDunes(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1);
   c.fillStyle=paper; c.fillRect(0,0,W,H);
-  const n=3+Math.floor(R(seed,2)*2), lw=M*0.0055, gap=M*(0.016+R(seed,3)*0.006);
+  /* knobs: ridges, lines, height, weight */
+  const n=KNOB[0]==null?3+Math.floor(R(seed,2)*2):2+Math.floor(KV(0,0)*5), gap=KNOB[1]==null?M*(0.016+R(seed,3)*0.006):M*(0.034-KV(1,0)*0.019),
+    lw=KNOB[3]==null?M*0.0055:gap*(0.2+KV(3,0)*0.35), hm=KNOB[2]==null?1:0.25+KV(2,0)*2.25;
   for(let k=0;k<n;k++){
-    const base=H*(-0.02+0.92*k/(n-0.5)), amp=H*(0.06+R(seed,10+k)*0.08);
+    const base=H*(-0.02+0.92*k/(n-0.5)), amp=H*(0.06+R(seed,10+k)*0.08)*hm;
     const f1=0.6+R(seed,20+k)*1.2, p1=R(seed,30+k)*6.283, sk=0.4+R(seed,40+k)*0.5;
     const crest=x=>{ const u=x/W*f1*6.283+p1, s=Math.sin(u)+sk*Math.sin(2*u+0.8); return base-amp*(0.5+0.5*s/(1+sk)); };
     const xs=[]; for(let i=0;i<=160;i++) xs.push(-2+i/160*(W+4));
@@ -3807,6 +3829,11 @@ function drawLineDunes(cv,seed){
   }
   noteStrategy(cv,n+' ridges · '+nm);
 }
+knobs('dunes',[
+  {n:'Ridges',lo:'few',hi:'many',d:0.3},
+  {n:'Lines',lo:'open',hi:'dense',d:0.65},
+  {n:'Height',lo:'flat',hi:'peaked',d:0.35},
+  {n:'Weight',lo:'fine',hi:'bold',d:0.25}]);
 
 /* Lava blobs — a slow, warped noise field cut into iso-bands: two dark
    tones for the bands, a light gutter between them, so the sheet reads as
@@ -3815,7 +3842,9 @@ function drawLavaBlobs(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const sets=[['#9ad0ee','#3a2418','#1d120c'],['#f3e6d6','#c2452c','#7a1f1f'],['#eef0a0','#151c33','#1f2a4a'],['#f6d2b0','#5f6a2c','#3a4220']];
   const S=sets[Math.floor(R(seed,1)*sets.length)].map(h=>hexRGB(POSTER_VIVID?vivid(h,VIVID):h));
-  const fs=1.0+R(seed,2)*0.8, k=2.4+R(seed,3)*1.6, gw=0.16+R(seed,4)*0.08, wk=1.0+R(seed,5)*1.2;
+  /* knobs: scale, bands, warp, gutter */
+  const fs=KNOB[0]==null?1.0+R(seed,2)*0.8:2.3-KV(0,0)*1.3, k=(KNOB[1]==null?2.4+R(seed,3)*1.6:1.2+KV(1,0)*4.4)*(KNOB[0]==null?1:Math.sqrt(1.4/fs)),
+    gw=KNOB[3]==null?0.16+R(seed,4)*0.08:0.1+KV(3,0)*0.3, wk=KNOB[2]==null?1.0+R(seed,5)*1.2:0.2+KV(2,0)*3.0;
   paintPixels(c,W,H,(x,y)=>{
     const u=x/M*fs, v=y/M*fs, qx=fbm(u,v,seed), qy=fbm(u+3.1,v+7.7,seed);
     const g=fbm(u+wk*qx,v+wk*qy,seed+9)*k*2, f=g-Math.floor(g), b=Math.floor(g);
@@ -3824,6 +3853,11 @@ function drawLavaBlobs(cv,seed){
   });
   noteStrategy(cv,'lava');
 }
+knobs('lava',[
+  {n:'Scale',lo:'small',hi:'large',d:0.55},
+  {n:'Bands',lo:'few',hi:'many',d:0.55},
+  {n:'Warp',lo:'calm',hi:'swirling',d:0.4},
+  {n:'Gutter',lo:'thin',hi:'wide',d:0.35}]);
 
 /* Mesh gradient — Fragments' warped-coordinate gradient with a procedural
    cosine palette (a + b·cos 2π(c·t + d)), and on half the seeds the sheet is
@@ -4097,24 +4131,30 @@ function drawMazeStripes(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
   const rects=[[0,0,W,H]];
-  const n=3+Math.floor(R(seed,2)*4);
+  /* knobs: shape (mixed / U / L / boxes), blocks, stripes, wobble */
+  const shp=KNOB[0]==null?0:Math.floor(KV(0,0)*4), n=KNOB[1]==null?3+Math.floor(R(seed,2)*4):1+Math.floor(KV(1,0)*8);
   for(let k=0;k<n-1;k++){
     rects.sort((a,b)=>b[2]*b[3]-a[2]*a[3]); const [x,y,w,h]=rects.shift();
     const t=0.35+R(seed,10+k)*0.3;
     if(w>h){ const a=Math.round(w*t); rects.push([x,y,a,h],[x+a,y,w-a,h]); }
     else { const a=Math.round(h*t); rects.push([x,y,w,a],[x,y+a,w,h-a]); }
   }
-  const sw=M*(0.024+R(seed,3)*0.012), open=rects.map((_,i)=>Math.floor(R(seed,40+i)*5)); /* 4 = closed */
-  const wob=M*0.004;
+  const sw=KNOB[2]==null?M*(0.024+R(seed,3)*0.012):M*(0.052-KV(2,0)*0.032), open=rects.map((_,i)=>shp===3?4:Math.floor(R(seed,40+i)*(shp?4:5))+(shp===2?5:0)); /* 4 = closed, 5+ = L corner */
+  const wob=KNOB[3]==null?M*0.004:M*KV(3,0)*0.02;
   paintPixels(c,W,H,(px,py)=>{
     let ri=0; for(let i=0;i<rects.length;i++){ const [x,y,w,h]=rects[i]; if(px>=x&&px<x+w&&py>=y&&py<y+h){ ri=i; break; } }
     const [x,y,w,h]=rects[ri], o=open[ri];
-    const ds=[px-x, x+w-px, py-y, y+h-py]; if(o<4) ds[o]=1e9;
+    const ds=[px-x, x+w-px, py-y, y+h-py]; if(o<4) ds[o]=1e9; else if(o>4){ ds[(o-5)>>1]=1e9; ds[2+((o-5)&1)]=1e9; }
     let d=Math.max(0,Math.min(...ds)+(noise2(px/M*14,py/M*14,seed)-0.5)*wob*2);
     return Math.floor(d/sw)%2?Pp:Pi;
   });
   noteStrategy(cv,rects.length+' blocks · '+nm);
 }
+knobs('maze',[
+  {n:'Shape',opts:['Mixed','U','L','Boxes'],steps:4,d:0},
+  {n:'Blocks',lo:'one',hi:'many',d:0.35},
+  {n:'Stripes',lo:'few',hi:'many',d:0.65},
+  {n:'Wobble',lo:'crisp',hi:'wavy',d:0.2}]);
 
 /* Fingerprint — thick paper stripes on an ink ground, evenly spaced and
    flowing around a few whorls and deltas, the way a fingerprint or a
@@ -4123,34 +4163,48 @@ function drawFingerprint(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1);
   c.fillStyle=ink; c.fillRect(0,0,W,H);
-  const n=2+Math.floor(R(seed,2)*3), pts=[];
+  /* knobs: whorls, swirl (whorl pull over the drift), ridges, weight */
+  const n=KNOB[0]==null?2+Math.floor(R(seed,2)*3):1+Math.floor(KV(0,0)*6), pts=[], pull=KNOB[1]==null?0.3:0.02*Math.pow(30,KV(1,0));
   for(let k=0;k<n;k++) pts.push([W*(0.15+0.7*R(seed,10+k)),H*(0.15+0.7*R(seed,20+k)),R(seed,30+k)<0.5?1:-1]);
   const dir=(x,y)=>{ const a0=(fbm(x/M*0.9,y/M*0.9,seed)-0.5)*3; let vx=Math.cos(a0)*0.4, vy=Math.sin(a0)*0.4;
-    for(const [px,py,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.004; vx+=sg*-dy/d2*M*0.3; vy+=sg*dx/d2*M*0.3; }
+    for(const [px,py,sg] of pts){ const dx=x-px, dy=y-py, d2=dx*dx+dy*dy+M*M*0.004; vx+=sg*-dy/d2*M*pull; vy+=sg*dx/d2*M*pull; }
     const l=Math.hypot(vx,vy)||1; return [vx/l,vy/l]; };
-  const sep=M*(0.019+R(seed,3)*0.006);
+  const sep=KNOB[2]==null?M*(0.019+R(seed,3)*0.006):M*(0.042-KV(2,0)*0.025);
   const lines=streamlines(W,H,seed,sep,dir,(x,y)=>x>-sep&&y>-sep&&x<W+sep&&y<H+sep,1200);
-  c.strokeStyle=paper; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=sep*0.46;
+  c.strokeStyle=paper; c.lineCap='round'; c.lineJoin='round'; c.lineWidth=sep*(KNOB[3]==null?0.46:0.25+KV(3,0)*0.45);
   for(const L of lines){ c.beginPath(); c.moveTo(L[0][0],L[0][1]); for(const q of L) c.lineTo(q[0],q[1]); c.stroke(); }
   noteStrategy(cv,n+' whorls · '+nm);
 }
+knobs('fprint',[
+  {n:'Whorls',lo:'one',hi:'many',d:0.3},
+  {n:'Swirl',lo:'wavy',hi:'whorled',d:0.75},
+  {n:'Ridges',lo:'few',hi:'many',d:0.7},
+  {n:'Weight',lo:'thin',hi:'bold',d:0.47}]);
 
 /* Cell net — a dense Voronoi field: ink cells separated by a paper net with
    rounded joints, slightly warped so the cells look organic. Edge to edge. */
 function drawCellNet2(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,M=Math.min(W,H);
   const [paper,ink,nm]=posterInk(seed,1), Pp=hexRGB(paper), Pi=hexRGB(ink);
-  const sc=(14+R(seed,2)*12)/M, gw=0.13+R(seed,3)*0.09;
+  /* knobs: order (random → honeycomb), cells, warp, net */
+  const sc=KNOB[1]==null?(14+R(seed,2)*12)/M:(6+KV(1,0)*24)/M, gw=KNOB[3]==null?0.13+R(seed,3)*0.09:0.07+KV(3,0)*0.31;
+  const J=KNOB[0]==null?1:1-KV(0,0), wa=KNOB[2]==null?1.2:KV(2,0)*2.4*Math.min(1,sc*M/16);   /* big cells warp less, so the net never folds */
   const h2=(i,j)=>{ const a=Math.sin(i*127.1+j*311.7+seed*1.3)*43758.5453, b=Math.sin(i*269.5+j*183.3+seed*2.1)*43758.5453; return [a-Math.floor(a),b-Math.floor(b)]; };
   paintPixels(c,W,H,(x,y)=>{
-    let u=x*sc+(noise2(x/M*3,y/M*3,seed)-0.5)*1.2, v=y*sc+(noise2(x/M*3+7,y/M*3,seed)-0.5)*1.2;
+    let u=x*sc+(noise2(x/M*3,y/M*3,seed)-0.5)*wa, v=y*sc+(noise2(x/M*3+7,y/M*3,seed)-0.5)*wa;
     const iu=Math.floor(u), iv=Math.floor(v); let f1=9,f2=9;
-    for(let j=-1;j<=1;j++) for(let i=-1;i<=1;i++){ const o=h2(iu+i,iv+j), dx=iu+i+0.15+o[0]*0.7-u, dy=iv+j+0.15+o[1]*0.7-v, d=Math.hypot(dx,dy);
+    for(let j=-1;j<=1;j++) for(let i=-1;i<=1;i++){ const o=h2(iu+i,iv+j), hx=0.25+0.5*((iv+j)&1);
+      const dx=iu+i+(J===1?0.15+o[0]*0.7:hx+(0.15+o[0]*0.7-hx)*J)-u, dy=iv+j+(J===1?0.15+o[1]*0.7:0.5+(0.15+o[1]*0.7-0.5)*J)-v, d=Math.hypot(dx,dy);
       if(d<f1){ f2=f1; f1=d; } else if(d<f2) f2=d; }
     return f2-f1<gw?Pp:Pi;
   });
   noteStrategy(cv,nm);
 }
+knobs('cellnet2',[
+  {n:'Order',lo:'random',hi:'honeycomb',d:0.2},
+  {n:'Cells',lo:'few',hi:'many',d:0.4},
+  {n:'Warp',lo:'straight',hi:'organic',d:0.5},
+  {n:'Net',lo:'fine',hi:'thick',d:0.35}]);
 
 /* Gradients — the colour-field register: no form at all, only colour moving.
    Sky gradients run vertically through four stops in perceptual space with
@@ -4171,18 +4225,27 @@ function gradRGB(stops,t){ t=Math.max(0,Math.min(0.99999,t))*(stops.length-1); c
   const g=f*f*(3-2*f); return [a[0]+(b[0]-a[0])*g,a[1]+(b[1]-a[1])*g,a[2]+(b[2]-a[2])*g]; }
 function drawSkyGradient(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
-  const mode=Math.floor(R(seed,1)*3), [nm,st]=famPick(SKIES,'skies',R(seed,2)), i1=SKIES.findIndex(e=>e[1]===st);
+  const mode=Math.floor(KV(0,R(seed,1))*3), [nm,st0]=famPick(SKIES,'skies',R(seed,2)), i1=SKIES.findIndex(e=>e[1]===st0);
+  /* knobs: layout, horizon (bends the ramp low or high), drift, order (ramp forwards or reversed) */
+  const kn=KNOB[1]!=null||KNOB[2]!=null||KNOB[3]!=null, g=Math.pow(2.6,1-2*KV(1,0.5)), dr=KV(2,0)*0.4, st=KV(3,0)>=0.5?st0.slice().reverse():st0;
+  const gm=kn?t=>Math.pow(Math.max(0,Math.min(1,t)),g):t=>t, dz=(x,y,a)=>(noise2(x/W*1.5,y/H*1.5,seed)-0.5)*a;
   if(mode===0){ const tilt=(R(seed,3)-0.5)*0.15;
-    paintPixels(c,W,H,(x,y)=>gradRGB(st,y/H+tilt*(x/W-0.5)+(noise2(x/W*1.5,y/H*1.5,seed)-0.5)*0.08)); }
+    paintPixels(c,W,H,(x,y)=>gradRGB(st,gm(y/H)+tilt*(x/W-0.5)+dz(x,y,kn?dr:0.08))); }
   else if(mode===1){ const n=11+Math.floor(R(seed,4)*5), s2=[st[0],st[st.length-1]], dirn=R(seed,5)<0.5;
-    for(let i=0;i<n;i++){ const q=gradRGB(s2,dirn?i/(n-1):1-i/(n-1)); c.fillStyle=`rgb(${q[0]|0},${q[1]|0},${q[2]|0})`; c.fillRect(Math.floor(i*W/n),0,Math.ceil(W/n)+1,H); } }
+    if(kn) paintPixels(c,W,H,(x,y)=>{ const i=Math.max(0,Math.min(n-1,Math.floor((x/W+dz(x,y,dr*0.5))*n))); return gradRGB(s2,gm(i/(n-1))); });
+    else for(let i=0;i<n;i++){ const q=gradRGB(s2,dirn?i/(n-1):1-i/(n-1)); c.fillStyle=`rgb(${q[0]|0},${q[1]|0},${q[2]|0})`; c.fillRect(Math.floor(i*W/n),0,Math.ceil(W/n)+1,H); } }
   else { const [,st2]=SKIES[(i1+1+Math.floor(R(seed,6)*(SKIES.length-1)))%SKIES.length];
-    const mx=W*0.12, my=H*0.1, inv=R(seed,7)<0.5;
-    paintPixels(c,W,H,(x,y)=>{ const inside=x>mx&&x<W-mx&&y>my&&y<H-my;
-      if(inside) return gradRGB(st,(y-my)/(H-2*my));
-      const t=y/H; return gradRGB(inv?st.slice().reverse():st2,t); }); }
+    const mx=W*0.12, my=H*0.1, inv=R(seed,7)<0.5, so=inv?st.slice().reverse():st!==st0?st2.slice().reverse():st2;
+    paintPixels(c,W,H,(x,y)=>{ const inside=x>mx&&x<W-mx&&y>my&&y<H-my, z=kn?dz(x,y,dr):0;
+      if(inside) return gradRGB(st,gm((y-my)/(H-2*my))+z);
+      const t=y/H; return gradRGB(so,gm(t)+z); }); }
   noteStrategy(cv,['sky','stepped','framed'][mode]+' · '+nm);
 }
+knobs('sky',[
+  {n:'Layout',opts:['Sky','Columns','Framed'],steps:3,d:0},
+  {n:'Horizon',lo:'low',hi:'high',d:0.5},
+  {n:'Drift',lo:'still',hi:'flowing',d:0.2},
+  {n:'Order',opts:['Normal','Reversed'],steps:2,d:0}]);
 
 /* Bauhaus tiles — a square grid, each cell one primitive (quarter disc, half
    disc, disc, triangle, plain) in a three- or four-colour set. Quarter discs
