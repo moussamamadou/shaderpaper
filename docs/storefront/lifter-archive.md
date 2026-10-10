@@ -5,10 +5,19 @@
 **How it was archived.** In Figma, non-destructively:
 
 - The only page, `0:1` "Style probes — one app per row", was renamed `99 — Archive · Lifter style probes (archived 2026-10-10)` and moved to the end of the page list.
-- One note was added above its content saying what happened. No existing node was moved, edited or deleted.
+- One note (text node `17:2`) was added above its content saying what happened. No existing node was moved, edited or deleted.
 - Recovery: rename the page back. All ten rows (Flighty, Duolingo, Cash App, Oura, Stoic, Opal, Weather, GOAT, Vestiaire Collective, Tolan) with their 100 screens and captions are intact.
 - Figma's version history also holds the pre-archive state of the file.
 
 **What replaced it.** New pages in the same file hold the ShaderPaper storefront design (00 Cover, 01 Foundations, 02 Components, 10 Pages · Desktop, 11 Pages · Mobile, 12 States, 20 References). They are separate from the archived page and do not reuse any Lifter component.
 
-The node counts before and after, and the page ids, are filled in below once the Figma step reports back.
+## Record (read back from Figma on 2026-10-10)
+
+| | Before | After |
+|---|---|---|
+| Archive page | `0:1` "Style probes — one app per row", first page | `0:1` "99 — Archive · Lifter style probes (archived 2026-10-10)", last page |
+| Top-level nodes on it | 242 | 243 (the one added node is the archive note, text node `17:2` at 0, −200) |
+| All nodes on it | 5,370 | 5,371 |
+| 360 × 780 phone screens | 100 | 100 |
+
+New pages: `17:3` 00 — Cover, `17:4` 01 — Foundations, `17:5` 02 — Components, `17:6` 10 — Pages · Desktop, `17:7` 11 — Pages · Mobile, `17:8` 12 — States, `17:9` 20 — References.

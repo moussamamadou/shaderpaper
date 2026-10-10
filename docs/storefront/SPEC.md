@@ -51,7 +51,7 @@ Tokens: [`tokens.json`](tokens.json). Summary:
 - **Type:** Geist (display, headings, body) and Geist Mono (labels, captions, prices in tables). Labels are mono caps at 12/16, tracking 6%.
 - **Shape:** posters and media are square-cornered with the `poster` shadow; buttons and inputs 2 px radius; chips, swatches and tags are pills.
 - **Grid:** desktop 1440 (12 col, margin 48, gutter 24), tablet 834 (8 col), mobile 390 (4 col, margin 16, gutter 12). Max content 1344.
-- **Accessibility:** text contrast ≥ 4.5:1 (ink-3 on paper is 4.97:1), visible focus ring (`shadow.focus`), hit targets ≥ 44 px on mobile, every control labelled.
+- **Accessibility:** text contrast ≥ 4.5:1 (ink-3 is 4.95:1 on paper, 4.53:1 on sunken, 5.48:1 on surface), visible focus ring (`shadow.focus`), hit targets ≥ 44 px on mobile, every control labelled.
 
 ### Components (Figma component sets → Vue components)
 
