@@ -1,0 +1,1991 @@
+[
+  {
+    "id": "cells",
+    "name": "Cut Cells",
+    "blurb": "A sheet of ink cut apart by cream channels: a handful of big rounded masses, a field of organic cells graded from small to large, or a laid stone wall. One shared warp moves every edge, so the gutters stay even and the cut looks made by hand.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 0,
+    "knobs": [
+      {
+        "n": "Cut",
+        "opts": [
+          "Masses",
+          "Cells",
+          "Wall"
+        ],
+        "steps": 3,
+        "d": 0.5
+      },
+      {
+        "n": "Count",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.5
+      },
+      {
+        "n": "Roundness",
+        "lo": "sharp",
+        "hi": "pebbled",
+        "d": 0.5
+      },
+      {
+        "n": "Gutter",
+        "lo": "fine",
+        "hi": "wide",
+        "d": 0.55
+      }
+    ]
+  },
+  {
+    "id": "invert",
+    "name": "Inversion",
+    "blurb": "A dividing S-curve, a chain of blobs and a looping tube, all filled as one even-odd shape. Wherever two forms overlap the colour flips, so figure and ground keep trading places across the sheet.",
+    "category": "organic",
+    "strength": "b",
+    "order": 1,
+    "knobs": [
+      {
+        "n": "Split",
+        "opts": [
+          "Vertical",
+          "Horizontal"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Blobs",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Swing",
+        "lo": "calm",
+        "hi": "wild",
+        "d": 0.5
+      },
+      {
+        "n": "Size",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "ribbons",
+    "name": "Twisted Ribbons",
+    "blurb": "Wide brush ribbons running edge to edge. Width follows the twist of the ribbon, narrowing to an edge and opening again; ink is laid in multiply so crossings go darker, with paper streaks inside for the bristle drag.",
+    "category": "organic",
+    "strength": "n",
+    "order": 2,
+    "knobs": [
+      {
+        "n": "Direction",
+        "opts": [
+          "Across",
+          "Down"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Ribbons",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Twist",
+        "lo": "slow",
+        "hi": "tight",
+        "d": 0.35
+      },
+      {
+        "n": "Width",
+        "lo": "slim",
+        "hi": "broad",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "strands",
+    "name": "Strand Bundle",
+    "blurb": "A sheaf of strands entering from one edge, gathered into a tight waist and splayed out to the top and bottom. Thick at the ends, thin at the waist, and shuffled on the way through so they cross where they are tightest.",
+    "category": "lines",
+    "strength": "n",
+    "order": 3,
+    "knobs": [
+      {
+        "n": "Side",
+        "opts": [
+          "Left",
+          "Right"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Strands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Waist",
+        "lo": "tight",
+        "hi": "open",
+        "d": 0.3
+      },
+      {
+        "n": "Weight",
+        "lo": "fine",
+        "hi": "bold",
+        "d": 0.3
+      }
+    ]
+  },
+  {
+    "id": "warp",
+    "name": "Warp Stripes",
+    "blurb": "Parallel stripes pushed by a few smooth bumps, or turned by a slow angle field. Stripe edges are computed per pixel, so they stay crisp however tightly they are squeezed, and the stripe weight drifts until some of them swell into solid ink.",
+    "category": "lines",
+    "strength": "b",
+    "order": 4,
+    "knobs": [
+      {
+        "n": "Style",
+        "opts": [
+          "Bumps",
+          "Flow"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Stripes",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.5
+      },
+      {
+        "n": "Warp",
+        "lo": "gentle",
+        "hi": "strong",
+        "d": 0.5
+      },
+      {
+        "n": "Weight",
+        "lo": "light",
+        "hi": "heavy",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "waves",
+    "name": "Wave Bands",
+    "blurb": "Stacked bands whose edges are all the same wave at a shifted phase. Either a few wide bands in a four- or five-tone palette, or many thin two-colour bands bulging through a single swell.",
+    "category": "lines",
+    "strength": "v",
+    "order": 5,
+    "knobs": [
+      {
+        "n": "Style",
+        "opts": [
+          "Op-art",
+          "Tones"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Bands",
+        "lo": "fewer",
+        "hi": "more",
+        "d": 0.5
+      },
+      {
+        "n": "Waves",
+        "lo": "calm",
+        "hi": "rough",
+        "d": 0.6
+      },
+      {
+        "n": "Swell",
+        "lo": "flat",
+        "hi": "bulging",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "tiles",
+    "name": "Bauhaus Tiles",
+    "blurb": "A square grid, each cell one primitive — quarter disc, half disc, disc, triangle, half block — in a four- or five-colour set placed by a colour field rather than at random. A few 2&times;2 blocks share one large circle, which is what turns a tile sheet into a composition.",
+    "category": "geo",
+    "strength": "b",
+    "order": 6,
+    "knobs": [
+      {
+        "n": "Grid",
+        "lo": "coarse",
+        "hi": "fine",
+        "d": 0.25
+      },
+      {
+        "n": "Circles",
+        "lo": "none",
+        "hi": "many",
+        "d": 0.5
+      },
+      {
+        "n": "Curves",
+        "lo": "angular",
+        "hi": "round",
+        "d": 0.7
+      },
+      {
+        "n": "Fill",
+        "lo": "open",
+        "hi": "full",
+        "d": 0.8
+      }
+    ]
+  },
+  {
+    "id": "horizon",
+    "name": "Horizon",
+    "blurb": "A landscape reduced to stacked ridges that fill the whole sheet: five to eight wave bands from just under the top edge to the bottom, each shaded from its crest, the whole stack running light to deep through one colour gradient. No sun; the bands are the composition.",
+    "category": "light",
+    "strength": "b",
+    "order": 7,
+    "knobs": [
+      {
+        "n": "Ridges",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.35
+      },
+      {
+        "n": "Height",
+        "lo": "low",
+        "hi": "towering",
+        "d": 0.5
+      },
+      {
+        "n": "Terrain",
+        "lo": "rolling",
+        "hi": "choppy",
+        "d": 0.5
+      },
+      {
+        "n": "Shade",
+        "lo": "flat",
+        "hi": "deep",
+        "d": 0.42
+      }
+    ]
+  },
+  {
+    "id": "rhythm",
+    "name": "Disc Rhythm",
+    "blurb": "Concentric rings, each split along one diameter into two colours, with the split turning from ring to ring. Always one disc, centred on the sheet; the variation lives inside it.",
+    "category": "geo",
+    "strength": "b",
+    "order": 8,
+    "knobs": [
+      {
+        "n": "Split",
+        "opts": [
+          "Halves",
+          "Thirds",
+          "Quarters"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Rings",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Turn",
+        "lo": "still",
+        "hi": "spinning",
+        "d": 0.4
+      },
+      {
+        "n": "Scale",
+        "lo": "compact",
+        "hi": "full",
+        "d": 0.85
+      }
+    ]
+  },
+  {
+    "id": "stones",
+    "name": "Stacked Stones",
+    "blurb": "Rounded pebbles balanced on one axis, widest at the bottom, each resting on the one below, with one large disc behind the stack in a contrasting colour.",
+    "category": "geo",
+    "strength": "b",
+    "order": 9,
+    "knobs": [
+      {
+        "n": "Stones",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Scale",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.6
+      },
+      {
+        "n": "Shape",
+        "lo": "boxy",
+        "hi": "round",
+        "d": 0.7
+      },
+      {
+        "n": "Disc",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "truchet",
+    "name": "Truchet Fields",
+    "blurb": "Smith tiles drawn as filled regions, not lines: two quarter discs per tile, colours swapped with the checkerboard parity, so the regions join across tiles into one continuous two-colour figure. Orientation follows smooth noise, which grows large coherent shapes instead of static.",
+    "category": "pattern",
+    "strength": "v",
+    "order": 10,
+    "knobs": [
+      {
+        "n": "Tiles",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Pattern",
+        "lo": "regular",
+        "hi": "random",
+        "d": 0.5
+      },
+      {
+        "n": "Shape",
+        "lo": "pointed",
+        "hi": "boxy",
+        "d": 0.5
+      },
+      {
+        "n": "Stripes",
+        "opts": [
+          "Solid",
+          "Two",
+          "Three",
+          "Four"
+        ],
+        "steps": 4,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "pstar",
+    "name": "Penrose Star",
+    "blurb": "The aperiodic rhombus tiling from the Geometric tab, grown from its five-fold centre placed on the middle of the sheet. Tiles are coloured by type and by concentric ring, so the star carries at poster distance, with paper gutters instead of ink hairlines.",
+    "category": "geo",
+    "strength": "b",
+    "order": 11,
+    "knobs": [
+      {
+        "n": "Tiles",
+        "lo": "large",
+        "hi": "small",
+        "d": 0.25
+      },
+      {
+        "n": "Rings",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Centre",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.5
+      },
+      {
+        "n": "Gutter",
+        "lo": "fine",
+        "hi": "wide",
+        "d": 0.25
+      }
+    ]
+  },
+  {
+    "id": "dfield",
+    "name": "Distance Field",
+    "blurb": "The signed distance to one, two or three circles on the sheet's axes, merged with a smooth minimum and drawn as contour bands. The shapes are solid ink; the bands spread from them to every edge, so where two shapes meet the rings fuse into one figure.",
+    "category": "lines",
+    "strength": "b",
+    "order": 12,
+    "knobs": [
+      {
+        "n": "Layout",
+        "opts": [
+          "Single",
+          "Pair",
+          "Stack"
+        ],
+        "steps": 3,
+        "d": 0.5
+      },
+      {
+        "n": "Shape",
+        "opts": [
+          "Circle",
+          "Square",
+          "Diamond"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Size",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.47
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.45
+      }
+    ]
+  },
+  {
+    "id": "flowp",
+    "name": "Flow Field",
+    "blurb": "Evenly spaced streamlines through a noise field, in a gradient across the sheet. Most seeds add a vortex at the centre that fades toward the edges, so the strands wheel around one point and comb out into the corners. After Radiant’s Flow Field.",
+    "category": "lines",
+    "strength": "v",
+    "order": 13,
+    "knobs": [
+      {
+        "n": "Form",
+        "opts": [
+          "Vortex",
+          "Open"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Lines",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.6
+      },
+      {
+        "n": "Turbulence",
+        "lo": "calm",
+        "hi": "wild",
+        "d": 0.3
+      },
+      {
+        "n": "Weight",
+        "lo": "fine",
+        "hi": "heavy",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "form",
+    "name": "Raymarched Form",
+    "blurb": "One sculptural object raymarched at the centre of the sheet: three to five spheres, sometimes a ring, fused with a smooth minimum. Soft key light, ambient occlusion, a rim and a single highlight on a quiet gradient ground. After Radiant’s Metamorphosis.",
+    "category": "material",
+    "strength": "v",
+    "order": 14,
+    "knobs": [
+      {
+        "n": "Form",
+        "opts": [
+          "Cluster",
+          "Ringed"
+        ],
+        "steps": 2,
+        "d": 1
+      },
+      {
+        "n": "Lobes",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.5
+      },
+      {
+        "n": "Melt",
+        "lo": "crisp",
+        "hi": "molten",
+        "d": 0.43
+      },
+      {
+        "n": "Gloss",
+        "lo": "matte",
+        "hi": "mirror",
+        "d": 0.57
+      }
+    ]
+  },
+  {
+    "id": "eclipse",
+    "name": "Eclipse",
+    "blurb": "A black disc at the centre with a corona of angular noise streaming out to the edges and a bright limb. After Radiant’s Eclipse Glow.",
+    "category": "light",
+    "strength": "v",
+    "order": 15,
+    "knobs": [
+      {
+        "n": "Size",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.5
+      },
+      {
+        "n": "Rays",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.35
+      },
+      {
+        "n": "Reach",
+        "lo": "tight",
+        "hi": "vast",
+        "d": 0.4
+      },
+      {
+        "n": "Halo",
+        "lo": "faint",
+        "hi": "blazing",
+        "d": 0.45
+      }
+    ]
+  },
+  {
+    "id": "vortexp",
+    "name": "Vortex",
+    "blurb": "Logarithmic spiral ribbons wound around the centre, satin-shaded across their width and deepening toward a glowing eye. After Radiant’s Vortex.",
+    "category": "lines",
+    "strength": "b",
+    "order": 16,
+    "knobs": [
+      {
+        "n": "Arms",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Twist",
+        "lo": "loose",
+        "hi": "tight",
+        "d": 0.35
+      },
+      {
+        "n": "Gaps",
+        "lo": "hairline",
+        "hi": "wide",
+        "d": 0.1
+      },
+      {
+        "n": "Depth",
+        "lo": "shallow",
+        "hi": "deep",
+        "d": 0.33
+      }
+    ]
+  },
+  {
+    "id": "fracture",
+    "name": "Fracture",
+    "blurb": "Warped Voronoi cells with glowing cracks between them and a finer network inside each cell, edge to edge. After Radiant’s Gilded Fracture and Magma Core.",
+    "category": "organic",
+    "strength": "v",
+    "order": 17,
+    "knobs": [
+      {
+        "n": "Cells",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Warp",
+        "lo": "straight",
+        "hi": "warped",
+        "d": 0.55
+      },
+      {
+        "n": "Glow",
+        "lo": "thin",
+        "hi": "molten",
+        "d": 0.25
+      },
+      {
+        "n": "Veins",
+        "lo": "none",
+        "hi": "bold",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "vega",
+    "name": "Vega",
+    "blurb": "After Vasarely’s Vega series: a checkerboard with a disc in every cell, swollen into a sphere by one lens at the centre of the sheet. The lens blends smoothly into the flat grid.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 18,
+    "knobs": [
+      {
+        "n": "Grid",
+        "lo": "coarse",
+        "hi": "fine",
+        "d": 0.4
+      },
+      {
+        "n": "Lens",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.7
+      },
+      {
+        "n": "Bulge",
+        "lo": "gentle",
+        "hi": "strong",
+        "d": 0.6
+      },
+      {
+        "n": "Dots",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.45
+      }
+    ]
+  },
+  {
+    "id": "ringers",
+    "name": "Ringers",
+    "blurb": "After Dmitri Cherniak’s Ringers: pegs on a grid centred on the sheet and one string wound around some of them, each passed on its left or right. The loop is filled even-odd, so every crossing opens a window.",
+    "category": "geo",
+    "strength": "b",
+    "order": 19,
+    "knobs": [
+      {
+        "n": "Grid",
+        "opts": [
+          "3×3",
+          "4×4",
+          "5×5",
+          "6×6"
+        ],
+        "steps": 4,
+        "d": 0.3333333333333333
+      },
+      {
+        "n": "Wound",
+        "lo": "few pegs",
+        "hi": "many pegs",
+        "d": 0.4
+      },
+      {
+        "n": "Crossings",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.6
+      },
+      {
+        "n": "Weight",
+        "lo": "light",
+        "hi": "heavy",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "seigaiha",
+    "name": "Seigaiha",
+    "blurb": "The Japanese wave-scale pattern: rows of concentric half-discs overlapping the row above, with colour drifting slowly across the sheet instead of repeating.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 20,
+    "knobs": [
+      {
+        "n": "Scales",
+        "lo": "large",
+        "hi": "small",
+        "d": 0.3
+      },
+      {
+        "n": "Rings",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Rise",
+        "lo": "flat",
+        "hi": "tall",
+        "d": 0.45
+      },
+      {
+        "n": "Weight",
+        "lo": "light",
+        "hi": "bold",
+        "d": 0.45
+      }
+    ]
+  },
+  {
+    "id": "halftone",
+    "name": "Halftone Orb",
+    "blurb": "One lit sphere at the centre, set entirely in halftone dots on a rotated screen, sitting on its own shadow over a soft gradient ground. A print-native way to show volume.",
+    "category": "material",
+    "strength": "b",
+    "order": 21,
+    "knobs": [
+      {
+        "n": "Size",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.6
+      },
+      {
+        "n": "Dots",
+        "lo": "coarse",
+        "hi": "fine",
+        "d": 0.7
+      },
+      {
+        "n": "Light",
+        "lo": "soft",
+        "hi": "dramatic",
+        "d": 0.25
+      },
+      {
+        "n": "Ground",
+        "lo": "bare",
+        "hi": "dense",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "groovy",
+    "name": "Groovy Bloom",
+    "blurb": "Flat wavy bands radiating from one focal point low on the centre axis, pinched at the focus and billowing to every edge. Retro five-colour sets.",
+    "category": "organic",
+    "strength": "b",
+    "order": 22,
+    "knobs": [
+      {
+        "n": "Focus",
+        "lo": "high",
+        "hi": "low",
+        "d": 0.6
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Waves",
+        "lo": "gentle",
+        "hi": "wild",
+        "d": 0.45
+      },
+      {
+        "n": "Twist",
+        "lo": "straight",
+        "hi": "spiral",
+        "d": 0.25
+      }
+    ]
+  },
+  {
+    "id": "cdisc",
+    "name": "Contour Field",
+    "blurb": "The iso-bands of a domain-warped noise field, ink and paper alternating, filling the whole sheet.",
+    "category": "organic",
+    "strength": "b",
+    "order": 23,
+    "knobs": [
+      {
+        "n": "Scale",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.5
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.45
+      },
+      {
+        "n": "Warp",
+        "lo": "calm",
+        "hi": "swirling",
+        "d": 0.45
+      },
+      {
+        "n": "Weight",
+        "lo": "light",
+        "hi": "heavy",
+        "d": 0.45
+      }
+    ]
+  },
+  {
+    "id": "sdisc",
+    "name": "Strand Field",
+    "blurb": "Evenly spaced strands flowing around a few hidden sources and swirls, edge to edge, so the sheet breaks into petal-like patches of parallel lines.",
+    "category": "lines",
+    "strength": "v",
+    "order": 24,
+    "knobs": [
+      {
+        "n": "Points",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Swirl",
+        "lo": "radiating",
+        "hi": "whirling",
+        "d": 0.5
+      },
+      {
+        "n": "Density",
+        "lo": "open",
+        "hi": "dense",
+        "d": 0.55
+      },
+      {
+        "n": "Weight",
+        "lo": "fine",
+        "hi": "bold",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "ttree",
+    "name": "Turing Tree",
+    "blurb": "A tree drawn only with broken, wobbly ink stripes, the way reaction–diffusion labyrinths look: horizontal ground bands, a trunk on the centre axis, and a canopy fanning from the top of the trunk.",
+    "category": "lines",
+    "strength": "b",
+    "order": 25,
+    "knobs": [
+      {
+        "n": "Canopy",
+        "lo": "short",
+        "hi": "tall",
+        "d": 0.5
+      },
+      {
+        "n": "Stripes",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.65
+      },
+      {
+        "n": "Breaks",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.5
+      },
+      {
+        "n": "Weight",
+        "lo": "thin",
+        "hi": "bold",
+        "d": 0.3
+      }
+    ]
+  },
+  {
+    "id": "dunes",
+    "name": "Line Dunes",
+    "blurb": "Three or four ridges from the top edge of the sheet to the bottom, each a bundle of contour lines following its crest and spreading as it falls.",
+    "category": "lines",
+    "strength": "v",
+    "order": 26,
+    "knobs": [
+      {
+        "n": "Ridges",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Lines",
+        "lo": "open",
+        "hi": "dense",
+        "d": 0.65
+      },
+      {
+        "n": "Height",
+        "lo": "flat",
+        "hi": "peaked",
+        "d": 0.35
+      },
+      {
+        "n": "Weight",
+        "lo": "fine",
+        "hi": "bold",
+        "d": 0.25
+      }
+    ]
+  },
+  {
+    "id": "lava",
+    "name": "Lava Blobs",
+    "blurb": "A slow warped noise field cut into iso-bands: two dark tones and a light gutter between them, so the sheet reads as lava-lamp shapes.",
+    "category": "organic",
+    "strength": "b",
+    "order": 27,
+    "knobs": [
+      {
+        "n": "Scale",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.55
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.55
+      },
+      {
+        "n": "Warp",
+        "lo": "calm",
+        "hi": "swirling",
+        "d": 0.4
+      },
+      {
+        "n": "Gutter",
+        "lo": "thin",
+        "hi": "wide",
+        "d": 0.35
+      }
+    ]
+  },
+  {
+    "id": "mesh",
+    "name": "Mesh Gradient",
+    "blurb": "After Fragments’ mesh gradient lesson: a warped field read as satin folds in one hue, dark to bright. Most seeds cut it into horizontal slats, each sampled slightly offset, like satin seen through blinds.",
+    "category": "light",
+    "strength": "b",
+    "order": 28,
+    "knobs": [
+      {
+        "n": "Slats",
+        "lo": "none",
+        "hi": "many",
+        "d": 0.45
+      },
+      {
+        "n": "Folds",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Warp",
+        "lo": "calm",
+        "hi": "wild",
+        "d": 0.5
+      },
+      {
+        "n": "Sheen",
+        "lo": "broad",
+        "hi": "fine",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "satin",
+    "name": "Satin Ribbon",
+    "blurb": "One wide ribbon, sometimes a pair, swinging down the sheet and twisting as it goes. It pinches where it turns edge-on, catches a satin sheen on the turns, and runs through the colour gradient along its length, with the back face a deeper tone.",
+    "category": "material",
+    "strength": "b",
+    "order": 29,
+    "knobs": [
+      {
+        "n": "Ribbons",
+        "opts": [
+          "One",
+          "Two"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Swing",
+        "lo": "straight",
+        "hi": "wide",
+        "d": 0.6
+      },
+      {
+        "n": "Twist",
+        "lo": "calm",
+        "hi": "twisty",
+        "d": 0.35
+      },
+      {
+        "n": "Width",
+        "lo": "narrow",
+        "hi": "wide",
+        "d": 0.62
+      }
+    ]
+  },
+  {
+    "id": "voro",
+    "name": "Voronoi Tiles",
+    "blurb": "A few dozen large Voronoi cells under a gentle warp, separated by leading in the ground colour. Each cell is filled from its own border inward: a lit pillow bevel, contour rings that follow the outline, or a glow from edge to centre.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 30,
+    "knobs": [
+      {
+        "n": "Fill",
+        "opts": [
+          "Pillow",
+          "Rings",
+          "Glow"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Cells",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.35
+      },
+      {
+        "n": "Warp",
+        "lo": "straight",
+        "hi": "wavy",
+        "d": 0.4
+      },
+      {
+        "n": "Borders",
+        "lo": "thin",
+        "hi": "bold",
+        "d": 0.3
+      }
+    ]
+  },
+  {
+    "id": "julia",
+    "name": "Julia Set",
+    "blurb": "A Julia set at the centre of the sheet, its point symmetry giving the balance. The escape count runs through the colour gradient, dark far away and bright at the boundary; some seeds step it into flat bands.",
+    "category": "light",
+    "strength": "v",
+    "order": 31,
+    "knobs": [
+      {
+        "n": "Shape",
+        "opts": [
+          "Spirals",
+          "Seahorse",
+          "Coral",
+          "Dragon",
+          "Lace",
+          "Whirl"
+        ],
+        "steps": 6,
+        "d": 0
+      },
+      {
+        "n": "Morph",
+        "lo": "blooming",
+        "hi": "solid",
+        "d": 0.5
+      },
+      {
+        "n": "Bands",
+        "lo": "smooth",
+        "hi": "many steps",
+        "d": 0
+      },
+      {
+        "n": "Glow",
+        "lo": "thin edge",
+        "hi": "broad glow",
+        "d": 0.64
+      }
+    ]
+  },
+  {
+    "id": "chrome",
+    "name": "Liquid Chrome",
+    "blurb": "A warped surface read as polished metal: every fold reflects a studio sky over a hard horizon and a dark floor, tinted gold, steel, rose or teal.",
+    "category": "material",
+    "strength": "b",
+    "order": 32,
+    "knobs": [
+      {
+        "n": "Scale",
+        "lo": "broad",
+        "hi": "fine",
+        "d": 0.55
+      },
+      {
+        "n": "Warp",
+        "lo": "calm",
+        "hi": "liquid",
+        "d": 0.45
+      },
+      {
+        "n": "Relief",
+        "lo": "shallow",
+        "hi": "deep",
+        "d": 0.35
+      },
+      {
+        "n": "Horizon",
+        "lo": "low",
+        "hi": "high",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "glass",
+    "name": "Glass Lens",
+    "blurb": "A glass ball at the centre of the sheet over a full-bleed field of stripes, rings or checks. The field is refracted through the ball, flipped and magnified, with a rainbow edge where the colours split, a soft shadow and a caustic on the ground behind it.",
+    "category": "material",
+    "strength": "v",
+    "order": 33,
+    "knobs": [
+      {
+        "n": "Pattern",
+        "opts": [
+          "Stripes",
+          "Diagonal",
+          "Rings",
+          "Checks"
+        ],
+        "steps": 4,
+        "d": 0
+      },
+      {
+        "n": "Lens",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.6
+      },
+      {
+        "n": "Scale",
+        "lo": "bold",
+        "hi": "fine",
+        "d": 0.35
+      },
+      {
+        "n": "Prism",
+        "lo": "clear",
+        "hi": "rainbow",
+        "d": 0.25
+      }
+    ]
+  },
+  {
+    "id": "puffy",
+    "name": "Puffy Shapes",
+    "blurb": "Bauhaus shapes inflated like soft vinyl: discs, rings, crosses, flowers, pills, quarter-rounds. One shape centred, or a grid of six or twelve, each casting a soft shadow and catching one glossy highlight. After the puffy 3D trend.",
+    "category": "material",
+    "strength": "b",
+    "order": 34,
+    "knobs": [
+      {
+        "n": "Layout",
+        "opts": [
+          "Single",
+          "Six",
+          "Twelve"
+        ],
+        "steps": 3,
+        "d": 0.5
+      },
+      {
+        "n": "Shape",
+        "opts": [
+          "Mixed",
+          "Disc",
+          "Ring",
+          "Plus",
+          "Flower",
+          "Pill"
+        ],
+        "steps": 6,
+        "d": 0
+      },
+      {
+        "n": "Puff",
+        "lo": "flat",
+        "hi": "inflated",
+        "d": 0.75
+      },
+      {
+        "n": "Gloss",
+        "lo": "matte",
+        "hi": "glossy",
+        "d": 0.6
+      }
+    ]
+  },
+  {
+    "id": "totem",
+    "name": "Sculpture Stack",
+    "blurb": "Two to five primitives (sphere, dome, ring, cylinder, block, cone) stacked on the centre axis and lit in a studio cove: matte clay, one key light, soft shadows. After the 3D Bauhaus renders.",
+    "category": "material",
+    "strength": "n",
+    "order": 35,
+    "knobs": [
+      {
+        "n": "Pieces",
+        "opts": [
+          "Two",
+          "Three",
+          "Four",
+          "Five"
+        ],
+        "steps": 4,
+        "d": 0.67
+      },
+      {
+        "n": "Forms",
+        "lo": "rounded",
+        "hi": "angular",
+        "d": 0.5
+      },
+      {
+        "n": "Width",
+        "lo": "slender",
+        "hi": "wide",
+        "d": 0.5
+      },
+      {
+        "n": "Backdrop",
+        "opts": [
+          "Light",
+          "Dark"
+        ],
+        "steps": 2,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "pins",
+    "name": "Pin Field",
+    "blurb": "An isometric field of square columns whose heights follow ripples, terrain, a stepped pyramid, a dome or waves. The tops run through the colour gradient with height and the two sides take the shade, like pin art or a voxel landscape.",
+    "category": "material",
+    "strength": "b",
+    "order": 36,
+    "knobs": [
+      {
+        "n": "Relief",
+        "opts": [
+          "Ripple",
+          "Terrain",
+          "Pyramid",
+          "Dome",
+          "Waves"
+        ],
+        "steps": 5,
+        "d": 0
+      },
+      {
+        "n": "Columns",
+        "lo": "chunky",
+        "hi": "fine",
+        "d": 0.5
+      },
+      {
+        "n": "Height",
+        "lo": "low",
+        "hi": "tall",
+        "d": 0.45
+      },
+      {
+        "n": "Terraces",
+        "lo": "smooth",
+        "hi": "stepped",
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "folds",
+    "name": "Paper Folds",
+    "blurb": "A sheet of paper folded edge to edge: accordion pleats, chevrons on the centre axis, a fan from the bottom edge, or nested squares and diamonds. A low light grazes the folds, so the ridges cast shadows into the valleys.",
+    "category": "material",
+    "strength": "b",
+    "order": 37,
+    "knobs": [
+      {
+        "n": "Fold",
+        "opts": [
+          "Accordion",
+          "Chevron",
+          "Fan",
+          "Squares",
+          "Diamonds"
+        ],
+        "steps": 5,
+        "d": 0.25
+      },
+      {
+        "n": "Pleats",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Depth",
+        "lo": "shallow",
+        "hi": "deep",
+        "d": 0.55
+      },
+      {
+        "n": "Sweep",
+        "lo": "even",
+        "hi": "gradient",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "gyroid",
+    "name": "Gyroid",
+    "blurb": "A sphere or cube carved from a triply periodic surface (gyroid, Schwarz or diamond lattice), like a 3D-printed sculpture: flat cut faces where the lattice meets the outer form, shaded tunnels inside.",
+    "category": "material",
+    "strength": "b",
+    "order": 38,
+    "knobs": [
+      {
+        "n": "Form",
+        "opts": [
+          "Sphere",
+          "Cube",
+          "Cube 45°"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Cells",
+        "lo": "large",
+        "hi": "small",
+        "d": 0.4
+      },
+      {
+        "n": "Walls",
+        "lo": "thin",
+        "hi": "thick",
+        "d": 0.45
+      },
+      {
+        "n": "Lattice",
+        "opts": [
+          "Gyroid",
+          "Schwarz",
+          "Diamond"
+        ],
+        "steps": 3,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "knot",
+    "name": "Torus Knot",
+    "blurb": "A torus knot drawn as a glossy tube at the centre of the sheet, its colour sweeping along its length. Crossings shade the strand underneath and the knot casts a soft shadow on the ground.",
+    "category": "material",
+    "strength": "v",
+    "order": 39,
+    "knobs": [
+      {
+        "n": "Knot",
+        "opts": [
+          "Trefoil",
+          "Cinquefoil",
+          "3 · 4",
+          "3 · 5",
+          "2 · 7"
+        ],
+        "steps": 5,
+        "d": 0
+      },
+      {
+        "n": "Tube",
+        "lo": "thin",
+        "hi": "thick",
+        "d": 0.5
+      },
+      {
+        "n": "Tilt",
+        "lo": "face on",
+        "hi": "tilted",
+        "d": 0.3
+      },
+      {
+        "n": "Gradient",
+        "opts": [
+          "One sweep",
+          "Two",
+          "Three",
+          "Four"
+        ],
+        "steps": 4,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "cubes",
+    "name": "Isometric Cubes",
+    "blurb": "The tumbling-blocks tiling: hexagons split into a light top and a mid and dark side. The tones drift through the colour gradient down the sheet, in rings, or cube by cube, and every cube still reads as solid.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 40,
+    "knobs": [
+      {
+        "n": "Layout",
+        "opts": [
+          "Drift",
+          "Rings",
+          "Scatter"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Cubes",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.38
+      },
+      {
+        "n": "Depth",
+        "lo": "flat",
+        "hi": "deep",
+        "d": 0.5
+      },
+      {
+        "n": "Edges",
+        "lo": "none",
+        "hi": "bold",
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "holo",
+    "name": "Holographic Foil",
+    "blurb": "A soft folded surface with thin-film colour: the hue follows the film’s thickness and the angle of each fold, shifting through pale spectra with a pearly sheen.",
+    "category": "light",
+    "strength": "n",
+    "order": 41,
+    "knobs": [
+      {
+        "n": "Folds",
+        "lo": "broad",
+        "hi": "fine",
+        "d": 0.4
+      },
+      {
+        "n": "Warp",
+        "lo": "calm",
+        "hi": "swirling",
+        "d": 0.4
+      },
+      {
+        "n": "Relief",
+        "lo": "flat",
+        "hi": "crinkled",
+        "d": 0.35
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.2
+      }
+    ]
+  },
+  {
+    "id": "sunburst",
+    "name": "Sunburst",
+    "blurb": "Rays from a point on the centre axis, at the middle of the sheet or rising from the bottom edge, alternating two tones that both run through the colour gradient with distance. Some seeds twist the rays into a pinwheel.",
+    "category": "light",
+    "strength": "b",
+    "order": 42,
+    "knobs": [
+      {
+        "n": "Origin",
+        "opts": [
+          "Centre",
+          "Rising"
+        ],
+        "steps": 2,
+        "d": 0
+      },
+      {
+        "n": "Rays",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.35
+      },
+      {
+        "n": "Twist",
+        "lo": "straight",
+        "hi": "pinwheel",
+        "d": 0
+      },
+      {
+        "n": "Glow",
+        "lo": "soft",
+        "hi": "bright",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "engrave",
+    "name": "Engraving",
+    "blurb": "A lit sphere drawn only in parallel ink lines that thicken in shadow, like a banknote engraving. On the sphere the lines bow with the surface; behind it they run straight, darkening down the sheet, with a cast shadow.",
+    "category": "lines",
+    "strength": "n",
+    "order": 43,
+    "knobs": [
+      {
+        "n": "Size",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.6
+      },
+      {
+        "n": "Lines",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.45
+      },
+      {
+        "n": "Light",
+        "lo": "left",
+        "hi": "right",
+        "d": 0.2
+      },
+      {
+        "n": "Ink",
+        "lo": "light",
+        "hi": "heavy",
+        "d": 0.5
+      }
+    ]
+  },
+  {
+    "id": "mazestripes",
+    "name": "Maze Stripes",
+    "blurb": "The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.",
+    "category": "lines",
+    "strength": "n",
+    "order": 44,
+    "knobs": [
+      {
+        "n": "Shape",
+        "opts": [
+          "Mixed",
+          "U",
+          "L",
+          "Boxes"
+        ],
+        "steps": 4,
+        "d": 0
+      },
+      {
+        "n": "Blocks",
+        "lo": "one",
+        "hi": "many",
+        "d": 0.35
+      },
+      {
+        "n": "Stripes",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.65
+      },
+      {
+        "n": "Wobble",
+        "lo": "crisp",
+        "hi": "wavy",
+        "d": 0.2
+      }
+    ]
+  },
+  {
+    "id": "fprint",
+    "name": "Fingerprint",
+    "blurb": "Thick paper stripes on an ink ground, evenly spaced and flowing around a few whorls, edge to edge.",
+    "category": "lines",
+    "strength": "b",
+    "order": 45,
+    "knobs": [
+      {
+        "n": "Whorls",
+        "lo": "one",
+        "hi": "many",
+        "d": 0.3
+      },
+      {
+        "n": "Swirl",
+        "lo": "wavy",
+        "hi": "whorled",
+        "d": 0.75
+      },
+      {
+        "n": "Ridges",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.7
+      },
+      {
+        "n": "Weight",
+        "lo": "thin",
+        "hi": "bold",
+        "d": 0.47
+      }
+    ]
+  },
+  {
+    "id": "cellnet2",
+    "name": "Cell Net",
+    "blurb": "A dense warped Voronoi field: ink cells separated by a paper net, edge to edge.",
+    "category": "pattern",
+    "strength": "b",
+    "order": 46,
+    "knobs": [
+      {
+        "n": "Order",
+        "lo": "random",
+        "hi": "honeycomb",
+        "d": 0.2
+      },
+      {
+        "n": "Cells",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Warp",
+        "lo": "straight",
+        "hi": "organic",
+        "d": 0.5
+      },
+      {
+        "n": "Net",
+        "lo": "fine",
+        "hi": "thick",
+        "d": 0.35
+      }
+    ]
+  },
+  {
+    "id": "sky",
+    "name": "Gradients",
+    "blurb": "Colour fields with no form: a vertical sky gradient with a faint drift, one hue stepped into vertical columns, or one gradient framed inside another.",
+    "category": "light",
+    "strength": "v",
+    "order": 47,
+    "knobs": [
+      {
+        "n": "Layout",
+        "opts": [
+          "Sky",
+          "Columns",
+          "Framed"
+        ],
+        "steps": 3,
+        "d": 0
+      },
+      {
+        "n": "Horizon",
+        "lo": "low",
+        "hi": "high",
+        "d": 0.5
+      },
+      {
+        "n": "Drift",
+        "lo": "still",
+        "hi": "flowing",
+        "d": 0.2
+      },
+      {
+        "n": "Order",
+        "opts": [
+          "Normal",
+          "Reversed"
+        ],
+        "steps": 2,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "k_cpack",
+    "name": "Circle Packing · recut",
+    "blurb": "The Geometric tab's circle packing in a poster set instead of its screen palette. It is a field, so it runs to every edge.",
+    "category": "geo",
+    "strength": "b",
+    "order": 48,
+    "knobs": [
+      {
+        "n": "Pattern",
+        "opts": [
+          "Gradient",
+          "Clumps",
+          "Scatter",
+          "Marbled",
+          "Radial"
+        ],
+        "steps": 5,
+        "d": 0.25
+      },
+      {
+        "n": "Scale",
+        "lo": "small",
+        "hi": "large",
+        "d": 0.45
+      },
+      {
+        "n": "Gap",
+        "lo": "tight",
+        "hi": "airy",
+        "d": 0.2
+      },
+      {
+        "n": "Rings",
+        "lo": "none",
+        "hi": "all",
+        "d": 0.2
+      }
+    ]
+  },
+  {
+    "id": "qblocks",
+    "name": "Quadtree Blocks",
+    "blurb": "The Geometric tab's quadtree rebuilt at poster scale: always split twice and at most twice more, so even the smallest cell is large. Wide paper gutters, flat colour per cell, and the odd paper cell carrying a full disc.",
+    "category": "geo",
+    "strength": "b",
+    "order": 49,
+    "knobs": [
+      {
+        "n": "Cells",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.45
+      },
+      {
+        "n": "Gutter",
+        "lo": "thin",
+        "hi": "wide",
+        "d": 0.54
+      },
+      {
+        "n": "Corners",
+        "lo": "square",
+        "hi": "round",
+        "d": 0
+      },
+      {
+        "n": "Discs",
+        "lo": "none",
+        "hi": "many",
+        "d": 0.35
+      }
+    ]
+  },
+  {
+    "id": "k_fidenza",
+    "name": "Ribbon Field · recut",
+    "blurb": "The Fidenza-style ribbon field from the Organic tab in a poster set: thick flowing strokes that never cross, filling the sheet.",
+    "category": "organic",
+    "strength": "v",
+    "order": 50,
+    "knobs": [
+      {
+        "n": "Length",
+        "lo": "short",
+        "hi": "long",
+        "d": 1
+      },
+      {
+        "n": "Width",
+        "lo": "thin",
+        "hi": "thick",
+        "d": 0.42
+      },
+      {
+        "n": "Curl",
+        "lo": "calm",
+        "hi": "swirling",
+        "d": 0.4
+      },
+      {
+        "n": "Pattern",
+        "opts": [
+          "Gradient",
+          "Clumps",
+          "Scatter",
+          "Marbled",
+          "Radial"
+        ],
+        "steps": 5,
+        "d": 0.25
+      }
+    ]
+  },
+  {
+    "id": "k_bands",
+    "name": "Interference Bands · recut",
+    "blurb": "The Geometric tab’s Interference Bands, with the stepped rings run through a colour gradient: light at the outside, deepening toward the centre.",
+    "category": "lines",
+    "strength": "b",
+    "order": 51,
+    "knobs": [
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.69
+      },
+      {
+        "n": "Waves",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Height",
+        "lo": "flat",
+        "hi": "tall",
+        "d": 0.5
+      },
+      {
+        "n": "Rhythm",
+        "lo": "quick",
+        "hi": "slow",
+        "d": 0.4
+      }
+    ]
+  },
+  {
+    "id": "k_stepped",
+    "name": "Stepped Bands · recut",
+    "blurb": "Stepped Bands with its palette replaced by a single ink ramp, which turns it from a gradient study into a tonal one. In this cut the bands fill the whole sheet edge to edge: true squares, or diamonds at exactly 45°, stepping out from the centre until they cover every corner. Never at an angle in between.",
+    "category": "geo",
+    "strength": "n",
+    "order": 52,
+    "knobs": [
+      {
+        "n": "Shape",
+        "opts": [
+          "Square",
+          "Diamond"
+        ],
+        "steps": 2,
+        "d": 1
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.4
+      },
+      {
+        "n": "Spacing",
+        "lo": "wide edges",
+        "hi": "wide centre",
+        "d": 0.5
+      },
+      {
+        "n": "Centre",
+        "opts": [
+          "Dark",
+          "Light"
+        ],
+        "steps": 2,
+        "d": 0
+      }
+    ]
+  },
+  {
+    "id": "k_marble",
+    "name": "Marbling · recut",
+    "blurb": "Marbling mapped onto one ink. The posterized bands stay, the multicolour goes.",
+    "category": "organic",
+    "strength": "b",
+    "order": 53,
+    "knobs": [
+      {
+        "n": "Scale",
+        "lo": "large",
+        "hi": "fine",
+        "d": 0.3
+      },
+      {
+        "n": "Swirl",
+        "lo": "gentle",
+        "hi": "wild",
+        "d": 0.52
+      },
+      {
+        "n": "Bands",
+        "lo": "few",
+        "hi": "many",
+        "d": 0.25
+      },
+      {
+        "n": "Softness",
+        "lo": "crisp",
+        "hi": "soft",
+        "d": 0
+      }
+    ]
+  }
+]
