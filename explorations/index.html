@@ -757,12 +757,13 @@ function drawPartition(cv,seed){
 function drawBands(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const accent=pick(seed,1,ACCENTS);
-  const waveF=1.2+R(seed,2)*3.2, waveA=H*(0.02+R(seed,3)*0.075);
-  const phase=R(seed,4)*6.283, modF=1.5+R(seed,5)*4.0;
+  /* knobs (Interference Bands recut): bands, waves, height, rhythm */
+  const waveF=KNOB[1]==null?1.2+R(seed,2)*3.2:0.6+KV(1,0)*4.8, waveA=H*(KNOB[2]==null?0.02+R(seed,3)*0.075:0.005+KV(2,0)*0.09);
+  const phase=R(seed,4)*6.283, modF=KNOB[3]==null?1.5+R(seed,5)*4.0:0.9+KV(3,0)*4, bs=KNOB[0]==null?1:2.2-KV(0,0)*1.75;
   const accentAt=Math.floor(R(seed,6)*40)+6;
   const bnd=(i,x)=>waveA*Math.sin((x/W)*waveF*6.283+phase+i*0.22);
   let y=-H*0.15,i=0,ys=[];
-  while(y<H*1.15&&i<220){ ys.push(y); const m=(Math.sin(i/modF)+1)/2; y+=H*(0.004+Math.pow(m,2.1)*0.115); i++; }
+  while(y<H*1.15&&i<220){ ys.push(y); const m=(Math.sin(i/modF)+1)/2; y+=H*(0.004+Math.pow(m,2.1)*0.115)*bs; i++; }
   for(let k=0;k<ys.length-1;k++){
     if(k%2===1) continue;
     c.beginPath();
@@ -773,6 +774,11 @@ function drawBands(cv,seed){
     c.fillStyle=(k===accentAt||k===accentAt+4)?accent:INKC; c.fill();
   }
 }
+knobs('k_bands',[
+  {n:'Bands',lo:'few',hi:'many',d:0.69},
+  {n:'Waves',lo:'few',hi:'many',d:0.4},
+  {n:'Height',lo:'flat',hi:'tall',d:0.5},
+  {n:'Rhythm',lo:'quick',hi:'slow',d:0.4}]);
 function drawDisplacement(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
   const accent=pick(seed,1,ACCENTS);
@@ -1311,9 +1317,9 @@ const palOf=(seed,i)=>famPick(PALETTES,'base',R(seed,i));
    neighbours agree and build larger compositional masses.
    --------------------------------------------------------------------------- */
 const STRATEGIES=['gradient','clumping','sequence','sampled map','compositional'];
-function makeColorField(seed,pal){
+function makeColorField(seed,pal,r=R(seed,700)){   /* r: a knob may pick the strategy */
   const n=pal.length;
-  const mode=Math.floor(R(seed,700)*STRATEGIES.length);
+  const mode=Math.floor(r*STRATEGIES.length);
   const ang=R(seed,701)*Math.PI*2, dx=Math.cos(ang), dy=Math.sin(ang);
   const fs=1.1+R(seed,702)*2.3;
   const jitter=0.06+R(seed,703)*0.14;   /* Hobbs: sequences want probabilistic variation */
@@ -1390,7 +1396,8 @@ function drawCirclePack(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
   const pal=palOf(seed,1);
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
-  const maxR=D*(0.055+R(seed,2)*0.075), minR=D*0.0032;
+  /* knobs (Circle Packing recut): pattern, scale, gap, rings */
+  const maxR=D*(KNOB[1]==null?0.055+R(seed,2)*0.075:0.03+KV(1,0)*0.14), minR=D*0.0032, gp=KNOB[2]==null?null:KV(2,0);
   const cs=[]; const rnd=lcg(seed*7919+3);
   for(let i=0;i<9000 && cs.length<1600;i++){
     const x=rnd()*W, y=rnd()*H;
@@ -1403,15 +1410,24 @@ function drawCirclePack(cv,seed){
     if(r<minR) continue;
     cs.push([x,y,r-D*0.0012]);
   }
-  const field=makeColorField(seed,pal);
+  const field=makeColorField(seed,pal,KV(0,R(seed,700)));
   noteStrategy(cv,field.label);
   cs.forEach((o,i)=>{
-    c.beginPath(); c.arc(o[0],o[1],Math.max(0.5,o[2]),0,7);
+    const r=gp==null?o[2]:(o[2]+D*0.0012)*(1-gp*0.2)-D*(0.0003+gp*0.0016);
+    c.beginPath(); c.arc(o[0],o[1],Math.max(0.5,r),0,7);
     c.fillStyle=pal[field(o[0],o[1],W,H,i)];   /* colour by position, not by lottery */
     c.fill();
-    if(R(seed,9000+i)<0.16){ c.strokeStyle=pal[0]; c.lineWidth=Math.max(0.6,D*0.0011); c.stroke(); }
+    if(KNOB[3]!=null){ if(R(seed,9000+i)<KV(3,0)*1.05&&r>D*0.006){ const n=Math.min(4,Math.max(1,Math.round(r/(D*0.016))));
+        c.strokeStyle=pal[0]; c.lineWidth=r/(n+0.5)*0.32;
+        for(let j=1;j<=n;j++){ c.beginPath(); c.arc(o[0],o[1],r*j/(n+0.5),0,7); c.stroke(); } } }
+    else if(R(seed,9000+i)<0.16){ c.strokeStyle=pal[0]; c.lineWidth=Math.max(0.6,D*0.0011); c.stroke(); }
   });
 }
+knobs('k_cpack',[
+  {n:'Pattern',opts:['Gradient','Clumps','Scatter','Marbled','Radial'],steps:5,d:0.25},
+  {n:'Scale',lo:'small',hi:'large',d:0.45},
+  {n:'Gap',lo:'tight',hi:'airy',d:0.2},
+  {n:'Rings',lo:'none',hi:'all',d:0.2}]);
 
 /* Quadtree subdivision — recursion probability driven by a density field, so
    detail concentrates instead of spreading evenly. */
@@ -1625,19 +1641,26 @@ void main(){
 const F_MARBLE=`
 void main(){
   vec2 p=uvCentered();
-  float sc=0.9+rnd(1.)*1.3;
+  /* knobs (Marbling recut): scale, swirl, bands, softness */
+  float sc=u_k.x<0.0?0.9+rnd(1.)*1.3:0.7+kv(0,0.)*2.0, w=u_k.y<0.0?0.72:0.2+kv(1,0.)*1.0;
   vec2 q=p*sc;
   for(int i=0;i<4;i++){
-    q += 0.72*vec2(fbmG(q*1.7+float(i)*13.1+rnd(2.)*30.0),
-                   fbmG(q*1.7+float(i)*7.3 +rnd(3.)*30.0)) - 0.36;
+    q += w*vec2(fbmG(q*1.7+float(i)*13.1+rnd(2.)*30.0),
+                fbmG(q*1.7+float(i)*7.3 +rnd(3.)*30.0)) - w*0.5;
   }
   float v=fbmG(q*1.35+rnd(4.)*20.0);
-  float lv=5.0+floor(rnd(5.)*6.0);
+  float lv=u_k.z<0.0?5.0+floor(rnd(5.)*6.0):4.0+floor(kv(2,0.)*11.0);
   float band=floor(clamp(v,0.0,0.999)*lv)/lv;
+  if(u_k.w>=0.0){ float x=clamp(v,0.0,0.999)*lv; band=(floor(x)+smoothstep(0.99-kv(3,0.)*0.98,1.0,fract(x)))/lv; }
   float hue=rnd(6.)*6.28318;
   vec3 col=oklch(0.94-band*0.70, 0.020+band*0.085, hue+band*0.85);
   outColor=vec4(col,1.0);
 }`;
+knobs('k_marble',[
+  {n:'Scale',lo:'large',hi:'fine',d:0.3},
+  {n:'Swirl',lo:'gentle',hi:'wild',d:0.52},
+  {n:'Bands',lo:'few',hi:'many',d:0.25},
+  {n:'Softness',lo:'crisp',hi:'soft',d:0}]);
 
 /* ---- round 5: additive-density family (Art Blocks references) ---- */
 const EMIT=[
@@ -2096,7 +2119,7 @@ function drawSteppedBands(cv,seed,contained){
   const ramp=EMIT[Math.floor(R(seed,1)*EMIT.length)];
   const N=6+Math.floor(R(seed,2)*8);
   /* poster cut: square or diamond only, never off-axis */
-  const rot=contained?(R(seed,3)<0.5?0:Math.PI/4):Math.PI/4+(R(seed,3)-0.5)*0.9;
+  const rot=contained?(KV(0,R(seed,3))<0.5?0:Math.PI/4):Math.PI/4+(R(seed,3)-0.5)*0.9;
   let cx=W*(0.40+R(seed,4)*0.20), cy=H*(0.40+R(seed,5)*0.20);
   let S=Math.max(W,H)*(0.70+R(seed,6)*0.42);
   const drift=(R(seed,7)-0.5)*0.10;
@@ -2105,13 +2128,15 @@ function drawSteppedBands(cv,seed,contained){
        squares (or true 45° diamonds) nested from the centre and stepping out
        until they cover every corner, so the outer bands run off the edges.
        The outermost band stays tinted rather than paper. */
-    const diamond=rot!==0, M=N+2;
+    /* knobs (Stepped Bands recut): shape, bands, spacing, centre */
+    const diamond=rot!==0, M=KNOB[1]==null?N+2:4+Math.floor(KV(1,0)*18);
+    const sg=KNOB[2]==null?1:Math.pow(2.1,(KV(2,0)-0.5)*2), lc=KNOB[3]!=null&&KV(3,0)>=0.5;
     const dmax=diamond?(W/2+H/2):Math.max(W,H)/2;
     paintPixels(c,W,H,(px,py)=>{
       const x=Math.abs(px-W/2), y=Math.abs(py-H/2);
       const d=diamond?x+y:Math.max(x,y);
-      const k=Math.min(M-1,Math.floor(d/dmax*M)), t=1-k/(M-1);
-      return rampAt(ramp, 0.30+Math.pow(1-t,1.4)*0.55);
+      const k=Math.min(M-1,Math.floor((sg===1?d/dmax:Math.pow(d/dmax,sg))*M)), t=1-k/(M-1);
+      return rampAt(ramp, 0.30+Math.pow(lc?t:1-t,1.4)*0.55);
     });
     return;
   }
@@ -2127,6 +2152,11 @@ function drawSteppedBands(cv,seed,contained){
     c.restore();
   }
 }
+knobs('k_stepped',[
+  {n:'Shape',opts:['Square','Diamond'],steps:2,d:1},
+  {n:'Bands',lo:'few',hi:'many',d:0.4},
+  {n:'Spacing',lo:'wide edges',hi:'wide centre',d:0.5},
+  {n:'Centre',opts:['Dark','Light'],steps:2,d:0}]);
 
 /* Noise Bloom — the painterly reference. Three ingredients, and the third is
    what the other noise systems here are missing:
@@ -2214,13 +2244,14 @@ function drawFidenza(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
   const pal=palOf(seed,1);
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
-  const field=makeColorField(seed,pal);
+  /* knobs (Ribbon Field recut): length, width, curl, colour pattern */
+  const field=makeColorField(seed,pal,KV(3,R(seed,700)));
   noteStrategy(cv,field.label);
   const rnd=lcg(seed*911+3);
-  const fs=0.85+R(seed,2)*1.5, turb=1.4+R(seed,3)*2.4;
-  const cell=D*0.0045;
+  const fs=0.85+R(seed,2)*1.5, turb=KNOB[2]==null?1.4+R(seed,3)*2.4:0.4+KV(2,0)*4.4;
+  const cell=D*0.0045, len=KNOB[0]==null?360:8*Math.pow(22,KV(0,0)), ws=KNOB[1]==null?1:0.6+KV(1,0)*0.95;
   const occ=makeOccupancy(W,H,cell);
-  const widths=[D*0.052,D*0.030,D*0.017,D*0.009,D*0.0045];
+  const widths=[D*0.052*ws,D*0.030*ws,D*0.017*ws,D*0.009*ws,D*0.0045*ws];
   const angAt=(x,y)=>fbm(x/W*fs,y/H*fs,seed)*Math.PI*turb;
   const out=[];
   for(let a=0;a<2400;a++){
@@ -2230,7 +2261,7 @@ function drawFidenza(cv,seed){
     let ang=angAt(x,y);
     if(!occ.free(x,y,r+cell,-Math.sin(ang),Math.cos(ang))) continue;
     const pts=[];
-    for(let s=0;s<360;s++){
+    for(let s=0;s<len;s++){
       ang=angAt(x,y);
       const nx=-Math.sin(ang), ny=Math.cos(ang);
       if(x<-r||x>W+r||y<-r||y>H+r) break;
@@ -2255,6 +2286,11 @@ function drawFidenza(cv,seed){
     }
   });
 }
+knobs('k_fidenza',[
+  {n:'Length',lo:'short',hi:'long',d:1},
+  {n:'Width',lo:'thin',hi:'thick',d:0.42},
+  {n:'Curl',lo:'calm',hi:'swirling',d:0.4},
+  {n:'Pattern',opts:['Gradient','Clumps','Scatter','Marbled','Radial'],steps:5,d:0.25}]);
 
 /* QQL — the same non-overlap discipline, but discs threaded along the field
    into chains rather than continuous ribbons. */
@@ -3288,9 +3324,10 @@ function drawPenroseStar(cv,seed){
 function drawQuadBlocks(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const [nm,pal]=posterSet(seed,1);
-  const g=Math.min(W,H)*0.018, leaves=[];
+  /* knobs: cells, gutter, corners, discs */
+  const g=Math.min(W,H)*(KNOB[1]==null?0.018:0.004+KV(1,0)*0.026), stop=KNOB[0]==null?0.55:0.9-KV(0,0)*0.8, leaves=[];
   (function q(x,y,w,h,d,idx){
-    if(d>=4 || (d>=2 && R(seed,idx)<0.55)){ leaves.push([x,y,w,h,idx]); return; }
+    if(d>=4 || (d>=2 && R(seed,idx)<stop)){ leaves.push([x,y,w,h,idx]); return; }
     const hw=w/2, hh=h/2;
     q(x,y,hw,hh,d+1,idx*4+1); q(x+hw,y,hw,hh,d+1,idx*4+2);
     q(x,y+hh,hw,hh,d+1,idx*4+3); q(x+hw,y+hh,hw,hh,d+1,idx*4+4);
@@ -3300,12 +3337,20 @@ function drawQuadBlocks(cv,seed){
     const r=R(seed,9000+idx), big=w*h/(W*H);
     /* large cells take the quieter tones, small ones the accents */
     const col=r<0.3?pal[0]:big>0.05?pal[1+Math.floor(R(seed,7000+idx)*2)]:pal[1+Math.floor(R(seed,8000+idx)*4)];
-    c.fillStyle=col; c.fillRect(x+g/2,y+g/2,w-g,h-g);
-    if(col===pal[0] && R(seed,6000+idx)<0.4){ c.beginPath();
-      c.arc(x+w/2,y+h/2,Math.min(w,h)/2-g,0,7); c.fillStyle=pal[1+Math.floor(R(seed,5000+idx)*4)]; c.fill(); }
+    c.fillStyle=col;
+    if(KNOB[2]==null) c.fillRect(x+g/2,y+g/2,w-g,h-g);
+    else { c.beginPath(); c.roundRect(x+g/2,y+g/2,w-g,h-g,KV(2,0)*Math.min(w-g,h-g)/2); c.fill(); }
+    const dk=KNOB[3]==null?null:KV(3,0), dc=pal[1+Math.floor(R(seed,5000+idx)*4)];
+    if(col===pal[0]?R(seed,6000+idx)<(dk==null?0.4:Math.min(1,dk*1.6)):dk!=null&&R(seed,6000+idx)<dk-0.45){ c.beginPath();
+      c.arc(x+w/2,y+h/2,Math.max(0,Math.min(w,h)/2-g),0,7); c.fillStyle=dc===col?pal[0]:dc; c.fill(); }
   });
   noteStrategy(cv,leaves.length+' cells · '+nm);
 }
+knobs('qblocks',[
+  {n:'Cells',lo:'few',hi:'many',d:0.45},
+  {n:'Gutter',lo:'thin',hi:'wide',d:0.54},
+  {n:'Corners',lo:'square',hi:'round',d:0},
+  {n:'Discs',lo:'none',hi:'many',d:0.35}]);
 
 /* Distance field — the signed distance to a few circles, merged with a
    smooth minimum, drawn as contour bands. The shapes are placed on the
