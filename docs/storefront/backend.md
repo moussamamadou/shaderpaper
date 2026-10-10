@@ -78,7 +78,7 @@ None of these is a ShaderPaper decision; each is marked in the code.
 | Prodigi item attributes | Empty (framed SKUs usually need a `color`; valid values come from `GET products/{sku}`) | `PRODIGI_ITEM_ATTRIBUTES` in `catalog.ts` |
 | Print format | Sizes are 3:4 (Méridien's) while the catalogue composes posters at 4:5; see the open question in the print-renderer README | `POSTER_SIZES` |
 | Stripe | No keys; the manual provider takes no payment, so the storefront must say "Test mode" | `.env` |
-| Store name, stock location | "Default Store", "European Warehouse" (starter's) | seed, admin |
+| Store name, stock location | "Default Store" (or Medusa's "Medusa Store" when the app started before the seed), "European Warehouse" (starter's) | seed, admin |
 
 ## 6. Prodigi client
 
@@ -124,11 +124,12 @@ Get the publishable key from the seed's last log line or the admin (Settings →
 | `PRODIGI_API_KEY`, `PRODIGI_ENV` | for Prodigi | Empty key = off; `sandbox` by default |
 | `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET` | no | Registers Stripe; the region then needs `pp_stripe_stripe` |
 
-Tests: `pnpm --filter @shaderpaper/backend test:unit`, `pnpm --filter @shaderpaper/backend typecheck`, `pnpm --filter @shaderpaper/backend lint`, `pnpm --filter @shaderpaper/print-renderer test`, `pnpm --filter @shaderpaper/print-renderer typecheck`. The pre-commit hook runs the backend unit tests and the print renderer's tests and typecheck.
+Tests: `pnpm --filter @shaderpaper/backend test:unit`, `pnpm --filter @shaderpaper/backend typecheck` (stricter once `medusa develop` has generated `.medusa/types`, which types Query results), `pnpm --filter @shaderpaper/backend lint`, `pnpm --filter @shaderpaper/print-renderer test`, `pnpm --filter @shaderpaper/print-renderer typecheck`. The pre-commit hook runs the backend unit tests and the print renderer's tests and typecheck.
 
 ## 8. Verified on 2026-10-10 (local)
 
 - `medusa db:migrate` then the seed: 1 store, 1 sales channel, 1 publishable key, 1 region, 7 tax regions, 1 stock location, 1 fulfilment set, 2 shipping options, 6 collections, 54 products, 648 variants, 0 inventory items. `pnpm seed` again: "0 collection(s) and 0 poster product(s) created (54 already there)", same counts.
+- On two throwaway databases (dropped after): `db:migrate` alone (the seed runs as a migration script before the app ever starts), and `db:migrate --skip-scripts` then `medusa exec` of the seed (Medusa's own default store, channel and key exist first; the seed reuses them and adds USD). Both ended with the counts above.
 - `GET /store/products?limit=100&region_id=…`: 54 products, 12 variants each, 648/648 with a calculated EUR price (e.g. `glass` 30 × 40 unframed 39 EUR, 45 × 60 black 149 EUR, 60 × 80 oak 189 EUR).
 - `GET /store/collections`: the 6 collections.
 - A cart in region Europe with `SP-GLASS-45X60-BLACK` and `metadata.poster` (shader design): line at 149 EUR, metadata kept as sent; `GET /store/shipping-options?cart_id=…`: Standard 10 EUR, Express 10 EUR. No order was completed.

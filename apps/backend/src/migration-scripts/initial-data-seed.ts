@@ -71,32 +71,41 @@ export default async function initial_data_seed({ container }: { container: Medu
 
   // ---- Sales channel, publishable key, store ----
   logger.info("Seeding store data...")
-  let {
-    data: [salesChannel],
+  const {
+    data: [existingChannel],
   } = await query.graph({ entity: "sales_channel", fields: ["id"], filters: { name: SALES_CHANNEL_NAME } })
-  if (!salesChannel) {
-    const { result } = await createSalesChannelsWorkflow(container).run({
-      input: { salesChannelsData: [{ name: SALES_CHANNEL_NAME, description: "Created by Medusa" }] },
-    })
-    salesChannel = result[0]
-  }
+  const salesChannelId: string =
+    existingChannel?.id ??
+    (
+      await createSalesChannelsWorkflow(container).run({
+        input: { salesChannelsData: [{ name: SALES_CHANNEL_NAME, description: "Created by Medusa" }] },
+      })
+    ).result[0].id
 
-  let {
-    data: [apiKey],
+  const {
+    data: [existingKey],
   } = await query.graph({
     entity: "api_key",
     fields: ["id", "token", "sales_channels.id"],
     filters: { type: "publishable", title: API_KEY_TITLE },
   })
-  if (!apiKey) {
-    const { result } = await createApiKeysWorkflow(container).run({
-      input: { api_keys: [{ title: API_KEY_TITLE, type: "publishable", created_by: "" }] },
-    })
-    apiKey = { ...result[0], sales_channels: [] }
-  }
-  if (!(apiKey.sales_channels ?? []).some((channel) => channel?.id === salesChannel.id)) {
+  const apiKey: { id: string; token: string; channelIds: string[] } = existingKey
+    ? {
+        id: existingKey.id,
+        token: existingKey.token,
+        channelIds: (existingKey.sales_channels ?? []).flatMap((channel) => (channel ? [channel.id] : [])),
+      }
+    : {
+        ...(
+          await createApiKeysWorkflow(container).run({
+            input: { api_keys: [{ title: API_KEY_TITLE, type: "publishable", created_by: "" }] },
+          })
+        ).result[0],
+        channelIds: [],
+      }
+  if (!apiKey.channelIds.includes(salesChannelId)) {
     await linkSalesChannelsToApiKeyWorkflow(container).run({
-      input: { id: apiKey.id, add: [salesChannel.id] },
+      input: { id: apiKey.id, add: [salesChannelId] },
     })
   }
 
@@ -115,17 +124,17 @@ export default async function initial_data_seed({ container }: { container: Medu
     await createStoresWorkflow(container).run({
       input: {
         stores: [
-          { name: STORE_NAME, supported_currencies: supportedCurrencies, default_sales_channel_id: salesChannel.id },
+          { name: STORE_NAME, supported_currencies: supportedCurrencies, default_sales_channel_id: salesChannelId },
         ],
       },
     })
   } else {
     const codes = (existingStore.supported_currencies ?? []).map((c) => c?.currency_code)
-    if (existingStore.default_sales_channel_id !== salesChannel.id || !["eur", "usd"].every((c) => codes.includes(c))) {
+    if (existingStore.default_sales_channel_id !== salesChannelId || !["eur", "usd"].every((c) => codes.includes(c))) {
       await updateStoresWorkflow(container).run({
         input: {
           selector: { id: existingStore.id },
-          update: { supported_currencies: supportedCurrencies, default_sales_channel_id: salesChannel.id },
+          update: { supported_currencies: supportedCurrencies, default_sales_channel_id: salesChannelId },
         },
       })
     }
@@ -133,10 +142,11 @@ export default async function initial_data_seed({ container }: { container: Medu
 
   // ---- Region, tax regions ----
   logger.info("Seeding region data...")
-  let {
-    data: [region],
+  const {
+    data: [existingRegion],
   } = await query.graph({ entity: "region", fields: ["id"], filters: { name: REGION_NAME } })
-  if (!region) {
+  let regionId: string | undefined = existingRegion?.id
+  if (!regionId) {
     const { result } = await createRegionsWorkflow(container).run({
       input: {
         regions: [
@@ -149,7 +159,7 @@ export default async function initial_data_seed({ container }: { container: Medu
         ],
       },
     })
-    region = result[0]
+    regionId = result[0].id
   }
 
   const { data: taxRegions } = await query.graph({ entity: "tax_region", fields: ["country_code"] })
@@ -163,36 +173,51 @@ export default async function initial_data_seed({ container }: { container: Medu
 
   // ---- Stock location, fulfilment, shipping options ----
   logger.info("Seeding stock location and fulfillment data...")
-  let {
-    data: [stockLocation],
+  const {
+    data: [existingLocation],
   } = await query.graph({
     entity: "stock_location",
     fields: ["id", "fulfillment_providers.id", "fulfillment_sets.id", "sales_channels.id"],
     filters: { name: STOCK_LOCATION_NAME },
   })
-  if (!stockLocation) {
-    const { result } = await createStockLocationsWorkflow(container).run({
-      input: { locations: [{ name: STOCK_LOCATION_NAME, address: { city: "Copenhagen", country_code: "DK", address_1: "" } }] },
-    })
-    stockLocation = { ...result[0], fulfillment_providers: [], fulfillment_sets: [], sales_channels: [] }
-  }
-  if (!(stockLocation.fulfillment_providers ?? []).some((p) => p?.id === "manual_manual")) {
+  const ids = (list?: ({ id: string } | null)[] | null) => (list ?? []).flatMap((item) => (item ? [item.id] : []))
+  const stockLocation: { id: string; providerIds: string[]; setIds: string[]; channelIds: string[] } = existingLocation
+    ? {
+        id: existingLocation.id,
+        providerIds: ids(existingLocation.fulfillment_providers),
+        setIds: ids(existingLocation.fulfillment_sets),
+        channelIds: ids(existingLocation.sales_channels),
+      }
+    : {
+        id: (
+          await createStockLocationsWorkflow(container).run({
+            input: {
+              locations: [{ name: STOCK_LOCATION_NAME, address: { city: "Copenhagen", country_code: "DK", address_1: "" } }],
+            },
+          })
+        ).result[0].id,
+        providerIds: [],
+        setIds: [],
+        channelIds: [],
+      }
+  if (!stockLocation.providerIds.includes("manual_manual")) {
     await link.create({
       [Modules.STOCK_LOCATION]: { stock_location_id: stockLocation.id },
       [Modules.FULFILLMENT]: { fulfillment_provider_id: "manual_manual" },
     })
   }
 
-  let {
-    data: [shippingProfile],
+  const {
+    data: [existingProfile],
   } = await query.graph({ entity: "shipping_profile", fields: ["id"], filters: { type: "default" } })
-  if (!shippingProfile) {
-    // Created by a core migration on a fresh database; made here only if it is missing.
-    const { result } = await createShippingProfilesWorkflow(container).run({
-      input: { data: [{ name: "Default Shipping Profile", type: "default" }] },
-    })
-    shippingProfile = result[0]
-  }
+  // Created by a core migration on a fresh database; made here only if it is missing.
+  const shippingProfileId: string =
+    existingProfile?.id ??
+    (
+      await createShippingProfilesWorkflow(container).run({
+        input: { data: [{ name: "Default Shipping Profile", type: "default" }] },
+      })
+    ).result[0].id
 
   let [fulfillmentSet] = await fulfillmentModuleService.listFulfillmentSets(
     { name: FULFILLMENT_SET_NAME },
@@ -210,7 +235,7 @@ export default async function initial_data_seed({ container }: { container: Medu
       ],
     })
   }
-  if (!(stockLocation.fulfillment_sets ?? []).some((set) => set?.id === fulfillmentSet.id)) {
+  if (!stockLocation.setIds.includes(fulfillmentSet.id)) {
     await link.create({
       [Modules.STOCK_LOCATION]: { stock_location_id: stockLocation.id },
       [Modules.FULFILLMENT]: { fulfillment_set_id: fulfillmentSet.id },
@@ -231,7 +256,7 @@ export default async function initial_data_seed({ container }: { container: Medu
         price_type: "flat" as const,
         provider_id: "manual_manual",
         service_zone_id: serviceZone.id,
-        shipping_profile_id: shippingProfile.id,
+        shipping_profile_id: shippingProfileId,
         type: {
           label: option.label,
           // Neutral on purpose: no delivery time is promised until it is known (business input).
@@ -242,7 +267,7 @@ export default async function initial_data_seed({ container }: { container: Medu
         prices: [
           { currency_code: "usd", amount: SHIPPING_AMOUNT },
           { currency_code: "eur", amount: SHIPPING_AMOUNT },
-          { region_id: region.id, amount: SHIPPING_AMOUNT },
+          { region_id: regionId, amount: SHIPPING_AMOUNT },
         ],
         rules: [
           { attribute: "enabled_in_store", value: "true", operator: "eq" as const },
@@ -252,9 +277,9 @@ export default async function initial_data_seed({ container }: { container: Medu
     })
   }
 
-  if (!(stockLocation.sales_channels ?? []).some((channel) => channel?.id === salesChannel.id)) {
+  if (!stockLocation.channelIds.includes(salesChannelId)) {
     await linkSalesChannelsToStockLocationWorkflow(container).run({
-      input: { id: stockLocation.id, add: [salesChannel.id] },
+      input: { id: stockLocation.id, add: [salesChannelId] },
     })
   }
   logger.info("Finished seeding stock location and fulfillment data.")
@@ -300,7 +325,7 @@ export default async function initial_data_seed({ container }: { container: Medu
     const { result } = await createProductsWorkflow(container).run({
       input: {
         products: shaderPosterProductsInput(
-          { currencies, salesChannelId: salesChannel.id, shippingProfileId: shippingProfile.id, collectionIds },
+          { currencies, salesChannelId: salesChannelId, shippingProfileId, collectionIds },
           newPosters.slice(i, i + PRODUCT_BATCH)
         ),
       },
