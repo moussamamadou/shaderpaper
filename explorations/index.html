@@ -3451,7 +3451,8 @@ function drawDistanceField(cv,seed){
   else { const r=M*(0.08+R(seed,3)*0.04), rc=r*(1.2+R(seed,4)*0.4), dy=rc+r*(1.1+R(seed,5)*0.6);
     sh=[[W/2,H/2-dy,r],[W/2,H/2,rc],[W/2,H/2+dy,r]]; }
   if(KNOB[1]!=null||KNOB[2]!=null){ const e=st===2?1.27:1;
-    const f=Math.min(0.65+KV(2,0.47)*0.75,...sh.map(([x,y,r])=>Math.min(0.42*W/(Math.abs(x-W/2)+r*e),0.42*H/(Math.abs(y-H/2)+r*e))));
+    /* cap: the largest scale that still fits; at 3:4 the knob runs linearly up to it, so its top end never sits flat on the cap */
+    const cap=Math.min(...sh.map(([x,y,r])=>Math.min(0.42*W/(Math.abs(x-W/2)+r*e),0.42*H/(Math.abs(y-H/2)+r*e)))), f=AR45?Math.min(0.65+KV(2,0.47)*0.75,cap):Math.min(0.65,cap)+Math.max(0,cap-0.65)*KV(2,0.47);
     sh=sh.map(([x,y,r])=>[W/2+(x-W/2)*f,H/2+(y-H/2)*f,r*f]); }
   const k=M*(0.06+R(seed,6)*0.08), bw=KNOB[3]==null?M*(0.028+R(seed,7)*0.03):M*(0.075-KV(3,0)*0.053);
   const core=Math.floor(R(seed,8)*4), o=Math.floor(R(seed,9)*4), two=R(seed,10)<0.4;
@@ -3724,7 +3725,7 @@ function drawVega(cv,seed){
   const A=P[0], B=P[P.length-1]===P[0]?P[1]:(P.length>4?P[4]:P[1]), T=P[2];
   /* knobs: grid (columns), lens (radius), bulge (warp strength, kept below
      3 so the warp never folds), dots (disc size in its cell) */
-  const n=KNOB[0]==null?10+Math.floor(R(seed,3)*8):7+Math.floor(KV(0,0)*14), cs=W/n, rows=Math.ceil(H/cs)+1, oy=(H-rows*cs)/2;
+  const n=KNOB[0]==null?10+Math.floor(R(seed,3)*8):7+Math.floor(KV(0,0)*14), cs=W/n, rows=AR45?Math.ceil(H/cs)+1:Math.ceil(H/cs-1e-6), oy=(H-rows*cs)/2;   /* 3:4: whole rows, or ends of at least half a cell */
   const cx=W/2, cy=H/2, Rb=M*(KNOB[1]==null?0.36+R(seed,4)*0.1:0.24+KV(1,0)*0.23), amp=KNOB[2]==null?1.6+R(seed,5)*1.0:0.4+KV(2,0)*2.5;
   const warp=(x,y)=>{ const dx=x-cx, dy=y-cy, d=Math.hypot(dx,dy), r=d/Rb;
     if(r>=1||d===0) return [x,y]; const k=(r+amp*r*(1-r)*(1-r))/r; return [cx+dx*k, cy+dy*k]; };
@@ -3824,7 +3825,7 @@ function drawSeigaiha(cv,seed){
      flat overlapping arcs up to tall fans), weight (colour ring vs paper gap) */
   const n=KNOB[0]==null?3+Math.floor(R(seed,3)*3):2+Math.floor(KV(0,0)*5), Rs=W/n/2*1.0, rings=KNOB[1]==null?3+Math.floor(R(seed,4)*3):2+Math.floor(KV(1,0)*5);
   const dy=Rs*(KNOB[2]==null?0.5:0.32+KV(2,0)*0.4), wt=KNOB[3]==null?0.5:0.25+KV(3,0)*0.55;
-  const rowsN=Math.ceil(H/dy)+3;
+  const rowsN=AR45?Math.ceil(H/dy)+3:Math.ceil((H+2*Rs)/dy)+1;   /* 3:4: enough rows that the last one drawn is off the sheet, so no row shows whole rings at the bottom edge */
   for(let j=0;j<rowsN;j++){
     const y=j*dy-Rs, off=(j%2)*Rs;
     for(let i=-1;i<=n+1;i++){
@@ -4240,6 +4241,7 @@ void main(){
      fits it inside the sheet with a margin (measured offline) */
   float ang=k<1.?1.690:k<2.?1.724:k<3.?3.128:k<4.?2.128:k<5.?1.398:1.269;
   float zm=k<1.?1.32:k<2.?1.29:k<3.?0.94:k<4.?1.20:k<5.?1.34:1.29;
+  zm*=1.25/HY;   /* every set is fitted to the height (measured at 4:5), so a taller sheet takes it larger */
   /* knobs: shape (which C), morph (nudges C along its own direction, so the
      set keeps its character and its fit), bands, glow */
   C+=normalize(C)*(kv(1,0.5)-0.5)*0.05;
@@ -4566,7 +4568,8 @@ function drawBauhausTiles(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const [nm,pal]=posterSet(seed,1);
   /* knobs: grid, circles, curves, fill */
-  const cols=KNOB[0]==null?3+Math.floor(R(seed,2)*3):3+Math.floor(KV(0,0)*6), cs=W/cols, rows=Math.ceil(H/cs);
+  /* 3:4: whole rows when they fit, else the grid centred so both ends bleed alike */
+  const cols=KNOB[0]==null?3+Math.floor(R(seed,2)*3):3+Math.floor(KV(0,0)*6), cs=W/cols, rows=Math.ceil(H/cs-(AR45?0:1e-6)), oy=AR45?0:(H-rows*cs)/2;
   const used=pal.slice(0,4+(R(seed,3)<0.5?1:0));
   const field=makeColorField(seed,used);
   /* 2×2 circles: the seed's few tries, or (circles knob) first-fit over every spot in seeded order, keeping that share */
@@ -4580,7 +4583,7 @@ function drawBauhausTiles(cv,seed){
   });
   fit.slice(0,KNOB[1]==null?fit.length:Math.round(KV(1,0)*fit.length)).forEach(([i,j,key])=>{ key.forEach(q=>big.add(q)); big.add('c'+i+','+j); });
   for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){
-    const x=i*cs, y=j*cs, idx=j*cols+i;
+    const x=i*cs, y=oy+j*cs, idx=j*cols+i;
     const bgI=field(x+cs/2,y+cs/2,W,H,idx), fgI=(bgI+1+Math.floor(R(seed,100+idx)*(used.length-2)))%used.length;
     c.fillStyle=used[bgI]; c.fillRect(x,y,cs+1,cs+1);
     c.fillStyle=used[fgI===bgI?(bgI+1)%used.length:fgI];
@@ -4599,7 +4602,7 @@ function drawBauhausTiles(cv,seed){
   }
   /* the 2×2 circles, one fill each so no seam crosses them */
   big.forEach(q=>{ if(q[0]!=='c') return; const [bi,bj]=q.slice(1).split(',').map(Number);
-    const cx=(bi+1)*cs, cy=(bj+1)*cs, k=field(cx,cy,W,H,bj*cols+bi);
+    const cx=(bi+1)*cs, cy=oy+(bj+1)*cs, k=field(cx,cy,W,H,bj*cols+bi);
     c.fillStyle=used[(k+2)%used.length]; c.beginPath(); c.arc(cx,cy,cs*0.98,0,7); c.fill(); });
   noteStrategy(cv,nm+' · '+field.label);
 }
@@ -4690,8 +4693,10 @@ function drawStackedStones(cv,seed){
   const [nm,pal]=posterSet(seed,1);
   c.fillStyle=pal[0]; c.fillRect(0,0,W,H);
   /* knobs: stones, scale, shape, disc. A set scale builds the stack first, then
-     fits stack and disc together, centred, inside the sheet */
-  const fit=KNOB[1]!=null, ax=W*(0.38+R(seed,2)*0.24), di=Math.floor(R(seed,6)*4), dcol=pal[1+di], S=[];
+     fits stack and disc together, centred, inside the sheet. At 3:4 every plate
+     is fitted, the scale running from 0.58 of the fit to the full fit (the seed
+     picks it when the knob is unset), so no part of its range is clamped flat */
+  const fit=KNOB[1]!=null||!AR45, ax=W*(0.38+R(seed,2)*0.24), di=Math.floor(R(seed,6)*4), dcol=pal[1+di], S=[];
   if(!fit){ c.beginPath(); c.arc(ax+(R(seed,3)-0.5)*W*0.3,H*(0.36+R(seed,4)*0.12),M*(KNOB[3]==null?0.26+R(seed,5)*0.1:0.18+KV(3,0)*0.26),0,7);
     c.fillStyle=dcol; c.fill(); }
   const n=KNOB[0]==null?3+Math.floor(R(seed,7)*4):2+Math.floor(KV(0,0)*7);
@@ -4713,7 +4718,7 @@ function drawStackedStones(cv,seed){
     const P=S.flatMap(e=>e[0]), x0=Math.min(...P.map(p=>p[0])), x1=Math.max(...P.map(p=>p[0])), y0=Math.min(...P.map(p=>p[1])), y1=Math.max(...P.map(p=>p[1]));
     const sw=x1-x0, sh=y1-y0, dr=sw*(0.3+KV(3,0.5)*0.42), dx=(x0+x1)/2+(R(seed,3)-0.5)*sw*0.5, dy=y0+sh*(0.25+R(seed,4)*0.2);
     const ux0=Math.min(x0,dx-dr), ux1=Math.max(x1,dx+dr), uy0=Math.min(y0,dy-dr), uy1=Math.max(y1,dy+dr);
-    const s=Math.min(H*(0.5+0.36*KV(1,0))/(uy1-uy0),W*0.84/(ux1-ux0)), ox=(W-(ux1+ux0)*s)/2, oy=(H-(uy1+uy0)*s)/2;
+    const s=AR45?Math.min(H*(0.5+0.36*KV(1,0))/(uy1-uy0),W*0.84/(ux1-ux0)):Math.min(H*0.86/(uy1-uy0),W*0.84/(ux1-ux0))*(0.58+0.42*KV(1,0.45+R(seed,90)*0.45)), ox=(W-(ux1+ux0)*s)/2, oy=(H-(uy1+uy0)*s)/2;
     c.beginPath(); c.arc(dx*s+ox,dy*s+oy,dr*s,0,7); c.fillStyle=dcol; c.fill();
     S.forEach(([pts,col])=>{ fillPts(c,pts.map(p=>[p[0]*s+ox,p[1]*s+oy])); c.fillStyle=col; c.fill(); });
   }
@@ -4736,7 +4741,7 @@ function drawTruchetField(cv,seed){
   const [paper,ink,nm]=posterInk(seed,1);
   /* knobs: tiles, pattern, shape (corners from diamond through disc to
      squircle), stripes (concentric bands per shape) */
-  const cols=KNOB[0]==null?4+Math.floor(R(seed,2)*5):3+Math.floor(KV(0,0)*8), cs=W/cols, rows=Math.ceil(H/cs)+1;
+  const cols=KNOB[0]==null?4+Math.floor(R(seed,2)*5):3+Math.floor(KV(0,0)*8), cs=W/cols, rows=AR45?Math.ceil(H/cs)+1:Math.ceil(H/cs-1e-6), oy=AR45?0:(H-rows*cs)/2;   /* 3:4: centred, both ends alike */
   const sc=0.35+R(seed,3)*0.5;
   /* pattern knob: 0 every tile one way, the seed's noise patches growing in
      core first up to 0.5 (as the catalogue draws them), then random */
@@ -4759,7 +4764,7 @@ function drawTruchetField(cv,seed){
   c.beginPath();
   for(let j=0;j<rows;j++) for(let i=0;i<cols;i++){
     const o=ori?ori[j*cols+i]:noise2(i*sc,j*sc,seed)+(R(seed,100+j*31+i)-0.5)*0.25>0.5?1:0;
-    const flip=((i+j)&1)^o, x=i*cs, y=j*cs;
+    const flip=((i+j)&1)^o, x=i*cs, y=oy+j*cs;
     if(!plain){ if(flip^((nb-1)&1)) c.rect(x,y,cs,cs);
       for(let k=1-nb;k<nb;k++){ const rho=cs/2+k*cs/(2*nb);
         if(o===0){ corner(x,y,1,1,rho); corner(x+cs,y+cs,-1,-1,rho); } else { corner(x+cs,y,-1,1,rho); corner(x,y+cs,1,-1,rho); } }
@@ -4995,7 +5000,7 @@ float pinH(vec2 c){
   vec2 q=(c+0.5)/PN_S; float r=length(q), h;
   if(PN_mode<1.0) h=0.5+0.5*cos(r*PN_k*6.2832);
   else if(PN_mode<2.0) h=smoothstep(0.2,0.8,fbmG(q*1.4+PN_o));
-  else if(PN_mode<3.0) h=1.0-max(abs(q.x),abs(q.y))*0.8;
+  else if(PN_mode<3.0) h=1.0-max(abs(q.x),abs(q.y))*(HY>1.3?1.3:0.8);   /* 3:4: the pyramid fitted to the width, corners on the sheet */
   else if(PN_mode<4.0) h=sqrt(max(0.0,1.0-r*r*0.9));
   else h=0.5+0.25*(sin(q.x*PN_k*6.2832)+sin(q.y*PN_k*6.2832));
   h=clamp(h,0.0,1.0);
