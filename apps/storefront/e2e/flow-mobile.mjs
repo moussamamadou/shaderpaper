@@ -24,6 +24,8 @@ try {
   await hydrated()
   await page.waitForFunction(() => window.__sp.length > 0, null, { timeout: 90000 })
   await page.waitForTimeout(400)
+  const rail = await page.evaluate(() => [...document.querySelectorAll('ul.snap-x')].map((ul) => Math.round(ul.querySelector('li')?.getBoundingClientRect().left ?? -1)))
+  step('PDP mobile: the poster rail keeps its 16 px margin', rail.length > 0 && rail.every((x) => x === 16), rail)
   const tabs = await page.locator('[role="tab"]').allInnerTexts()
   step('PDP mobile: customiser tabs', tabs.length >= 3, tabs)
   await page.screenshot({ path: `${SHOTS}/e2e-m01-pdp.png` })
