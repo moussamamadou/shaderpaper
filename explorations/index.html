@@ -46,7 +46,8 @@
   .meta b{color:#bab6ae;font-weight:600}
 
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
-  .plate{background:#f2f0ea;border-radius:3px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.55);aspect-ratio:4/5}
+  .plate{background:#f2f0ea;border-radius:3px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,.55);aspect-ratio:3/4}
+  html.ar45 .plate{aspect-ratio:4/5}
   .plate canvas{width:100%;height:100%;display:block}
   .cap{color:var(--dim);font-size:11px;margin-top:6px;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bar{display:flex;gap:10px;align-items:center;margin-top:18px;flex-wrap:wrap}
@@ -86,7 +87,8 @@
   /* customiser */
   .cz{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
   .czstage{position:sticky;top:76px}
-  .czstage .plate{max-width:560px;margin:0 auto}
+  .czstage .plate{max-width:525px;margin:0 auto}
+  html.ar45 .czstage .plate{max-width:560px}
   .czstage .cap{text-align:center}
   .czpanel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:18px}
   .czpanel h3{margin:0}
@@ -118,9 +120,14 @@
   /* #embed?id=… paints one poster full-bleed for the storefront (see embedBoot) */
   html.embed,html.embed body{margin:0;height:100%;overflow:hidden;background:#f2f0ea}
   html.embed .wrap{display:none}
-  #spembed{position:fixed;inset:0;width:100%;height:100%;display:block}
+  /* the canvas keeps the sheet's aspect, as large as the viewport allows (the whole viewport when it matches) */
+  #spembed{position:fixed;inset:0;margin:auto;display:block;width:min(100vw,calc(100vh*3/4));height:min(100vh,calc(100vw*4/3))}
+  html.ar45 #spembed{width:min(100vw,calc(100vh*4/5));height:min(100vh,calc(100vw*5/4))}
 </style>
-<script>if(/^#embed\b/.test(location.hash)) document.documentElement.classList.add('embed');</script>
+<script>/* the sheet aspect: 3:4, the print sizes sold, unless ?ar=4:5 or ar=4:5 among the hash params (#embed?…&ar=4:5) */
+var SHEET_AR=/[?&#]ar=4(:|%3A)5(&|$)/i.test(location.search+'&'+location.hash)?'4:5':'3:4';
+document.documentElement.classList.add(SHEET_AR==='4:5'?'ar45':'ar34');
+if(/^#embed\b/.test(location.hash)) document.documentElement.classList.add('embed');</script>
 </head>
 <body>
 <div class="wrap">
@@ -193,9 +200,16 @@ function glRnd(seed,i){ const f=Math.fround, fr=x=>f(x-Math.floor(x));
   let p=f(f(f(seed)*f(7.13))+f(f(i)*f(19.77))); p=fr(f(p*f(0.1031))); p=f(p*f(p+f(33.33))); p=f(p*f(p+p)); return fr(p); }
 function strHash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0)/4294967296; }
 function seedFrom(s){ return strHash(s)*997; }
+/* ---- sheet aspect -----------------------------------------------------------
+   SHEET_AR (set in <head>) is '3:4', the print sizes sold, or '4:5' with ?ar=4:5
+   (ar=4:5 among the #embed params), which renders every plate exactly as the
+   4:5 catalogue did. Width is the unit: SHEET_HY is the sheet's half height when
+   its half width is 1, so uvCentered() runs y over ±SHEET_HY; GLSL sees it as HY.
+   Composition fixes that only the 3:4 sheet needs are gated on !AR45. */
+const AR45=SHEET_AR==='4:5', SHEET_W=AR45?4:3, SHEET_H=AR45?5:4, SHEET_HY=SHEET_H/SHEET_W, SHEET_WH=AR45?0.8:0.75;
 function prep(cv){
   const dpr=Math.min(devicePixelRatio||1,EMBED_DPR);
-  const w=cv.clientWidth||200,h=cv.clientHeight||250;
+  const w=cv.clientWidth||SHEET_W*50,h=cv.clientHeight||SHEET_H*50;
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
   const c=cv.getContext('2d'); c.fillStyle=PAPER; c.fillRect(0,0,cv.width,cv.height); return c;
 }
@@ -208,7 +222,7 @@ function noise2(x,y,s){
 function fbm(x,y,s){ let a=.5,t=0,fx=x,fy=y; for(let i=0;i<4;i++){t+=a*noise2(fx,fy,s);fx*=2.03;fy*=2.03;a*=.5;} return t; }
 
 /* ---- shared WebGL2 renderer: one context, blitted into many 2D canvases ---- */
-const SS=2, GW=520, GH=650;
+const SS=2, GW=AR45?520:504, GH=AR45?650:672;   /* 3:4 keeps the pixel count of 4:5 */
 const glc=document.createElement('canvas'); glc.width=GW*SS; glc.height=GH*SS;
 const gl=glc.getContext('webgl2',{preserveDrawingBuffer:true,antialias:false});
 if(!gl) fail('X WebGL2 unavailable — shader systems will not render.');
@@ -222,6 +236,7 @@ precision highp float;
 out vec4 outColor;
 uniform vec2 u_res; uniform float u_seed; uniform float u_vivid;
 uniform vec4 u_k; uniform float u_pal;
+#define HY ${AR45?'1.25':'1.33333333'}
 const vec3 PAPER=vec3(0.949,0.941,0.919);
 const vec3 INK  =vec3(0.078,0.078,0.102);
 float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
@@ -460,7 +475,7 @@ void main(){
 }`;
 
 function runRD(seed){
-  const W=200,H=250,texel=[1/W,1/H];
+  const W=AR45?200:198,H=AR45?250:264,texel=[1/W,1/H];
   const f=0.030+R(seed,3.1)*0.032, k=0.057+R(seed,5.7)*0.008;
   const data=new Float32Array(W*H*4);
   for(let i=0;i<W*H;i++){ data[i*4]=1; data[i*4+1]=0; data[i*4+3]=1; }
@@ -510,7 +525,7 @@ function drawCA(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height;
   const rule=CA_RULES[Math.floor(R(seed,2.7)*CA_RULES.length)];
   /* rule 1: full bleed — the automaton runs off the sheet rather than sitting in a margin */
-  const N=61+Math.floor(R(seed,7.7)*40), rows=Math.ceil(N*1.25);
+  const N=61+Math.floor(R(seed,7.7)*40), rows=Math.ceil(N*SHEET_HY);
   const cell=Math.max(W/N,H/rows), ox=(W-cell*N)/2, oy=(H-cell*rows)/2;
   let st=new Uint8Array(N);
   if(R(seed,4.4)<0.5) st[Math.floor(N/2)]=1;
@@ -796,7 +811,7 @@ knobs('k_bands',[
 function drawDisplacement(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
   const accent=pick(seed,1,ACCENTS);
-  const cols=5+Math.floor(R(seed,2)*6), rows=Math.round(cols*1.25);
+  const cols=5+Math.floor(R(seed,2)*6), rows=Math.round(cols*SHEET_HY);
   const m=Math.min(W,H)*0.07, cw=(W-m*2)/cols, ch=(H-m*2)/rows;
   const ox=R(seed,3), oy=R(seed,4), nest=2+Math.floor(R(seed,5)*3);
   for(let r=0;r<rows;r++) for(let q=0;q<cols;q++){
@@ -1486,7 +1501,7 @@ function drawQuadtree(cv,seed){
 function drawHypnoSquares(cv,seed){
   const c=prep(cv),W=cv.width,H=cv.height,D=Math.hypot(W,H);
   const pal=palOf(seed,1);
-  const cols=3+Math.floor(R(seed,2)*4), rows=Math.round(cols*1.25);
+  const cols=3+Math.floor(R(seed,2)*4), rows=Math.round(cols*SHEET_HY);
   const m=Math.min(W,H)*0.05;
   const cw=(W-m*2)/cols, ch=(H-m*2)/rows;
   const field=makeColorField(seed,pal);
@@ -1712,7 +1727,7 @@ function renderDensity(c,W,H,dens,maxd,ramp,paper,boost){
 }
 function darkGround(cv){
   const dpr=Math.min(devicePixelRatio||1,2);
-  const w=cv.clientWidth||200,h=cv.clientHeight||250;
+  const w=cv.clientWidth||SHEET_W*50,h=cv.clientHeight||SHEET_H*50;
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
   const c=cv.getContext('2d'); c.fillStyle='#000'; c.fillRect(0,0,cv.width,cv.height); return c;
 }
@@ -3302,8 +3317,8 @@ function openViewer(sys,base,label){
   }
   ov.style.display='flex';
   const cv=ov.querySelector('canvas');
-  const h=Math.min(innerHeight*0.9,(innerWidth-32)*1.25);
-  cv.style.height=h+'px'; cv.style.width=(h*0.8)+'px';
+  const h=Math.min(innerHeight*0.9,(innerWidth-32)*SHEET_HY);
+  cv.style.height=h+'px'; cv.style.width=(h*SHEET_WH)+'px';
   cv.dataset.strategy='';
   try{ paintGated(sys,cv,base); }catch(err){ fail('X viewer '+sys.id+': '+err.message); }
   ov.querySelector('div').textContent=label+(cv.dataset.strategy?' · '+cv.dataset.strategy:'')+' · click or Esc to close';
@@ -4356,7 +4371,7 @@ void main(){
   vec3 g,a,b,c; freePal(g,a,b,c);
   vec2 uv=uvCentered();
   /* knobs: origin (centre or rising from the bottom edge), rays, twist (straight to pinwheel), glow */
-  float oy=u_k.x<0.0?(rnd(1.)<0.5?0.0:-1.25):(u_k.x<0.5?0.0:-1.25);
+  float oy=u_k.x<0.0?(rnd(1.)<0.5?0.0:-HY):(u_k.x<0.5?0.0:-HY);
   vec2 q=uv-vec2(0.0,oy);
   float rays=u_k.y<0.0?floor(14.0+rnd(2.)*20.0):floor(8.0+u_k.y*40.0), tw=u_k.z<0.0?(rnd(3.)-0.5)*0.8*step(0.5,rnd(4.)):u_k.z*(oy<-0.5?0.8:1.4)*(rnd(3.)<0.5?-1.0:1.0);
   float r=length(q), an=atan(q.x,q.y)+tw*r;
@@ -4862,7 +4877,7 @@ void main(){
   float wk=kv(2,0.55+rnd(4.)*0.45), gk=kv(3,0.35+rnd(5.)*0.5);
   bool dark=rnd(6.)<0.5;
   float cols=lay<1.0?1.0:lay<2.0?2.0:3.0, rows=lay<1.0?1.0:cols+1.0;
-  vec2 cell=vec2(2.0/cols,2.5/rows), q=uv+vec2(1.0,1.25);
+  vec2 cell=vec2(2.0/cols,2.0*HY/rows), q=uv+vec2(1.0,HY);
   vec2 id=clamp(floor(q/cell),vec2(0.0),vec2(cols-1.0,rows-1.0)), lp=q-(id+0.5)*cell;
   PF_s=min(cell.x,cell.y)*(lay<1.0?0.40:0.37);
   float h1=hash21(id*1.37+u_seed*0.731), h2=hash21(id*2.71+u_seed*0.377+5.0), h3=hash21(id*0.91+u_seed*1.13+9.0);
@@ -5040,7 +5055,7 @@ float F_mode,F_f,F_amp,F_n;
 float foldH(vec2 p){
   if(F_mode<1.0) return tri1(p.y*F_f)*F_amp;
   if(F_mode<2.0) return tri1((p.y+abs(p.x))*F_f*0.70711)*F_amp;
-  if(F_mode<3.0){ float th=atan(p.x,p.y+1.25)/3.14159; return tri1(th*F_n)*length(p+vec2(0.0,1.25))*F_amp*F_f*0.25; }
+  if(F_mode<3.0){ float th=atan(p.x,p.y+HY)/3.14159; return tri1(th*F_n)*length(p+vec2(0.0,HY))*F_amp*F_f*0.25; }
   if(F_mode<4.0) return tri1(max(abs(p.x),abs(p.y))*F_f)*F_amp;
   return tri1((abs(p.x)+abs(p.y))*F_f*0.70711)*F_amp;
 }
@@ -5062,9 +5077,9 @@ void main(){
     float h=foldH(p);
     vec2 gr=vec2(foldH(p+vec2(e,0.0))-foldH(p-vec2(e,0.0)),foldH(p+vec2(0.0,e))-foldH(p-vec2(0.0,e)))/(2.0*e);
     vec3 n=normalize(vec3(-gr,1.0));
-    float base=0.55+sw*0.3*(F_mode==2.0?(0.4-length(p+vec2(0.0,1.25))*0.45):p.y/1.25);
+    float base=0.55+sw*0.3*(F_mode==2.0?(0.4-length(p+vec2(0.0,HY))*0.45):p.y/HY);
     float hn=clamp(h/max(F_amp,1e-4),0.0,1.0);
-    if(F_mode==2.0) hn=clamp(h/max(F_amp*F_f*0.25*length(p+vec2(0.0,1.25)),1e-4),0.0,1.0);
+    if(F_mode==2.0) hn=clamp(h/max(F_amp*F_f*0.25*length(p+vec2(0.0,HY)),1e-4),0.0,1.0);
     float sh=1.0;
     for(int k=1;k<=12;k++){ float sd=float(k)*per*0.09; sh=min(sh,clamp(1.0-(foldH(p+l2*sd)-h-sd*rise)/(F_amp*0.12),0.0,1.0)); }
     vec3 col=ramp(g,a,b,c,base+0.5*(max(dot(n,L),0.0)*mix(0.35,1.0,sh)-0.6));
@@ -5971,7 +5986,7 @@ function embedParse(src){
 function embedSizeGL(){
   if(!gl) return;
   const dpr=Math.min(devicePixelRatio||1,EMBED_DPR);
-  let w=Math.round((EM.cv.clientWidth||520)*dpr), h=Math.round((EM.cv.clientHeight||650)*dpr);
+  let w=Math.round((EM.cv.clientWidth||GW)*dpr), h=Math.round((EM.cv.clientHeight||GH)*dpr);
   const lim=Math.min(gl.getParameter(gl.MAX_VIEWPORT_DIMS)[0],gl.getParameter(gl.MAX_VIEWPORT_DIMS)[1],gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),4096);
   const f=Math.min(1,lim/Math.max(w,h)); w=Math.max(1,Math.floor(w*f)); h=Math.max(1,Math.floor(h*f));
   if(glc.width!==w||glc.height!==h){ glc.width=w; glc.height=h; }
@@ -6015,7 +6030,7 @@ function embedBoot(){
   if(first.id) embedQueue(first);
 }
 if(EMBED) embedBoot();
-else if(location.hash==='#customise'){ document.body.classList.add('czonly'); show('C'); } else show('K');
+else if(/^#customise\b/.test(location.hash)){ document.body.classList.add('czonly'); show('C'); } else show('K');
 addEventListener('resize',()=>{ clearTimeout(window.__rt);
   window.__rt=setTimeout(()=>{
     Object.entries(panes).forEach(([k,p])=>{
