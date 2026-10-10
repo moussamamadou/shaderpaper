@@ -1,0 +1,6 @@
+{
+  // `pnpm typecheck`: the server code. The admin extensions (src/admin) are type-checked with their
+  // own config (ESM, Vite), as Medusa builds them separately.
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", ".medusa/server", ".medusa/admin", ".cache", "eslint.config.*", "src/admin"]
+}

@@ -1,11 +1,30 @@
 /**
- * A render request and its geometry. The poster page lays the poster out at a
- * logical size (short side 1000 CSS px, see the storefront's posterSize()); the
+ * A render request and its geometry. The render page lays the poster out at a
+ * logical size (short side 1000 CSS px, see README.md, "Render page contract"); the
  * print file is that page captured at deviceScaleFactor = output px / logical px.
  */
 
 export const LOGICAL_SHORT_SIDE = 1000
 const MAX_DESIGN_BYTES = 32 * 1024
+
+/**
+ * The design as the render page's `d` parameter: its JSON, UTF-8, base64url
+ * (RFC 4648 §5, no padding). The storefront decodes it the same way.
+ */
+export function encodeDesign(design: Record<string, unknown>): string {
+  return Buffer.from(JSON.stringify(design), 'utf8').toString('base64url')
+}
+
+/** The inverse of encodeDesign; null when `encoded` isn't a base64url JSON object. */
+export function decodeDesign(encoded: string): Record<string, unknown> | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(encoded)) return null
+  try {
+    const value: unknown = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'))
+    return isObject(value) ? value : null
+  } catch {
+    return null
+  }
+}
 
 export type ImageFormat = 'png' | 'jpeg'
 
@@ -19,7 +38,10 @@ export interface RenderJob {
   format: ImageFormat
   /** JPEG quality, 1–100. */
   quality: number
-  /** One poster of a set (L'Ensemble: `moment`, the sky's, or `lieu`, the map's); the render page draws only it. */
+  /**
+   * One poster of a set (from Méridien, whose L'Ensemble prints two). ShaderPaper's
+   * backend never sends it; kept so the API stays Méridien's.
+   */
   part?: string
 }
 

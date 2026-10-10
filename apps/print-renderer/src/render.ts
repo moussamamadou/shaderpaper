@@ -1,8 +1,7 @@
-import lzString from 'lz-string'
 import { chromium, type Browser } from 'playwright-core'
 
 import type { Config } from './config.ts'
-import { renderGeometry, type ImageFormat, type RenderJob, type Size } from './job.ts'
+import { encodeDesign, renderGeometry, type ImageFormat, type RenderJob, type Size } from './job.ts'
 
 export interface RenderResult {
   image: Buffer
@@ -13,8 +12,8 @@ export interface RenderResult {
 
 /**
  * `design`: the render page rejected the input (don't retry). The others are
- * worth a retry: `timeout`, `network` (map tiles failed to load: the print would
- * have holes), `browser` (Chrome missing or crashed).
+ * worth a retry: `timeout`, `network` (a resource from another origin failed to
+ * load: the print could have holes), `browser` (Chrome missing or crashed).
  */
 export type RenderErrorKind = 'design' | 'timeout' | 'network' | 'browser'
 
@@ -45,9 +44,10 @@ export function imageSize(image: Buffer, format: ImageFormat): Size {
 }
 
 /**
- * Opens the storefront's poster render page in headless Chrome, at the job's
- * logical size and a device scale factor giving the print resolution, waits
- * until the map is drawn and fonts are loaded, then captures the page.
+ * Opens the storefront's render page (`/render?d=…`, see README.md) in headless
+ * Chrome, at the job's logical size and a device scale factor giving the print
+ * resolution, waits until the poster is drawn and fonts are loaded, then captures
+ * the page.
  */
 export class PosterRenderer {
   #config: Config
@@ -79,7 +79,7 @@ export class PosterRenderer {
 
   renderUrl(job: RenderJob): string {
     const url = new URL(this.#config.renderPath, this.#config.storefrontUrl)
-    url.searchParams.set('d', lzString.compressToEncodedURIComponent(JSON.stringify(job.design)))
+    url.searchParams.set('d', encodeDesign(job.design))
     url.searchParams.set('size', job.size.id)
     url.searchParams.set('mm', `${job.size.widthMm}x${job.size.heightMm}`)
     if (job.part) url.searchParams.set('part', job.part)
@@ -93,8 +93,8 @@ export class PosterRenderer {
     const browser = await this.#launch()
     const context = await browser.newContext({ viewport, deviceScaleFactor: scale })
 
-    // Map tiles, glyphs and sprites come from other origins than the storefront; a
-    // failed one leaves a hole in the map, so it fails the render.
+    // Anything from another origin than the storefront (Méridien's map tiles; the
+    // shader page needs none) that fails would leave a hole, so it fails the render.
     const storefront = new URL(this.#config.storefrontUrl).origin
     const failures: string[] = []
     const pageErrors: string[] = []
@@ -136,11 +136,11 @@ export class PosterRenderer {
         )
       }
       if (failures.length) {
-        throw new RenderError('network', `Map resources failed to load: ${failures.slice(0, 3).join('; ')}`)
+        throw new RenderError('network', `Resources failed to load: ${failures.slice(0, 3).join('; ')}`)
       }
 
       // Device pixels (viewport × scale). A viewport capture doesn't resize the
-      // page, so the map isn't redrawn.
+      // page, so the poster isn't redrawn.
       const image = await page.screenshot({
         type: job.format,
         ...(job.format === 'jpeg' ? { quality: job.quality } : {}),

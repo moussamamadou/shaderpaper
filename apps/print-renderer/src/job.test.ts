@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { JobError, logicalSize, parseJob, renderGeometry } from './job.ts'
+import { decodeDesign, encodeDesign, JobError, logicalSize, parseJob, renderGeometry } from './job.ts'
 
-const design = { version: 1, product: { sizeId: '30x40', orientation: 'portrait', frameId: 'none' } }
+// A ShaderPaper line item's design (metadata.poster.design).
+const design = { kind: 'shader', id: 'glass', seed: 12.5, knobs: [0.2, null, 0.7, 0.5], palette: 2, strength: 'b' }
 const size = { id: '30x40', widthMm: 300, heightMm: 400 }
 const job = (overrides: Record<string, unknown> = {}) => ({ design, size, pixels: { width: 3600, height: 4800 }, ...overrides })
 
@@ -33,7 +34,7 @@ describe('parseJob', () => {
     assert.deepEqual(parsed.pixels, { width: 3600, height: 4800 })
   })
 
-  it('passes a set\'s poster through', () => {
+  it('passes a set\'s poster through (Méridien; ShaderPaper sends none)', () => {
     assert.equal(parseJob(job({ part: 'lieu' }), 8192).part, 'lieu')
     assert.equal('part' in parseJob(job(), 8192), false)
   })
@@ -61,5 +62,26 @@ describe('parseJob', () => {
     assert.throws(() => parseJob(job({ format: 'gif' }), 8192), /format/)
     assert.throws(() => parseJob(job({ format: 'jpeg', quality: 101 }), 8192), /quality/)
     assert.throws(() => parseJob(job({ part: '../x' }), 8192), /part/)
+  })
+})
+
+describe('design encoding (the render page\'s d parameter)', () => {
+  it('is base64url JSON, without padding, and round-trips', () => {
+    const encoded = encodeDesign(design)
+    assert.match(encoded, /^[A-Za-z0-9_-]+$/)
+    assert.equal(Buffer.from(encoded, 'base64url').toString('utf8'), JSON.stringify(design))
+    assert.deepEqual(decodeDesign(encoded), design)
+  })
+
+  it('keeps non-ASCII text', () => {
+    const named = { ...design, title: 'Été — 東京' }
+    assert.deepEqual(decodeDesign(encodeDesign(named)), named)
+  })
+
+  it('rejects what is not a base64url JSON object', () => {
+    assert.equal(decodeDesign(''), null)
+    assert.equal(decodeDesign('not base64!'), null)
+    assert.equal(decodeDesign(Buffer.from('[1,2]').toString('base64url')), null)
+    assert.equal(decodeDesign(Buffer.from('{oops').toString('base64url')), null)
   })
 })

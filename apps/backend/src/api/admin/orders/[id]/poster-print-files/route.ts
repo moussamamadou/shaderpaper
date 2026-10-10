@@ -2,18 +2,21 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import type { IFileModuleService } from "@medusajs/framework/types"
 import { ContainerRegistrationKeys, MedusaError, Modules } from "@medusajs/framework/utils"
 
-import { posterMetadata, posterParts, type PosterPart, type PosterPrintFile } from "../../../../../poster/print-files"
+import { posterMetadata, type PosterPrintFile } from "../../../../../poster/print-files"
 import { renderPosterPrintFilesWorkflow } from "../../../../../workflows/render-poster-print-files"
 import type { RenderPosterPrintFilesSchema } from "./middlewares"
 
-/** The order's custom posters, one row per print (each poster of a set), with a download URL for each file. */
+/**
+ * The order's posters, one row per line, with a download URL for each print file, and what was sent
+ * to Prodigi (`order.metadata.prodigi`, or `prodigi_error`).
+ */
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const {
     data: [order],
   } = await query.graph({
     entity: "order",
-    fields: ["id", "items.id", "items.variant_title", "items.quantity", "items.metadata"],
+    fields: ["id", "metadata", "items.id", "items.variant_title", "items.quantity", "items.metadata"],
     filters: { id: req.params.id },
   })
   if (!order) {
@@ -21,35 +24,31 @@ export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) 
   }
 
   const fileModule = req.scope.resolve<IFileModuleService>(Modules.FILE)
-  const lines = (order.items ?? []).flatMap((item) => {
-    const poster = item && posterMetadata(item.metadata)
-    return item && poster ? [{ item, poster }] : []
-  })
-
   // Private files: a fresh (possibly expiring) download URL.
   const withUrl = async (file?: PosterPrintFile) =>
     file
       ? { ...file, url: await fileModule.retrieveFile(file.file_id).then((f) => f.url).catch(() => null) }
       : null
-  const rows = lines.flatMap(({ item, poster }) => {
-    const parts: (PosterPart | null)[] = poster.design ? posterParts(poster.design) : []
-    return (parts.length ? parts : [null]).map((part) => ({ item, poster, part }))
-  })
 
+  const lines = (order.items ?? []).flatMap((item) => {
+    const poster = item && posterMetadata(item.metadata)
+    return item && poster ? [{ item, poster }] : []
+  })
   const posters = await Promise.all(
-    rows.map(async ({ item, poster, part }) => ({
+    lines.map(async ({ item, poster }) => ({
       item_id: item.id,
-      part,
       title: poster.title ?? null,
+      poster_id: typeof poster.design?.id === "string" ? poster.design.id : null,
       variant_title: item.variant_title ?? null,
       quantity: item.quantity,
       thumbnail: poster.thumbnail ?? null,
-      print_file: await withUrl(part ? poster.print_files?.[part] : poster.print_file),
-      print_error: poster.print_error && (!part || !poster.print_error.part || poster.print_error.part === part) ? poster.print_error : null,
+      print_file: await withUrl(poster.print_file),
+      print_error: poster.print_error ?? null,
     }))
   )
 
-  res.json({ posters })
+  const metadata = (order.metadata ?? {}) as Record<string, unknown>
+  res.json({ posters, prodigi: metadata.prodigi ?? null, prodigi_error: metadata.prodigi_error ?? null })
 }
 
 /** Renders the order's missing print files (all of them with `force`). */

@@ -8,7 +8,7 @@ export interface Config {
   production: boolean
   /** Origin serving the render page, e.g. http://localhost:3000. */
   storefrontUrl: string
-  /** Render page path, with a valid country code (the storefront routes by region). */
+  /** Render page path (the storefront's `/render`, outside the country routes). */
   renderPath: string
   chrome: { channel: string; executablePath?: string; gl: GlMode }
   concurrency: number
@@ -16,7 +16,7 @@ export interface Config {
   timeoutMs: number
   /**
    * Largest output side, in px. Software WebGL (SwiftShader) draws at most
-   * 8192 px, and a larger map canvas would silently lose resolution.
+   * 8192 px, and a larger canvas would silently lose resolution.
    */
   maxSidePx: number
 }
@@ -40,7 +40,7 @@ export function loadConfig(): Config {
   if (gl !== 'swiftshader' && gl !== 'gpu') throw new Error('RENDER_GL must be "swiftshader" or "gpu"')
 
   const storefrontUrl = new URL(process.env.STOREFRONT_URL ?? 'http://localhost:3000').origin
-  const renderPath = process.env.RENDER_PATH ?? '/fr/poster/render'
+  const renderPath = process.env.RENDER_PATH ?? '/render'
   if (!renderPath.startsWith('/')) throw new Error('RENDER_PATH must start with "/"')
 
   return {

@@ -1,25 +1,21 @@
 {
-  "name": "@dtc/backend",
+  "name": "@shaderpaper/backend",
   "version": "0.0.1",
-  "description": "A starter for Medusa projects.",
-  "author": "Medusa (https://medusajs.com)",
+  "private": true,
+  "description": "ShaderPaper commerce backend (Medusa 2.17.2), adapted from MapAndSky (Méridien)'s apps/backend.",
+  "author": "ShaderPaper",
   "license": "MIT",
-  "keywords": [
-    "sqlite",
-    "postgres",
-    "typescript",
-    "ecommerce",
-    "headless",
-    "medusa"
-  ],
   "scripts": {
     "build": "medusa build",
     "start": "medusa start",
     "dev": "medusa develop",
     "lint": "medusa lint",
+    "seed": "medusa exec ./src/migration-scripts/initial-data-seed.ts",
+    "extract-posters": "node scripts/extract-posters.mjs",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
     "test:integration:modules": "TEST_TYPE=integration:modules NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",
-    "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit"
+    "test:unit": "TEST_TYPE=unit NODE_OPTIONS=--experimental-vm-modules jest --silent --runInBand --forceExit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json && tsc --noEmit -p src/admin/tsconfig.json"
   },
   "dependencies": {
     "@medusajs/admin-sdk": "2.17.2",
@@ -38,6 +34,7 @@
     "zod": "4.2.0"
   },
   "devDependencies": {
+    "@medusajs/eslint-plugin": "2.16.0",
     "@medusajs/test-utils": "2.17.2",
     "@swc/core": "^1.7.28",
     "@swc/jest": "^0.2.36",
@@ -45,7 +42,9 @@
     "@types/node": "^20.12.11",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.2.25",
+    "eslint": "^9.39.4",
     "jest": "^29.7.0",
+    "jiti": "^2.7.0",
     "prop-types": "^15.8.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -56,6 +55,5 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "packageManager": "npm@10.9.8"
+  }
 }

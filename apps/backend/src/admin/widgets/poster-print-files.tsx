@@ -7,9 +7,8 @@ import { sdk } from "../lib/client"
 
 type PosterLine = {
   item_id: string
-  /** A set's poster: the sky's (moment), the photo's (nous) or the map's (lieu). */
-  part: "moment" | "nous" | "lieu" | null
   title: string | null
+  poster_id: string | null
   variant_title: string | null
   quantity: number
   thumbnail: string | null
@@ -17,19 +16,34 @@ type PosterLine = {
   print_error: { message: string; at: string } | null
 }
 
+type ProdigiRecord = { env: string; order_id: string; outcome: string; stage: string | null; submitted_at: string }
+
+type PrintFiles = {
+  posters: PosterLine[]
+  prodigi: ProdigiRecord | null
+  prodigi_error: { message: string; at: string } | null
+}
+
+type ProdigiStatus = { configured: boolean; env: string; skusMissing: string[]; reason?: string }
+
 type RenderResult = { rendered: unknown[]; failed: { item_id: string; message: string }[] }
 
-/** What a set's poster is called in its row. */
-const PARTS = { moment: "star map", nous: "photo", lieu: "city map" }
-
-/** Print files of the order's custom posters (each poster of a set): download, or render them (again). */
+/**
+ * Print files of the order's shader posters: download, or render them (again). Below, sending the
+ * order to Prodigi: an admin's manual action, available once Prodigi is configured, every SKU is
+ * chosen and every print file is rendered.
+ */
 const PosterPrintFilesWidget = ({ data: order }: DetailWidgetProps<HttpTypes.AdminOrder>) => {
   const queryClient = useQueryClient()
   const queryKey = ["poster-print-files", order.id]
 
   const { data, isLoading } = useQuery({
     queryKey,
-    queryFn: () => sdk.client.fetch<{ posters: PosterLine[] }>(`/admin/orders/${order.id}/poster-print-files`),
+    queryFn: () => sdk.client.fetch<PrintFiles>(`/admin/orders/${order.id}/poster-print-files`),
+  })
+  const { data: prodigiStatus } = useQuery({
+    queryKey: ["prodigi-status"],
+    queryFn: () => sdk.client.fetch<ProdigiStatus>(`/admin/prodigi/status`),
   })
 
   const render = useMutation({
@@ -46,11 +60,34 @@ const PosterPrintFilesWidget = ({ data: order }: DetailWidgetProps<HttpTypes.Adm
     onError: (error) => toast.error(error.message || "Rendering failed"),
   })
 
+  const sendToProdigi = useMutation({
+    mutationFn: () =>
+      sdk.client.fetch<{ prodigi: ProdigiRecord }>(`/admin/orders/${order.id}/prodigi`, { method: "POST", body: {} }),
+    onSuccess: ({ prodigi }) => {
+      queryClient.invalidateQueries({ queryKey })
+      toast.success(`Sent to Prodigi (${prodigi.env}): ${prodigi.order_id}`)
+    },
+    onError: (error) => {
+      queryClient.invalidateQueries({ queryKey })
+      toast.error(error.message || "Prodigi refused the order")
+    },
+  })
+
   const posters = data?.posters ?? []
-  // Orders without a custom poster don't show the widget.
+  // Orders without a shader poster don't show the widget.
   if (!isLoading && !posters.length) return null
 
   const missing = posters.some((poster) => !poster.print_file)
+  const prodigi = data?.prodigi ?? null
+  const blocker = !prodigiStatus
+    ? "Checking Prodigi…"
+    : !prodigiStatus.configured
+      ? prodigiStatus.reason ?? "Prodigi isn't configured"
+      : prodigiStatus.skusMissing.length
+        ? `No Prodigi SKU chosen yet for ${prodigiStatus.skusMissing.length} size/frame pair(s)`
+        : missing
+          ? "Render every print file first"
+          : null
 
   return (
     <Container className="divide-y p-0">
@@ -74,7 +111,7 @@ const PosterPrintFilesWidget = ({ data: order }: DetailWidgetProps<HttpTypes.Adm
         </div>
       ) : (
         posters.map((poster) => (
-          <div key={`${poster.item_id}-${poster.part ?? ""}`} className="flex items-center gap-3 px-6 py-4">
+          <div key={poster.item_id} className="flex items-center gap-3 px-6 py-4">
             {poster.thumbnail ? (
               <img
                 src={poster.thumbnail}
@@ -84,8 +121,7 @@ const PosterPrintFilesWidget = ({ data: order }: DetailWidgetProps<HttpTypes.Adm
             ) : null}
             <div className="flex min-w-0 flex-1 flex-col gap-y-1">
               <Text size="small" leading="compact" weight="plus" className="truncate">
-                {poster.title ?? "Custom map poster"}
-                {poster.part ? ` (${PARTS[poster.part]})` : ""} · {poster.quantity}×
+                {poster.title ?? poster.poster_id ?? "Shader poster"} · {poster.quantity}×
               </Text>
               <Text size="small" leading="compact" className="truncate text-ui-fg-subtle">
                 {poster.variant_title}
@@ -111,6 +147,40 @@ const PosterPrintFilesWidget = ({ data: order }: DetailWidgetProps<HttpTypes.Adm
           </div>
         ))
       )}
+      {!isLoading ? (
+        <div className="flex flex-col gap-y-2 px-6 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <Text size="small" leading="compact" weight="plus">
+              Prodigi{prodigiStatus ? ` (${prodigiStatus.env})` : ""}
+            </Text>
+            {prodigi ? (
+              <Badge size="2xsmall" color="green">
+                {prodigi.order_id} · {prodigi.outcome}
+              </Badge>
+            ) : (
+              <Button
+                size="small"
+                variant="secondary"
+                isLoading={sendToProdigi.isPending}
+                disabled={Boolean(blocker) || sendToProdigi.isPending}
+                onClick={() => sendToProdigi.mutate()}
+              >
+                Send to Prodigi
+              </Button>
+            )}
+          </div>
+          {!prodigi && blocker ? (
+            <Text size="small" leading="compact" className="text-ui-fg-subtle">
+              {blocker}
+            </Text>
+          ) : null}
+          {!prodigi && data?.prodigi_error ? (
+            <Text size="small" leading="compact" className="text-ui-fg-error">
+              {data.prodigi_error.message}
+            </Text>
+          ) : null}
+        </div>
+      ) : null}
     </Container>
   )
 }

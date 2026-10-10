@@ -16,15 +16,15 @@ type Input = {
 }
 
 /**
- * Renders the print files of an order's custom map posters (see
- * src/poster/print-files.ts). Runs when an order is placed, and from the admin.
+ * Renders the print files of an order's shader posters (see src/poster/print-files.ts). Runs when an
+ * order is placed, and from the admin. Nothing is sent to Prodigi here (see src/poster/prodigi.ts).
  */
 export const renderPosterPrintFilesWorkflow = createWorkflow(
   "render-poster-print-files",
   function (input: Input) {
     const { data: orders } = useQueryGraphStep({
       entity: "order",
-      fields: ["id", "display_id", "items.id", "items.metadata", "items.variant.metadata"],
+      fields: ["id", "display_id", "items.id", "items.metadata", "items.variant_sku", "items.variant.metadata"],
       filters: { id: input.order_id },
       options: { throwIfKeyNotFound: true },
     })

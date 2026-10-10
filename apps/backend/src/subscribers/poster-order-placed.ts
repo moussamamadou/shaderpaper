@@ -3,7 +3,10 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 import { renderPosterPrintFilesWorkflow } from "../workflows/render-poster-print-files"
 
-/** Renders the print files of the custom map posters in a new order. */
+/**
+ * Renders the print files of the shader posters in a new order. It does not send anything to Prodigi:
+ * an admin does that, once the files are checked (POST /admin/orders/:id/prodigi).
+ */
 export default async function posterOrderPlacedHandler({
   event: { data },
   container,

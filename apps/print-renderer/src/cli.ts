@@ -1,16 +1,14 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
 
-import lzString from 'lz-string'
-
 import { loadConfig } from './config.ts'
-import { parseJob } from './job.ts'
+import { decodeDesign, parseJob } from './job.ts'
 import { PosterRenderer } from './render.ts'
 
 /**
  * Renders one poster to a file, without the HTTP server:
  *
- *   pnpm render --link '<builder or share link with ?d=>' --out poster.png
+ *   pnpm render --link '<render page link with ?d=>' --out poster.png
  *   pnpm render --design design.json --size 45x60 --dpi 300 --out poster.png
  */
 
@@ -45,14 +43,16 @@ async function readDesign(): Promise<Record<string, unknown>> {
   if (values.design) return JSON.parse(await readFile(values.design, 'utf8'))
   if (!values.link) fail('Pass --link or --design')
   const encoded = new URL(values.link).searchParams.get('d')
-  const json = encoded ? lzString.decompressFromEncodedURIComponent(encoded) : null
-  if (!json) fail('The link has no design (?d=)')
-  return JSON.parse(json)
+  const design = encoded ? decodeDesign(encoded) : null
+  if (!design) fail('The link has no design (?d=, base64url JSON)')
+  return design
 }
 
 const design = await readDesign()
+// Méridien's designs carried their size in `product`; a render page link carries it as `size`.
 const product = (design.product ?? {}) as { sizeId?: string; orientation?: string }
-const sizeId = values.size ?? product.sizeId ?? '30x40'
+const linkSize = values.link ? (new URL(values.link).searchParams.get('size') ?? undefined) : undefined
+const sizeId = values.size ?? linkSize ?? product.sizeId ?? '30x40'
 // A size id like "30x40" is in cm; others (e.g. "digital") need --mm.
 const [widthMm, heightMm] = values.mm
   ? pair(values.mm, 'mm')

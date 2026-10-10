@@ -13,24 +13,22 @@ type Input = RenderPosterPrintFilesOutput & {
 type Previous = { id: string; metadata: Record<string, unknown> | null }[]
 
 /**
- * Records the outcomes on their order line items: `metadata.poster.print_file`
- * (a set's `print_files`), or `metadata.poster.print_error`. A set's posters are
- * recorded together. Compensation restores the previous metadata.
+ * Records the outcomes on their order line items: `metadata.poster.print_file`, or
+ * `metadata.poster.print_error`. Compensation restores the previous metadata.
  */
 export const recordPosterPrintFilesStep = createStep(
   "record-poster-print-files",
   async (input: Input, { container }) => {
     const orderModule = container.resolve<IOrderModuleService>(Modules.ORDER)
     const at = new Date().toISOString()
-    const outcomes = new Map<string, PrintOutcome[]>()
-    const add = (id: string, outcome: PrintOutcome) => outcomes.set(id, [...(outcomes.get(id) ?? []), outcome])
-    for (const r of input.rendered) add(r.item_id, { print_file: r.print_file, part: r.part })
-    for (const f of input.failed) add(f.item_id, { error: f.message, at, part: f.part })
+    const outcomes = new Map<string, PrintOutcome>()
+    for (const r of input.rendered) outcomes.set(r.item_id, { print_file: r.print_file })
+    for (const f of input.failed) outcomes.set(f.item_id, { error: f.message, at })
 
     const previous: Previous = []
-    for (const [id, line] of outcomes) {
+    for (const [id, outcome] of outcomes) {
       const metadata = input.items.find((item) => item.id === id)?.metadata ?? null
-      await orderModule.updateOrderLineItems(id, { metadata: withPrintOutcome(metadata, line) })
+      await orderModule.updateOrderLineItems(id, { metadata: withPrintOutcome(metadata, outcome) })
       previous.push({ id, metadata })
     }
     return new StepResponse(input.rendered.length + input.failed.length, previous)
