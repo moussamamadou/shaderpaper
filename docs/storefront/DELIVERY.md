@@ -13,7 +13,7 @@ what still needs a decision, a credential or business input. Details live in the
 | 4 | **Payments.** A Stripe test key, if card payments should be tested. | The only provider is Medusa's manual one, so every order is a test order that takes no payment | [storefront.md § Mocked](storefront.md#mocked-incomplete-or-undecided) |
 | 5 | **Policies and business facts.** Who we are, print partner, paper and inks, production and delivery times, contact details, returns and withdrawal, privacy, terms of sale, four FAQ answers. | Every such block reads "To be written — needs business input" | `InfoTbw` on the info pages |
 | 6 | **Photography.** No product photos exist; the product page shows the live render in a drawn frame mockup. | Nothing to show of the physical print | Product page |
-| 7 | **Figma image uploads.** Allow `mcp.figma.com` in this environment's network access (Project settings, Cloud environment). | Figma's upload tool posts to that host, which the network policy denies, so images can only be sent inline as base64, which is slow and costly. 40 of the 54 posters therefore have no exact 3:4 image in Figma yet (see Phase 4) | This file, Phase 4 |
+| 7 | **Figma image uploads.** Allow `mcp.figma.com` in this environment's network access (Project settings, Cloud environment). | Figma's upload tool posts to that host, which the network policy denies, so images can only be sent inline as base64, which is slow and costly. 25 of the 54 posters therefore have no art in Figma yet, and 12 more show their earlier 4:5 image cropped to 3:4 (see Phase 4) | This file, Phase 4 |
 
 ## Phase 1: audit
 
@@ -39,7 +39,7 @@ File: <https://www.figma.com/design/WJaAvH0aRGvb46Z87FKV1A>
 | Page | Holds |
 |---|---|
 | `17:3` 00 — Cover | Cover frame `47:2` and the page index |
-| `17:4` 01 — Foundations | Variables "SP / Tokens v1" (61, mirrors [tokens.json](tokens.json)) and "SP / Content samples"; 17 text styles; grid styles; poster art: section `26:2` (16 `Art/<id>` components) and section `57:5279` "Poster art · 3:4" |
+| `17:4` 01 — Foundations | Variables "SP / Tokens v1" (61, mirrors [tokens.json](tokens.json)) and "SP / Content samples"; 17 text styles; grid styles; poster art: sections `26:2` and `57:5279` "Poster art · 3:4" (29 `Art/<id>` components) |
 | `17:5` 02 — Components | Sections Icons, Actions, Inputs, Selection & configurator, Navigation, Feedback & states, Commerce (28 component sets) |
 | `17:6` 10 — Pages · Desktop | Sections Browse `50:61`, Account & info `50:327`, Cart & checkout `50:385` |
 | `17:7` 11 — Pages · Mobile | Sections Browse `53:1146`, Cart, checkout & account `51:315` |
@@ -47,10 +47,18 @@ File: <https://www.figma.com/design/WJaAvH0aRGvb46Z87FKV1A>
 | `17:9` 20 — References | The references board |
 | `0:1` 99 — Archive | Lifter, archived |
 
-**Poster art.** Images can enter Figma only through the plugin API inline (see "What needs you" #7). Section
-`57:5279` holds 12 new 216 × 288 (3:4) components: sky, eclipse, form, groovy, invert, vortexp, rhythm, mesh, stones,
-tiles, k_marble, qblocks. The 16 earlier `Art/<id>` components were drawn at 4:5. The remaining 3:4 JPEGs
-(216 × 288, the storefront thumbnails) are ready to upload once the host is allowed.
+**Poster art.** 29 of the 54 posters have an `Art/<id>` component, all 216 × 288 (3:4).
+
+- 17 hold the exact 3:4 storefront thumbnail: sky, eclipse, form, groovy, invert, vortexp, rhythm, mesh, stones,
+  tiles, k_marble, qblocks, folds, chrome, holo, knot, pins.
+- 12 still hold their earlier 4:5 image, cropped to fill the 3:4 frame: glass, puffy, totem, gyroid, julia, waves,
+  cells, voro, sunburst, ribbons, seigaiha, lava.
+- 25 have no component, because images can enter Figma only inline (see "What needs you" #7). 15 of them appear on
+  page frames drawn with another poster's art, marked "(stand-in art)" in the layer name: Warp Stripes, Strand
+  Bundle, Horizon, Fracture, Vega, Flow Field, Distance Field, Ringers, Truchet Fields, Penrose Star, Halftone Orb,
+  Turing Tree, Circle Packing · recut, Stepped Bands · recut, Satin Ribbon.
+
+The 3:4 JPEGs for every poster (216 × 288, the storefront thumbnails) are ready to upload once the host is allowed.
 
 ## Phase 5: pages and states (Figma)
 
@@ -60,13 +68,19 @@ All frames are built from the component instances, at 1440 (desktop) and 390 (mo
   Product `53:5031`, Not found `53:5781`.
 - **Desktop · Cart & checkout** `50:385`: Cart `53:1710`, Details `53:3212`, Delivery `53:3980`, Payment `53:4097`,
   Review `53:4240`, Confirmed `53:5370`.
-- **Desktop · Account & info** `50:327`: sign in and register, dashboard, orders, order detail, profile, addresses
-  with the add-address dialog, and the info pages (10 frames).
+- **Desktop · Account & info** `50:327`: sign in and register, overview, orders, profile, addresses, the add-address
+  dialog, and the info pages about, FAQ, shipping and contact; returns, privacy and terms use the shipping
+  template (10 frames).
 - **Mobile · Browse** `53:1146`: 8 frames including the menu drawer `53:5570`.
 - **Mobile · Cart, checkout & account** `51:315`: 12 frames.
-- **States** `17:8`: Loading (shop grid at 1440 and 390, product, cart), Empty (cart, cart drawer, search without a
-  query and without results, account orders, shop filters with no match), Errors (404, 500, unknown product,
-  add-to-cart failure).
+- **States** `17:8`, 20 frames:
+  - Loading `53:1861`: shop grid at 1440 and 390, product, cart.
+  - Empty `53:1862`: cart, cart drawer, search without a query and without results, account orders, shop filters
+    with no match.
+  - Errors `53:1863`: 404, 500, unknown product, add-to-cart failure, checkout address errors at 1440 and 390 (the
+    error summary links to each field), order not placed.
+  - Success & notices `53:1864`: added to cart at 1440 and 390 (the drawer with its success banner), and a board of
+    every banner, toast and to-be-written block in the code with its exact copy and route.
 
 ## Phase 6: storefront
 
@@ -97,7 +111,38 @@ The code is the reference. Building the pages in Figma surfaced two phone bugs i
 by the phone check: the checkout step label was cut off (`checkout/Stepper.vue`), and the poster rails lost their
 16 px side margin when snapped (`product/Rail.vue`).
 
-The component differences found while building the pages are listed below with their state.
+**Components aligned with the code** in a second pass: header, footer, icons (2 px strokes, RotateCcw added), banner,
+inputs, tabs, breadcrumbs, accordion, empty state, button, menu, dialog, pagination, the commerce components and the
+configurator. The ones that changed most:
+
+- KnobSlider: the value reads 0 to 100 and the Auto state reads "Auto".
+- PriceTag: the "From" prefix is a caption in `ink-3`.
+- QuantityStepper: sm and md sizes, as the code has.
+- TextField: the error variant shows the field's own value.
+- Cart drawer: the description line, the added-to-cart banner (a `Show added` property), compact lines (new
+  `CartLine · compact`, 72 px thumbnail), View cart, paper and surface colours.
+- Toast: circle icons, a dismiss button, and the action link hidden unless a toast has one.
+
+The page frames were then re-checked against screenshots of the running storefront (desktop home, shop, product, cart
+and checkout; phone home), and the 102 product cards on them rebuilt at 3:4.
+
+**Code changed to match the design system** in the same pass:
+
+- Text fields, selects, checkboxes, radios, the quantity stepper and the header search draw their border in `ink-3`
+  (5.5:1 on white). It was `line` or `line-strong` (1.4:1 and 2.2:1), below the 3:1 WCAG asks of a form control's
+  edge. Hover darkens to `ink-2`; a disabled field keeps the light `line` border.
+- The product card and the home and campaign images declare 600 × 800, the size of the 3:4 thumbnails (they
+  declared 600 × 750).
+
+**Known differences left**, all minor:
+
+- The knob slider's Auto thumb sits at 50 % in Figma; in the code it sits at the poster's rest value (an instance
+  cannot move it).
+- Icon buttons draw a 24 px icon in Figma and a 20 px one in the code.
+- The product card's hover, which shows the poster's second variation in the code, has no Figma state.
+- The cart drawer's empty state uses the full empty-state component; the code uses its compact form.
+- The home hero poster's scale differs slightly.
+- The Lines and Light collection tiles use stand-in art (Warp Stripes and Horizon are among the 25 missing).
 
 ## Phase 8: tests
 
@@ -111,8 +156,8 @@ browser checks are in the repo: [apps/storefront/e2e](../../apps/storefront/e2e/
 | Print renderer tests | 16 passed |
 | Typecheck: storefront, backend, print renderer | pass |
 | Builds: `nuxt build`, `medusa build` | succeed |
-| Route crawl (`e2e:crawl`): status, hydration, console errors, broken images, horizontal scroll, axe WCAG A/AA serious and critical | 74 of 74 route checks pass (37 routes × 1440 and 390) |
-| Internal links found on those pages | 104 checked, 0 broken |
+| Route crawl (`e2e:crawl`): status, hydration, console errors, broken images, horizontal scroll, axe WCAG A/AA serious and critical | 74 of 74 route checks pass (37 routes × 1440 and 390). Re-run after the Phase 7 code changes: 72 of 72, plus order #3's confirmation page at both widths |
+| Internal links found on those pages | 104 checked, 0 broken (re-run: 103, 0 broken) |
 | Desktop flow with an order (`e2e:flow … place`): customiser, URL round trip, variant prices, drawer, cart, checkout validation, delivery, test-mode banners, confirmation | 19 passed (test order #3) |
 | Phone flow (`e2e:flow:mobile`): tabs, palette, add bar, drawer, cart, checkout errors, step label, rail margin | 13 passed |
 | Account (`e2e:account`): register, signed-in pages at both widths, add address, sign out, another customer's order is 404 | 18 passed |
