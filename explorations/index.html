@@ -4237,7 +4237,7 @@ function drawMazeStripes(cv,seed){
   });
   noteStrategy(cv,rects.length+' blocks · '+nm);
 }
-knobs('maze',[
+knobs('mazestripes',[
   {n:'Shape',opts:['Mixed','U','L','Boxes'],steps:4,d:0},
   {n:'Blocks',lo:'one',hi:'many',d:0.35},
   {n:'Stripes',lo:'few',hi:'many',d:0.65},
@@ -5232,7 +5232,7 @@ SYSTEMS.push(
  blurb:'A sphere or cube carved from a triply periodic surface (gyroid, Schwarz or diamond lattice), like a 3D-printed sculpture: flat cut faces where the lattice meets the outer form, shaded tunnels inside.'},
 {cat:'K',id:'knot',bleed:true,name:'Torus Knot',kind:'gl',frag:F_K_KNOT,
  blurb:'A torus knot drawn as a glossy tube at the centre of the sheet, its colour sweeping along its length. Crossings shade the strand underneath and the knot casts a soft shadow on the ground.'},
-{cat:'K',id:'maze',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
+{cat:'K',id:'mazestripes',bleed:true,name:'Maze Stripes',kind:'js',draw:drawMazeStripes,
  blurb:'The sheet split into a few rectangles, each holding concentric stripes that follow its border and open to one side, so they read as nested U and L shapes. A little noise gives the edges a brushed wobble.'},
 {cat:'K',id:'fprint',bleed:true,name:'Fingerprint',kind:'js',draw:drawFingerprint,
  blurb:'Thick paper stripes on an ink ground, evenly spaced and flowing around a few whorls, edge to edge.'},
